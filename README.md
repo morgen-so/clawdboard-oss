@@ -41,7 +41,7 @@ The open-source leaderboard for Claude Code users. Track and compare usage, cost
 ### Setup
 
 ```bash
-git clone https://github.com/morgen-so/clawdboard.git
+git clone https://github.com/morgen-so/clawdboard-oss.git
 cd clawdboard
 npm install
 cp .env.example .env.local
