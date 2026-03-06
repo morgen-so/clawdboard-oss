@@ -1,10 +1,10 @@
-export const dynamic = "force-dynamic";
-
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { after } from "next/server";
 import { Link } from "@/i18n/navigation";
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
+
+export const dynamic = "force-dynamic";
 import { Header } from "@/components/layout/Header";
 import { getUserByUsername, persistEarnedBadges } from "@/lib/db/profile";
 import {
@@ -36,7 +36,7 @@ import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
-const UsageChart = dynamic(
+const UsageChart = nextDynamic(
   () =>
     import("@/components/profile/UsageChart").then((m) => ({
       default: m.UsageChart,
@@ -48,7 +48,7 @@ const UsageChart = dynamic(
   }
 );
 
-const ModelBreakdown = dynamic(
+const ModelBreakdown = nextDynamic(
   () =>
     import("@/components/profile/ModelBreakdown").then((m) => ({
       default: m.ModelBreakdown,
