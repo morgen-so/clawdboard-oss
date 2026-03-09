@@ -41,7 +41,6 @@ export async function GET(req: NextRequest) {
           COUNT(DISTINCT da.date) AS active_days
         FROM users u
         LEFT JOIN daily_aggregates da ON da.user_id = u.id
-        WHERE u.last_sync_at IS NOT NULL
         GROUP BY u.id, u.github_username, u.image
       ),
       streak_days AS (

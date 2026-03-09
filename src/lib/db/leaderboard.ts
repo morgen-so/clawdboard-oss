@@ -114,7 +114,6 @@ function buildLeaderboardCTEs(dateFilter: ReturnType<typeof sql>) {
         COUNT(DISTINCT da.date)::int AS active_days
       FROM users u
       LEFT JOIN daily_aggregates da ON da.user_id = u.id AND ${dateFilter}
-      WHERE u.last_sync_at IS NOT NULL
       GROUP BY u.id, u.github_username, u.image, u.cooking_url, u.cooking_label
     ),
     streak_days AS (
@@ -319,7 +318,7 @@ export function mapSingleRow(
 
 export async function getVibeCoderCount(): Promise<number> {
   const result = await db.execute(
-    sql`SELECT COUNT(*)::int AS count FROM users WHERE last_sync_at IS NOT NULL`
+    sql`SELECT COUNT(*)::int AS count FROM users`
   );
   return Number(result.rows[0]?.count ?? 0);
 }
