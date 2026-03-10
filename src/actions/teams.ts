@@ -12,7 +12,7 @@ import {
 import { createNotification } from "@/lib/db/notifications";
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import crypto from "crypto";
 import type { ActionResult } from "@/lib/action-result";
 import { validatePublicUrl } from "@/lib/validate-url";
@@ -95,6 +95,8 @@ export async function joinTeam(
     redirect(`/team/${team.slug}`);
   }
 
+  revalidateTag("team-stats");
+  revalidateTag("team-members-lb");
   revalidatePath(`/team/${team.slug}`);
   redirect(`/team/${team.slug}`);
 }
@@ -145,6 +147,8 @@ export async function leaveTeam(
       .where(eq(teams.id, teamId));
   }
 
+  revalidateTag("team-stats");
+  revalidateTag("team-members-lb");
   revalidatePath("/team", "layout");
   redirect("/my-team");
 }
@@ -184,6 +188,8 @@ export async function removeMember(
       )
     );
 
+  revalidateTag("team-stats");
+  revalidateTag("team-members-lb");
   revalidatePath("/team", "layout");
 }
 
@@ -300,6 +306,8 @@ export async function toggleTeamPublic(
     sql`UPDATE teams SET is_public = NOT is_public WHERE id = ${teamId}`
   );
 
+  revalidateTag("team-stats");
+  revalidateTag("team-members-lb");
   revalidatePath("/team", "layout");
 }
 
@@ -477,5 +485,7 @@ export async function inviteToTeam(
     }),
   ]);
 
+  revalidateTag("team-stats");
+  revalidateTag("team-members-lb");
   revalidatePath("/team", "layout");
 }
