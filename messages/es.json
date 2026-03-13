@@ -50,7 +50,8 @@
     "faq": "FAQ",
     "privacy": "Privacidad",
     "terms": "Terminos",
-    "contact": "Contacto"
+    "contact": "Contacto",
+    "changelog": "Changelog"
   },
   "errors": {
     "pageNotFound": "Pagina no encontrada",
@@ -102,7 +103,7 @@
     "getStarted": "Ejecuta <command>npx clawdboard auth</command> para comenzar",
     "showingCount": "Mostrando {shown} de {total} usuarios",
     "loadMore": "Cargar más",
-    "loading": "Cargando\u2026",
+    "loading": "Cargando…",
     "you": "tú",
     "anonymous": "Anónimo"
   },
