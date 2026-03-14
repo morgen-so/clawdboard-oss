@@ -1,8 +1,8 @@
 {
   "metadata": {
     "home": {
-      "title": "clawdboard -- Claude Code Usage Leaderboard",
-      "description": "Claude Code leaderboard. Track and compare usage, estimated costs, tokens, streaks, and model breakdowns across developers."
+      "title": "clawdboard -- AI Coding Usage Leaderboard",
+      "description": "AI coding leaderboard. Track and compare usage, estimated costs, tokens, streaks, and model breakdowns across developers."
     },
     "faq": {
       "title": "FAQ",
@@ -10,7 +10,7 @@
     },
     "teams": {
       "title": "Team Leaderboard",
-      "description": "Compare team performance on the Claude Code leaderboard"
+      "description": "Compare team performance on the AI coding leaderboard"
     },
     "settings": {
       "title": "Settings",
@@ -19,6 +19,10 @@
     "signin": {
       "title": "Sign In",
       "description": "Sign in to clawdboard with GitHub"
+    },
+    "stats": {
+      "title": "AI Coding Usage Statistics — Live Developer Data",
+      "description": "Real AI coding usage statistics from hundreds of developers. See total spend, model popularity, daily trends, cost breakdowns, and community growth."
     }
   },
   "common": {
@@ -46,7 +50,8 @@
     "noRepoAccess": "No repo access required."
   },
   "footer": {
-    "tagline": "claude code leaderboard",
+    "tagline": "ai coding leaderboard",
+    "stats": "Stats",
     "faq": "FAQ",
     "privacy": "Privacy",
     "terms": "Terms",
@@ -127,7 +132,7 @@
     "lastSynced": "Last synced:",
     "neverSynced": "Never synced.",
     "setupSyncing": "Set up syncing",
-    "syncCommand": "Sync your Claude Code usage:",
+    "syncCommand": "Sync your AI coding usage:",
     "memberSince": "Member since {date}",
     "whatCooking": "What are you cooking?",
     "projectName": "Project Name",
@@ -172,8 +177,8 @@
     "daysAgo": "{count}d ago"
   },
   "leaderboard": {
-    "heading": "Claude Code Usage Leaderboard",
-    "seoIntro": "The community leaderboard for Claude Code. Track your spending, compare usage across developers, and see who's shipping the most with AI-powered coding. Free to join — sync your stats in one command.",
+    "heading": "AI Coding Usage Leaderboard",
+    "seoIntro": "The community leaderboard for AI coding tools. Track your spending, compare usage across developers, and see who's shipping the most with AI-powered coding. Free to join — sync your stats in one command.",
     "individuals": "Individuals",
     "teams": "Teams",
     "vibeCodersOnBoard": "{count} vibe coders on the board",
@@ -268,9 +273,9 @@
     "copyForSlack": "Copy for Slack",
     "emailInvite": "Email Invite",
     "copied": "Copied!",
-    "slackMessage": "Join our team on clawdboard -- track Claude Code usage and compete: {url}",
+    "slackMessage": "Join our team on clawdboard -- track AI coding usage and compete: {url}",
     "emailSubject": "Join our team on clawdboard",
-    "emailBody": "Hey! Join our team on clawdboard to track Claude Code usage and compete on the leaderboard:\n\n{url}",
+    "emailBody": "Hey! Join our team on clawdboard to track AI coding usage and compete on the leaderboard:\n\n{url}",
     "yourTeam": "Your Team",
     "noTeamYet": "Your team isn't on the board yet",
     "createOrJoinTeam": "create or join a team",
@@ -298,7 +303,7 @@
     "totalCost": "Total Cost",
     "totalTokens": "Total Tokens",
     "activeDays": "Active Days",
-    "activeDaysTooltip": "Distinct calendar days where at least one team member used Claude Code",
+    "activeDaysTooltip": "Distinct calendar days where at least one team member used AI coding tools",
     "activeMembers": "Active Members",
     "youAreRole": "You are a {role}",
     "formerContributors": "Former Contributors ({count})",
@@ -353,36 +358,36 @@
   },
   "faq": {
     "heading": "Frequently Asked Questions",
-    "intro": "Everything you need to know about clawdboard, Claude Code usage tracking, and how the leaderboard works.",
+    "intro": "Everything you need to know about clawdboard, AI coding usage tracking, and how the leaderboard works.",
     "backToLeaderboard": "leaderboard",
     "q1": "What is clawdboard?",
-    "a1": "clawdboard is a leaderboard that ranks developers by their Claude Code CLI usage. It shows estimated costs, token counts, daily activity streaks, and model breakdowns -- giving you and your team visibility into how much you're actually using Claude Code as a development tool.",
+    "a1": "clawdboard is a leaderboard that ranks developers by their AI coding tool usage. It supports Claude Code, OpenCode, and Codex CLI. It shows estimated costs, token counts, daily activity streaks, and model breakdowns -- giving you and your team visibility into how much you're actually using AI coding tools.",
     "q2": "Is clawdboard free?",
     "a2": "Yes. clawdboard is completely free to use. There are no paid tiers, no ads, and no data monetization.",
     "q3": "Who is clawdboard for?",
-    "a3": "Any developer using Claude Code (Anthropic's CLI coding assistant). Whether you're curious about your own usage, want to benchmark against peers, or are a team lead tracking adoption -- clawdboard gives you the numbers.",
+    "a3": "Any developer using AI coding tools like Claude Code, OpenCode, or Codex CLI. Whether you're curious about your own usage, want to benchmark against peers, or are a team lead tracking adoption -- clawdboard gives you the numbers.",
     "q4": "How do I join the leaderboard?",
     "a4": "Sign in with your GitHub account, then follow the setup guide in your dashboard. You'll install ccusage (a local CLI tool), run a single sync command, and your data appears on the leaderboard within seconds.",
     "q5": "What is ccusage?",
-    "a5": "ccusage is the companion CLI that reads Claude Code's local log files on your machine, extracts aggregate metrics (tokens and costs), and sends them to clawdboard. It never reads your code, project names, or conversation content.",
+    "a5": "ccusage is the companion CLI that reads local log files from AI coding tools (Claude Code, OpenCode, Codex) on your machine, extracts aggregate metrics (tokens and costs), and sends them to clawdboard. It never reads your code, project names, or conversation content.",
     "q6": "What data does clawdboard track?",
-    "a6": "Only aggregate Claude Code metrics -- input, output, cache-creation, and cache-read tokens per day, the estimated cost at API pricing, and which Claude models you used (Sonnet, Opus, Haiku, etc.).",
+    "a6": "Only aggregate AI coding metrics -- input, output, cache-creation, and cache-read tokens per day, the estimated cost at API pricing, and which models you used (Sonnet, Opus, Haiku, GPT-4o, etc.).",
     "q7": "What does clawdboard NOT track?",
     "a7": "It does not track any code, file paths, project names, git branches, session IDs, conversation content, or anything from claude.ai web chat. It also does not track API tokens used by your own applications.",
     "q8": "Is my data private?",
     "a8": "The CLI enforces a strict privacy allowlist -- only aggregate token counts and costs leave your machine. No code, prompts, or project context is ever transmitted. Your profile on clawdboard shows only the metrics you've synced.",
     "q9": "Where does the data come from?",
-    "a9": "ccusage reads the JSONL log files that Claude Code stores locally in ~/.claude/ on your machine. No API calls to Anthropic are made -- everything is parsed from your local logs.",
+    "a9": "ccusage reads the JSONL log files that AI coding tools store locally on your machine (e.g., Claude Code in ~/.claude/, OpenCode and Codex in their respective directories). No API calls are made -- everything is parsed from your local logs.",
     "q10": "What does the \"cost\" number mean?",
-    "a10": "It's the estimated cost of your token usage at Anthropic's published API rates. This is a calculated estimate, not an actual bill. Think of it as a proxy for how intensively you're using Claude Code.",
+    "a10": "It's the estimated cost of your token usage at published API rates (Anthropic, OpenAI, etc.). This is a calculated estimate, not an actual bill. Think of it as a proxy for how intensively you're using AI coding tools.",
     "q11": "How are streaks calculated?",
-    "a11": "A streak counts consecutive days where you used Claude Code. If you use it on Monday, Tuesday, and Wednesday, that's a 3-day streak. Missing a day resets it. The leaderboard shows your current active streak.",
+    "a11": "A streak counts consecutive days where you used AI coding tools. If you use them on Monday, Tuesday, and Wednesday, that's a 3-day streak. Missing a day resets it. The leaderboard shows your current active streak.",
     "q12": "How is ranking determined?",
     "a12": "By default, users are ranked by estimated cost (highest first). You can also sort by total tokens, number of active days, or current streak. Each column is sortable, and you can filter by time period (7d, 30d, this month, YTD, or a custom date range).",
     "q13": "Does clawdboard track API usage from my own apps?",
-    "a13": "No. Only Claude Code CLI usage is tracked. If you call the Anthropic API from your own code, that usage is completely separate and not included in clawdboard.",
+    "a13": "No. Only usage from supported AI coding tools (Claude Code, OpenCode, Codex CLI) is tracked. If you call APIs directly from your own code, that usage is completely separate and not included in clawdboard.",
     "q14": "Which Claude models are tracked?",
-    "a14": "All models available through Claude Code -- including Sonnet, Opus, and Haiku across their version families. Your profile page shows a detailed breakdown of which models you've used and how much.",
+    "a14": "All models available through supported AI coding tools -- including Claude's Sonnet, Opus, and Haiku, as well as OpenAI's GPT-4o and o-series models. Your profile page shows a detailed breakdown of which models you've used and how much.",
     "q15": "What is the clawdboard plugin?",
     "a15": "It's a Claude Code plugin that adds /sync, /stats, and /leaderboard slash commands directly inside Claude Code. It also auto-syncs your usage every 2 hours via a background hook -- so your stats stay up to date without manual effort.",
     "q16": "How do I install the plugin?",

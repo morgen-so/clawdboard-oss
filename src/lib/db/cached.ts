@@ -15,6 +15,12 @@ import {
   getTeamLeaderboardData as _getTeamLeaderboardData,
   getTeamStats as _getTeamStats,
 } from "./teams";
+import {
+  getCommunityStats as _getCommunityStats,
+  getDailyTrends as _getDailyTrends,
+  getModelStats as _getModelStats,
+  getWeeklyGrowth as _getWeeklyGrowth,
+} from "./stats";
 
 // ─── Cache tags (single source of truth) ────────────────────────────────────
 // Every unstable_cache wrapper below references these constants for both its
@@ -32,6 +38,10 @@ export const TAG = {
   userSummary: "user-summary",
   userDaily: "user-daily",
   userModels: "user-models",
+  communityStats: "community-stats",
+  dailyTrends: "daily-trends",
+  modelStats: "model-stats",
+  weeklyGrowth: "weekly-growth",
 } as const;
 
 const ALL_TAGS = Object.values(TAG);
@@ -121,4 +131,33 @@ export const getUserModelBreakdown = unstable_cache(
   _getUserModelBreakdown,
   [TAG.userModels],
   { revalidate: 120, tags: [TAG.userModels] }
+);
+
+// ─── Stats (aggregate, hourly refresh) ──────────────────────────────────────
+// NOTE: These cache wrappers are for the stats PAGE only (no period filter).
+// The /api/stats route calls the raw query functions directly since it
+// supports period filtering and relies on HTTP Cache-Control instead.
+
+export const getCommunityStatsCached = unstable_cache(
+  _getCommunityStats,
+  [TAG.communityStats],
+  { revalidate: 3600, tags: [TAG.communityStats] }
+);
+
+export const getDailyTrendsCached = unstable_cache(
+  _getDailyTrends,
+  [TAG.dailyTrends],
+  { revalidate: 3600, tags: [TAG.dailyTrends] }
+);
+
+export const getModelStatsCached = unstable_cache(
+  _getModelStats,
+  [TAG.modelStats],
+  { revalidate: 3600, tags: [TAG.modelStats] }
+);
+
+export const getWeeklyGrowthCached = unstable_cache(
+  _getWeeklyGrowth,
+  [TAG.weeklyGrowth],
+  { revalidate: 3600, tags: [TAG.weeklyGrowth] }
 );

@@ -1,8 +1,8 @@
 {
   "metadata": {
     "home": {
-      "title": "clawdboard -- Classement d'utilisation de Claude Code",
-      "description": "Classement Claude Code. Suivez et comparez l'utilisation, les couts estimes, les tokens, les series et les repartitions de modeles entre developpeurs."
+      "title": "clawdboard -- Classement d'utilisation de codage IA",
+      "description": "Classement de codage IA. Suivez et comparez l'utilisation, les couts estimes, les tokens, les series et les repartitions de modeles entre developpeurs."
     },
     "faq": {
       "title": "FAQ",
@@ -10,7 +10,7 @@
     },
     "teams": {
       "title": "Classement des equipes",
-      "description": "Comparez les performances des equipes sur le classement Claude Code"
+      "description": "Comparez les performances des equipes sur le classement de codage IA"
     },
     "settings": {
       "title": "Parametres",
@@ -19,6 +19,10 @@
     "signin": {
       "title": "Connexion",
       "description": "Connectez-vous a clawdboard avec GitHub"
+    },
+    "stats": {
+      "title": "Statistiques d'utilisation de codage IA",
+      "description": "Donnees reelles d'utilisation de codage IA provenant de centaines de developpeurs. Depenses totales, popularite des modeles, tendances et croissance."
     }
   },
   "common": {
@@ -46,7 +50,8 @@
     "noRepoAccess": "Aucun acces aux depots requis."
   },
   "footer": {
-    "tagline": "classement claude code",
+    "tagline": "classement codage IA",
+    "stats": "Stats",
     "faq": "FAQ",
     "privacy": "Confidentialite",
     "terms": "Conditions",
@@ -127,7 +132,7 @@
     "lastSynced": "Derniere synchronisation :",
     "neverSynced": "Jamais synchronise.",
     "setupSyncing": "Configurer la synchronisation",
-    "syncCommand": "Synchronisez votre utilisation de Claude Code :",
+    "syncCommand": "Synchronisez votre utilisation de codage IA :",
     "memberSince": "Membre depuis {date}",
     "whatCooking": "What are you cooking?",
     "projectName": "Nom du projet",
@@ -172,8 +177,8 @@
     "daysAgo": "il y a {count}j"
   },
   "leaderboard": {
-    "heading": "Classement d'utilisation de Claude Code",
-    "seoIntro": "Le classement communautaire de Claude Code. Suivez vos depenses, comparez l'utilisation entre developpeurs et decouvrez qui code le plus avec l'IA. Gratuit — synchronisez vos statistiques en une commande.",
+    "heading": "Classement d'utilisation de codage IA",
+    "seoIntro": "Le classement communautaire des outils de codage IA. Suivez vos depenses, comparez l'utilisation entre developpeurs et decouvrez qui code le plus avec l'IA. Gratuit — synchronisez vos statistiques en une commande.",
     "individuals": "Individus",
     "teams": "Teams",
     "vibeCodersOnBoard": "{count} vibe coders au classement",
@@ -268,9 +273,9 @@
     "copyForSlack": "Copier pour Slack",
     "emailInvite": "Invitation par e-mail",
     "copied": "Copie !",
-    "slackMessage": "Rejoignez notre equipe sur clawdboard -- suivez l'utilisation de Claude Code et competitionnez : {url}",
+    "slackMessage": "Rejoignez notre equipe sur clawdboard -- suivez l'utilisation de codage IA et competitionnez : {url}",
     "emailSubject": "Rejoignez notre equipe sur clawdboard",
-    "emailBody": "Salut ! Rejoignez notre equipe sur clawdboard pour suivre l'utilisation de Claude Code et concourir au classement :\n\n{url}",
+    "emailBody": "Salut ! Rejoignez notre equipe sur clawdboard pour suivre l'utilisation de codage IA et concourir au classement :\n\n{url}",
     "yourTeam": "Votre equipe",
     "noTeamYet": "Votre equipe n'est pas encore au classement",
     "createOrJoinTeam": "creer ou rejoindre une equipe",
@@ -298,7 +303,7 @@
     "totalCost": "Cout total",
     "totalTokens": "Tokens totaux",
     "activeDays": "Jours actifs",
-    "activeDaysTooltip": "Jours calendaires distincts ou au moins un membre de l'equipe a utilise Claude Code",
+    "activeDaysTooltip": "Jours calendaires distincts ou au moins un membre de l'equipe a utilise des outils de codage IA",
     "activeMembers": "Membres actifs",
     "youAreRole": "Vous etes {role}",
     "formerContributors": "Anciens contributeurs ({count})",
@@ -353,36 +358,36 @@
   },
   "faq": {
     "heading": "Questions frequemment posees",
-    "intro": "Tout ce que vous devez savoir sur clawdboard, le suivi d'utilisation de Claude Code et le fonctionnement du classement.",
+    "intro": "Tout ce que vous devez savoir sur clawdboard, le suivi d'utilisation de codage IA et le fonctionnement du classement.",
     "backToLeaderboard": "classement",
     "q1": "Qu'est-ce que clawdboard ?",
-    "a1": "clawdboard est un classement qui classe les developpeurs par leur utilisation du CLI Claude Code. Il affiche les couts estimes, les comptages de tokens, les series d'activite quotidienne et les repartitions par modele -- vous donnant, a vous et a votre equipe, une visibilite sur votre utilisation reelle de Claude Code comme outil de developpement.",
+    "a1": "clawdboard est un classement qui classe les developpeurs par leur utilisation d'outils de codage IA. Il prend en charge Claude Code, OpenCode et Codex CLI. Il affiche les couts estimes, les comptages de tokens, les series d'activite quotidienne et les repartitions par modele -- vous donnant, a vous et a votre equipe, une visibilite sur votre utilisation reelle des outils de codage IA.",
     "q2": "clawdboard est-il gratuit ?",
     "a2": "Oui. clawdboard est entierement gratuit. Il n'y a pas de niveaux payants, pas de publicites et pas de monetisation des donnees.",
     "q3": "A qui s'adresse clawdboard ?",
-    "a3": "A tout developpeur utilisant Claude Code (l'assistant de codage CLI d'Anthropic). Que vous soyez curieux de votre propre utilisation, que vous souhaitiez vous comparer a vos pairs, ou que vous soyez un chef d'equipe suivant l'adoption -- clawdboard vous donne les chiffres.",
+    "a3": "A tout developpeur utilisant des outils de codage IA comme Claude Code, OpenCode ou Codex CLI. Que vous soyez curieux de votre propre utilisation, que vous souhaitiez vous comparer a vos pairs, ou que vous soyez un chef d'equipe suivant l'adoption -- clawdboard vous donne les chiffres.",
     "q4": "Comment rejoindre le classement ?",
     "a4": "Connectez-vous avec votre compte GitHub, puis suivez le guide de configuration dans votre tableau de bord. Vous installerez ccusage (un outil CLI local), executerez une seule commande de synchronisation, et vos donnees apparaitront sur le classement en quelques secondes.",
     "q5": "Qu'est-ce que ccusage ?",
-    "a5": "ccusage est le CLI compagnon qui lit les fichiers de journalisation locaux de Claude Code sur votre machine, extrait les metriques agregees (tokens et couts) et les envoie a clawdboard. Il ne lit jamais votre code, vos noms de projets ou le contenu de vos conversations.",
+    "a5": "ccusage est le CLI compagnon qui lit les fichiers de journalisation locaux des outils de codage IA (Claude Code, OpenCode, Codex) sur votre machine, extrait les metriques agregees (tokens et couts) et les envoie a clawdboard. Il ne lit jamais votre code, vos noms de projets ou le contenu de vos conversations.",
     "q6": "Quelles donnees clawdboard suit-il ?",
-    "a6": "Uniquement les metriques agregees de Claude Code -- tokens d'entree, de sortie, de creation de cache et de lecture de cache par jour, le cout estime aux tarifs API, et quels modeles Claude vous avez utilises (Sonnet, Opus, Haiku, etc.).",
+    "a6": "Uniquement les metriques agregees de codage IA -- tokens d'entree, de sortie, de creation de cache et de lecture de cache par jour, le cout estime aux tarifs API, et quels modeles vous avez utilises (Sonnet, Opus, Haiku, GPT-4o, etc.).",
     "q7": "Que ne suit PAS clawdboard ?",
     "a7": "Il ne suit aucun code, chemin de fichier, nom de projet, branche git, identifiant de session, contenu de conversation, ni quoi que ce soit de claude.ai chat web. Il ne suit pas non plus les tokens API utilises par vos propres applications.",
     "q8": "Mes donnees sont-elles privees ?",
     "a8": "Le CLI applique une liste blanche de confidentialite stricte -- seuls les comptages de tokens et les couts agreges quittent votre machine. Aucun code, prompt ou contexte de projet n'est jamais transmis. Votre profil sur clawdboard n'affiche que les metriques que vous avez synchronisees.",
     "q9": "D'ou viennent les donnees ?",
-    "a9": "ccusage lit les fichiers de journalisation JSONL que Claude Code stocke localement dans ~/.claude/ sur votre machine. Aucun appel API a Anthropic n'est effectue -- tout est analyse a partir de vos journaux locaux.",
+    "a9": "ccusage lit les fichiers de journalisation JSONL que les outils de codage IA stockent localement sur votre machine (par ex. Claude Code dans ~/.claude/, OpenCode et Codex dans leurs repertoires respectifs). Aucun appel API n'est effectue -- tout est analyse a partir de vos journaux locaux.",
     "q10": "Que signifie le chiffre \"cout\" ?",
-    "a10": "C'est le cout estime de votre utilisation de tokens aux tarifs API publies d'Anthropic. C'est une estimation calculee, pas une facture reelle. Considerez-le comme un indicateur de l'intensite de votre utilisation de Claude Code.",
+    "a10": "C'est le cout estime de votre utilisation de tokens aux tarifs API publies (Anthropic, OpenAI, etc.). C'est une estimation calculee, pas une facture reelle. Considerez-le comme un indicateur de l'intensite de votre utilisation des outils de codage IA.",
     "q11": "Comment les series sont-elles calculees ?",
-    "a11": "Une serie compte les jours consecutifs ou vous avez utilise Claude Code. Si vous l'utilisez lundi, mardi et mercredi, c'est une serie de 3 jours. Manquer un jour la reinitialise. Le classement affiche votre serie active actuelle.",
+    "a11": "Une serie compte les jours consecutifs ou vous avez utilise des outils de codage IA. Si vous les utilisez lundi, mardi et mercredi, c'est une serie de 3 jours. Manquer un jour la reinitialise. Le classement affiche votre serie active actuelle.",
     "q12": "Comment le classement est-il determine ?",
     "a12": "Par defaut, les utilisateurs sont classes par cout estime (le plus eleve en premier). Vous pouvez aussi trier par tokens totaux, nombre de jours actifs ou serie actuelle. Chaque colonne est triable, et vous pouvez filtrer par periode (7j, 30j, ce mois, depuis le debut de l'annee ou une plage personnalisee).",
     "q13": "clawdboard suit-il l'utilisation API de mes propres applications ?",
-    "a13": "Non. Seule l'utilisation du CLI Claude Code est suivie. Si vous appelez l'API Anthropic depuis votre propre code, cette utilisation est completement separee et non incluse dans clawdboard.",
+    "a13": "Non. Seule l'utilisation des outils de codage IA supportes (Claude Code, OpenCode, Codex CLI) est suivie. Si vous appelez des APIs directement depuis votre propre code, cette utilisation est completement separee et non incluse dans clawdboard.",
     "q14": "Quels modeles Claude sont suivis ?",
-    "a14": "Tous les modeles disponibles via Claude Code -- y compris Sonnet, Opus et Haiku dans leurs familles de versions. Votre page de profil affiche une repartition detaillee des modeles que vous avez utilises et de leur proportion.",
+    "a14": "Tous les modeles disponibles via les outils de codage IA supportes -- y compris Sonnet, Opus et Haiku de Claude, ainsi que GPT-4o et les modeles o-series d'OpenAI. Votre page de profil affiche une repartition detaillee des modeles que vous avez utilises et de leur proportion.",
     "q15": "Qu'est-ce que le plugin clawdboard ?",
     "a15": "C'est un plugin Claude Code qui ajoute les commandes /sync, /stats et /leaderboard directement dans Claude Code. Il synchronise aussi automatiquement votre utilisation toutes les 2 heures via un hook en arriere-plan -- pour que vos statistiques restent a jour sans effort manuel.",
     "q16": "Comment installer le plugin ?",

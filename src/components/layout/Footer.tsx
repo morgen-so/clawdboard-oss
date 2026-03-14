@@ -19,6 +19,12 @@ export async function Footer() {
 
           <nav className="flex items-center gap-4 font-mono text-xs">
             <Link
+              href="/stats"
+              className="text-muted transition-colors hover:text-accent"
+            >
+              {t("stats")}
+            </Link>
+            <Link
               href="/log"
               className="text-muted transition-colors hover:text-accent"
             >

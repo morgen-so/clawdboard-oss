@@ -1,8 +1,8 @@
 {
   "metadata": {
     "home": {
-      "title": "clawdboard -- Claude Code Nutzungs-Rangliste",
-      "description": "Claude Code Rangliste. Verfolge und vergleiche Nutzung, geschatzte Kosten, Tokens, Serien und Modellverteilungen unter Entwicklern."
+      "title": "clawdboard -- KI-Coding Nutzungs-Rangliste",
+      "description": "KI-Coding Rangliste. Verfolge und vergleiche Nutzung, geschatzte Kosten, Tokens, Serien und Modellverteilungen unter Entwicklern."
     },
     "faq": {
       "title": "FAQ",
@@ -10,7 +10,7 @@
     },
     "teams": {
       "title": "Team-Rangliste",
-      "description": "Vergleiche die Teamleistung auf der Claude Code Rangliste"
+      "description": "Vergleiche die Teamleistung auf der KI-Coding Rangliste"
     },
     "settings": {
       "title": "Einstellungen",
@@ -19,6 +19,10 @@
     "signin": {
       "title": "Anmelden",
       "description": "Melde dich bei clawdboard mit GitHub an"
+    },
+    "stats": {
+      "title": "KI-Coding Nutzungsstatistiken",
+      "description": "Echte KI-Coding Nutzungsdaten von Hunderten Entwicklern. Gesamtausgaben, Modellpopularitat, tagliche Trends und Wachstum."
     }
   },
   "common": {
@@ -46,7 +50,8 @@
     "noRepoAccess": "Kein Repository-Zugriff erforderlich."
   },
   "footer": {
-    "tagline": "Claude Code Rangliste",
+    "tagline": "KI-Coding Rangliste",
+    "stats": "Stats",
     "faq": "FAQ",
     "privacy": "Datenschutz",
     "terms": "Nutzungsbedingungen",
@@ -74,8 +79,8 @@
     "genericError": "Etwas ist schiefgelaufen. Bitte versuche es erneut."
   },
   "leaderboard": {
-    "heading": "Claude Code Nutzungs-Rangliste",
-    "seoIntro": "Die Community-Rangliste fur Claude Code. Verfolge deine Ausgaben, vergleiche die Nutzung unter Entwicklern und sieh, wer am meisten mit KI-gestutztem Coding liefert. Kostenlos — synchronisiere deine Statistiken mit einem Befehl.",
+    "heading": "KI-Coding Nutzungs-Rangliste",
+    "seoIntro": "Die Community-Rangliste fur KI-Coding-Tools. Verfolge deine Ausgaben, vergleiche die Nutzung unter Entwicklern und sieh, wer am meisten mit KI-gestutztem Coding liefert. Kostenlos — synchronisiere deine Statistiken mit einem Befehl.",
     "individuals": "Einzelpersonen",
     "teams": "Teams",
     "vibeCodersOnBoard": "{count} Vibe Coders in der Rangliste",
@@ -205,7 +210,7 @@
     "lastSynced": "Zuletzt synchronisiert:",
     "neverSynced": "Nie synchronisiert.",
     "setupSyncing": "Synchronisierung einrichten",
-    "syncCommand": "Synchronisiere deine Claude Code Nutzung:",
+    "syncCommand": "Synchronisiere deine KI-Coding Nutzung:",
     "memberSince": "Mitglied seit {date}",
     "whatCooking": "What are you cooking?",
     "projectName": "Projektname",
@@ -268,9 +273,9 @@
     "copyForSlack": "Fur Slack kopieren",
     "emailInvite": "E-Mail-Einladung",
     "copied": "Kopiert!",
-    "slackMessage": "Tritt unserem Team auf clawdboard bei -- verfolge die Claude Code Nutzung und tritt an: {url}",
+    "slackMessage": "Tritt unserem Team auf clawdboard bei -- verfolge die KI-Coding Nutzung und tritt an: {url}",
     "emailSubject": "Tritt unserem Team auf clawdboard bei",
-    "emailBody": "Hey! Tritt unserem Team auf clawdboard bei, um die Claude Code Nutzung zu verfolgen und auf der Rangliste anzutreten:\n\n{url}",
+    "emailBody": "Hey! Tritt unserem Team auf clawdboard bei, um die KI-Coding Nutzung zu verfolgen und auf der Rangliste anzutreten:\n\n{url}",
     "yourTeam": "Dein Team",
     "noTeamYet": "Dein Team ist noch nicht in der Rangliste",
     "createOrJoinTeam": "Team erstellen oder beitreten",
@@ -298,7 +303,7 @@
     "totalCost": "Gesamtkosten",
     "totalTokens": "Tokens gesamt",
     "activeDays": "Aktive Tage",
-    "activeDaysTooltip": "Unterschiedliche Kalendertage, an denen mindestens ein Teammitglied Claude Code genutzt hat",
+    "activeDaysTooltip": "Unterschiedliche Kalendertage, an denen mindestens ein Teammitglied KI-Coding-Tools genutzt hat",
     "activeMembers": "Aktive Mitglieder",
     "youAreRole": "Du bist {role}",
     "formerContributors": "Ehemalige Mitwirkende ({count})",
@@ -353,36 +358,36 @@
   },
   "faq": {
     "heading": "Haufig gestellte Fragen",
-    "intro": "Alles, was du uber clawdboard, die Nutzungsverfolgung von Claude Code und die Funktionsweise der Rangliste wissen musst.",
+    "intro": "Alles, was du uber clawdboard, die Nutzungsverfolgung von KI-Coding-Tools und die Funktionsweise der Rangliste wissen musst.",
     "backToLeaderboard": "Rangliste",
     "q1": "Was ist clawdboard?",
-    "a1": "clawdboard ist eine Rangliste, die Entwickler nach ihrer Nutzung des Claude Code CLI einstuft. Sie zeigt geschatzte Kosten, Token-Zahlen, tagliche Aktivitatsserien und Modellaufschlusselungen -- und gibt dir und deinem Team Einblick, wie intensiv ihr Claude Code als Entwicklungswerkzeug nutzt.",
+    "a1": "clawdboard ist eine Rangliste, die Entwickler nach ihrer Nutzung von KI-Coding-Tools einstuft. Es unterstutzt Claude Code, OpenCode und Codex CLI. Sie zeigt geschatzte Kosten, Token-Zahlen, tagliche Aktivitatsserien und Modellaufschlusselungen -- und gibt dir und deinem Team Einblick, wie intensiv ihr KI-Coding-Tools nutzt.",
     "q2": "Ist clawdboard kostenlos?",
     "a2": "Ja. clawdboard ist vollig kostenlos. Es gibt keine kostenpflichtigen Stufen, keine Werbung und keine Datenmonetarisierung.",
     "q3": "Fur wen ist clawdboard?",
-    "a3": "Fur jeden Entwickler, der Claude Code (Anthropics CLI-Codierassistent) nutzt. Ob du neugierig auf deine eigene Nutzung bist, dich mit Kollegen vergleichen mochtest oder als Teamleiter die Akzeptanz verfolgst -- clawdboard liefert dir die Zahlen.",
+    "a3": "Fur jeden Entwickler, der KI-Coding-Tools wie Claude Code, OpenCode oder Codex CLI nutzt. Ob du neugierig auf deine eigene Nutzung bist, dich mit Kollegen vergleichen mochtest oder als Teamleiter die Akzeptanz verfolgst -- clawdboard liefert dir die Zahlen.",
     "q4": "Wie trete ich der Rangliste bei?",
     "a4": "Melde dich mit deinem GitHub-Konto an und folge dann der Einrichtungsanleitung in deinem Dashboard. Du installierst ccusage (ein lokales CLI-Tool), fuhrst einen einzigen Synchronisierungsbefehl aus, und deine Daten erscheinen innerhalb von Sekunden in der Rangliste.",
     "q5": "Was ist ccusage?",
-    "a5": "ccusage ist das Begleit-CLI, das die lokalen Protokolldateien von Claude Code auf deinem Rechner liest, aggregierte Metriken (Tokens und Kosten) extrahiert und sie an clawdboard sendet. Es liest niemals deinen Code, Projektnamen oder Gesprachesinhalte.",
+    "a5": "ccusage ist das Begleit-CLI, das die lokalen Protokolldateien von KI-Coding-Tools (Claude Code, OpenCode, Codex) auf deinem Rechner liest, aggregierte Metriken (Tokens und Kosten) extrahiert und sie an clawdboard sendet. Es liest niemals deinen Code, Projektnamen oder Gesprachesinhalte.",
     "q6": "Welche Daten verfolgt clawdboard?",
-    "a6": "Nur aggregierte Claude Code Metriken -- Eingabe-, Ausgabe-, Cache-Erstellungs- und Cache-Lese-Tokens pro Tag, die geschatzten Kosten zu API-Preisen und welche Claude-Modelle du verwendet hast (Sonnet, Opus, Haiku usw.).",
+    "a6": "Nur aggregierte KI-Coding Metriken -- Eingabe-, Ausgabe-, Cache-Erstellungs- und Cache-Lese-Tokens pro Tag, die geschatzten Kosten zu API-Preisen und welche Modelle du verwendet hast (Sonnet, Opus, Haiku, GPT-4o usw.).",
     "q7": "Was verfolgt clawdboard NICHT?",
     "a7": "Es verfolgt keinen Code, keine Dateipfade, Projektnamen, Git-Branches, Sitzungs-IDs, Gesprachesinhalte oder irgendetwas von claude.ai Web-Chat. Es verfolgt auch keine API-Tokens, die von deinen eigenen Anwendungen verwendet werden.",
     "q8": "Sind meine Daten privat?",
     "a8": "Das CLI erzwingt eine strenge Datenschutz-Positivliste -- nur aggregierte Token-Zahlen und Kosten verlassen deinen Rechner. Kein Code, keine Prompts oder Projektkontexte werden jemals ubertragen. Dein Profil auf clawdboard zeigt nur die Metriken, die du synchronisiert hast.",
     "q9": "Woher kommen die Daten?",
-    "a9": "ccusage liest die JSONL-Protokolldateien, die Claude Code lokal in ~/.claude/ auf deinem Rechner speichert. Es werden keine API-Aufrufe an Anthropic gemacht -- alles wird aus deinen lokalen Protokollen ausgelesen.",
+    "a9": "ccusage liest die JSONL-Protokolldateien, die KI-Coding-Tools lokal auf deinem Rechner speichern (z.B. Claude Code in ~/.claude/, OpenCode und Codex in ihren jeweiligen Verzeichnissen). Es werden keine API-Aufrufe gemacht -- alles wird aus deinen lokalen Protokollen ausgelesen.",
     "q10": "Was bedeutet die Zahl \"Kosten\"?",
-    "a10": "Es sind die geschatzten Kosten deiner Token-Nutzung zu Anthropics veroffentlichten API-Tarifen. Dies ist eine berechnete Schatzung, keine tatsachliche Rechnung. Betrachte es als Indikator dafur, wie intensiv du Claude Code nutzt.",
+    "a10": "Es sind die geschatzten Kosten deiner Token-Nutzung zu veroffentlichten API-Tarifen (Anthropic, OpenAI usw.). Dies ist eine berechnete Schatzung, keine tatsachliche Rechnung. Betrachte es als Indikator dafur, wie intensiv du KI-Coding-Tools nutzt.",
     "q11": "Wie werden Serien berechnet?",
-    "a11": "Eine Serie zahlt aufeinanderfolgende Tage, an denen du Claude Code genutzt hast. Wenn du es am Montag, Dienstag und Mittwoch nutzt, ist das eine 3-Tage-Serie. Ein fehlender Tag setzt sie zuruck. Die Rangliste zeigt deine aktuelle aktive Serie.",
+    "a11": "Eine Serie zahlt aufeinanderfolgende Tage, an denen du KI-Coding-Tools genutzt hast. Wenn du sie am Montag, Dienstag und Mittwoch nutzt, ist das eine 3-Tage-Serie. Ein fehlender Tag setzt sie zuruck. Die Rangliste zeigt deine aktuelle aktive Serie.",
     "q12": "Wie wird das Ranking bestimmt?",
     "a12": "Standardmassig werden Benutzer nach geschatzten Kosten sortiert (hochste zuerst). Du kannst auch nach Gesamt-Tokens, Anzahl aktiver Tage oder aktueller Serie sortieren. Jede Spalte ist sortierbar, und du kannst nach Zeitraum filtern (7T, 30T, dieser Monat, seit Jahresbeginn oder ein benutzerdefinierter Zeitraum).",
     "q13": "Verfolgt clawdboard die API-Nutzung meiner eigenen Apps?",
-    "a13": "Nein. Nur die Nutzung des Claude Code CLI wird verfolgt. Wenn du die Anthropic API aus deinem eigenen Code aufrufst, ist diese Nutzung vollig getrennt und nicht in clawdboard enthalten.",
+    "a13": "Nein. Nur die Nutzung von unterstutzten KI-Coding-Tools (Claude Code, OpenCode, Codex CLI) wird verfolgt. Wenn du APIs direkt aus deinem eigenen Code aufrufst, ist diese Nutzung vollig getrennt und nicht in clawdboard enthalten.",
     "q14": "Welche Claude-Modelle werden verfolgt?",
-    "a14": "Alle uber Claude Code verfugbaren Modelle -- einschliesslich Sonnet, Opus und Haiku uber ihre Versionsfamilien hinweg. Deine Profilseite zeigt eine detaillierte Aufschlusselung, welche Modelle du wie stark genutzt hast.",
+    "a14": "Alle uber unterstutzte KI-Coding-Tools verfugbaren Modelle -- einschliesslich Claudes Sonnet, Opus und Haiku sowie OpenAIs GPT-4o und o-Serien-Modelle. Deine Profilseite zeigt eine detaillierte Aufschlusselung, welche Modelle du wie stark genutzt hast.",
     "q15": "Was ist das clawdboard-Plugin?",
     "a15": "Es ist ein Claude Code Plugin, das die Slash-Befehle /sync, /stats und /leaderboard direkt in Claude Code hinzufugt. Es synchronisiert auch automatisch deine Nutzung alle 2 Stunden uber einen Hintergrund-Hook -- damit deine Statistiken ohne manuellen Aufwand aktuell bleiben.",
     "q16": "Wie installiere ich das Plugin?",

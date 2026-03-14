@@ -47,5 +47,8 @@ next-env.d.ts
 # claude code settings
 .claude/
 
+# internal planning docs
+growthPlan.md
+
 # docker
 docker-compose.override.yml

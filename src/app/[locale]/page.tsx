@@ -37,9 +37,9 @@ import { cookies } from "next/headers";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
 
 export const metadata: Metadata = {
-  title: "clawdboard — Claude Code Usage Leaderboard",
+  title: "clawdboard — AI Coding Usage Leaderboard",
   description:
-    "See who's spending the most on Claude Code. Compare usage, costs, streaks, and model breakdowns across developers on the free community leaderboard.",
+    "See who's spending the most on AI coding. Compare usage, costs, streaks, and model breakdowns across developers on the free community leaderboard.",
   alternates: { canonical: env.NEXT_PUBLIC_BASE_URL },
 };
 
@@ -48,7 +48,7 @@ const jsonLd = {
   "@type": "WebApplication",
   name: "clawdboard",
   description:
-    "Leaderboard for tracking and comparing Claude Code usage across developers.",
+    "Leaderboard for tracking and comparing AI coding usage across developers.",
   applicationCategory: "DeveloperApplication",
   operatingSystem: "Web",
   url: env.NEXT_PUBLIC_BASE_URL,
@@ -59,8 +59,8 @@ function buildItemListLd(rows: { githubUsername: string | null; totalCost: strin
   return {
     "@context": "https://schema.org",
     "@type": "ItemList",
-    name: "Claude Code Usage Leaderboard",
-    description: "Top developers ranked by Claude Code usage and estimated cost.",
+    name: "AI Coding Usage Leaderboard",
+    description: "Top developers ranked by AI coding usage and estimated cost.",
     numberOfItems: rows.length,
     itemListElement: rows
       .filter((r) => r.githubUsername)
