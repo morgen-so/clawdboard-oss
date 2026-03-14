@@ -55,7 +55,8 @@
     "privacy": "Datenschutz",
     "terms": "Nutzungsbedingungen",
     "contact": "Kontakt",
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "contribute": "Beitragen"
   },
   "errors": {
     "pageNotFound": "Seite nicht gefunden",
@@ -391,6 +392,25 @@
     "a15": "Es ist ein Claude Code Plugin, das die Slash-Befehle /sync, /stats und /leaderboard direkt in Claude Code hinzufugt. Es synchronisiert auch automatisch deine Nutzung alle 2 Stunden uber einen Hintergrund-Hook -- damit deine Statistiken ohne manuellen Aufwand aktuell bleiben.",
     "q16": "Wie installiere ich das Plugin?",
     "a16": "Installiere es von GitHub, indem du \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" in deinem Terminal ausfuhrst. Du brauchst zuerst ein kostenloses clawdboard-Konto -- melde dich auf clawdboard.ai mit GitHub an und fuhre dann \"npx clawdboard auth\" aus, um deinen Rechner zu verknupfen."
+  },
+  "contribute": {
+    "heading": "Beitragen",
+    "intro": "clawdboard ist Open-Source. So kannst du helfen.",
+    "backToLeaderboard": "Rangliste",
+    "repoDescription": "Gib dem Repo einen Stern, durchsuche den Code oder forke es, um loszulegen.",
+    "bugReportsTitle": "Fehler melden",
+    "bugReportsDescription": "Etwas Kaputtes gefunden? Erstelle ein Issue mit Schritten zur Reproduktion und wir schauen es uns an.",
+    "featureRequestsTitle": "Features vorschlagen",
+    "featureRequestsDescription": "Hast du eine Idee fur ein neues Feature oder eine Verbesserung? Wir freuen uns auf deinen Vorschlag.",
+    "pullRequestsTitle": "Pull Requests einreichen",
+    "pullRequestsDescription": "Behebe einen Fehler, fuge ein Feature hinzu oder verbessere die Dokumentation. Lies den Contributing-Guide fur die Einrichtung.",
+    "translationsTitle": "Beim Ubersetzen helfen",
+    "translationsDescription": "clawdboard unterstutzt Englisch, Deutsch, Franzosisch und Spanisch. Hilf Ubersetzungen zu verbessern oder neue Sprachen hinzuzufugen.",
+    "openIssue": "Issue erstellen",
+    "readGuide": "Guide lesen",
+    "viewFiles": "Ubersetzungsdateien ansehen",
+    "quickStartTitle": "Schnellstart",
+    "quickStartNote": "Keine Secrets notig. Nutzt Docker fur lokales Postgres und Dev-Auth zum Anmelden."
   },
   "stats": {
     "heading": "Community-Statistiken",

@@ -55,7 +55,8 @@
     "privacy": "Privacidad",
     "terms": "Terminos",
     "contact": "Contacto",
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "contribute": "Contribuir"
   },
   "errors": {
     "pageNotFound": "Pagina no encontrada",
@@ -391,6 +392,25 @@
     "a15": "Es un plugin de Claude Code que agrega los comandos /sync, /stats y /leaderboard directamente en Claude Code. Tambien sincroniza automaticamente tu uso cada 2 horas mediante un hook en segundo plano -- para que tus estadisticas se mantengan actualizadas sin esfuerzo manual.",
     "q16": "Como instalo el plugin?",
     "a16": "Instalalo desde GitHub ejecutando \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" en tu terminal. Primero necesitaras una cuenta gratuita de clawdboard -- inicia sesion en clawdboard.ai con GitHub y luego ejecuta \"npx clawdboard auth\" para vincular tu maquina."
+  },
+  "contribute": {
+    "heading": "Contribuir",
+    "intro": "clawdboard es open-source. Asi puedes ayudar.",
+    "backToLeaderboard": "clasificacion",
+    "repoDescription": "Dale una estrella al repo, explora el codigo o haz un fork para empezar.",
+    "bugReportsTitle": "Reportar errores",
+    "bugReportsDescription": "Encontraste algo roto? Abre un issue con los pasos para reproducirlo y lo revisaremos.",
+    "featureRequestsTitle": "Sugerir funcionalidades",
+    "featureRequestsDescription": "Tienes una idea para una nueva funcionalidad o mejora? Nos encantaria escucharla.",
+    "pullRequestsTitle": "Enviar Pull Requests",
+    "pullRequestsDescription": "Corrige un error, agrega una funcionalidad o mejora la documentacion. Consulta la guia de contribucion para las instrucciones de configuracion.",
+    "translationsTitle": "Ayudar a traducir",
+    "translationsDescription": "clawdboard soporta ingles, aleman, frances y espanol. Ayuda a mejorar las traducciones o agregar nuevos idiomas.",
+    "openIssue": "Abrir un issue",
+    "readGuide": "Leer la guia",
+    "viewFiles": "Ver archivos de traduccion",
+    "quickStartTitle": "Inicio rapido",
+    "quickStartNote": "No se necesitan secretos. Usa Docker para Postgres local y auth de desarrollo para iniciar sesion."
   },
   "stats": {
     "heading": "Estadisticas de la comunidad",

@@ -37,6 +37,12 @@ export async function Footer() {
               {t("faq")}
             </Link>
             <Link
+              href="/contribute"
+              className="text-muted transition-colors hover:text-accent"
+            >
+              {t("contribute")}
+            </Link>
+            <Link
               href="/privacy"
               className="text-muted transition-colors hover:text-accent"
             >

@@ -56,7 +56,8 @@
     "privacy": "Privacy",
     "terms": "Terms",
     "contact": "Contact",
-    "changelog": "Changelog"
+    "changelog": "Changelog",
+    "contribute": "Contribute"
   },
   "errors": {
     "pageNotFound": "Page not found",
@@ -392,6 +393,25 @@
     "a15": "It's a Claude Code plugin that adds /sync, /stats, and /leaderboard slash commands directly inside Claude Code. It also auto-syncs your usage every 2 hours via a background hook -- so your stats stay up to date without manual effort.",
     "q16": "How do I install the plugin?",
     "a16": "Install it from GitHub by running \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" in your terminal. You'll need a free clawdboard account first -- sign in at clawdboard.ai with GitHub, then run \"npx clawdboard auth\" to link your machine."
+  },
+  "contribute": {
+    "heading": "Contribute",
+    "intro": "clawdboard is open-source. Here's how you can help.",
+    "backToLeaderboard": "leaderboard",
+    "repoDescription": "Star the repo, browse the code, or fork it to get started.",
+    "bugReportsTitle": "Report Bugs",
+    "bugReportsDescription": "Found something broken? Open an issue with steps to reproduce and we'll look into it.",
+    "featureRequestsTitle": "Suggest Features",
+    "featureRequestsDescription": "Have an idea for a new feature or improvement? We'd love to hear it.",
+    "pullRequestsTitle": "Submit Pull Requests",
+    "pullRequestsDescription": "Fix a bug, add a feature, or improve the docs. Check the contributing guide for setup instructions.",
+    "translationsTitle": "Help Translate",
+    "translationsDescription": "clawdboard supports English, German, French, and Spanish. Help improve translations or add new languages.",
+    "openIssue": "Open an issue",
+    "readGuide": "Read the guide",
+    "viewFiles": "View translation files",
+    "quickStartTitle": "Quick Start",
+    "quickStartNote": "No secrets needed. Uses Docker for local Postgres, dev auth for sign-in."
   },
   "stats": {
     "heading": "Community Stats",
