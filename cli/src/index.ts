@@ -13,7 +13,7 @@ import { VERSION } from "./version.js";
 
 program
   .name("clawdboard")
-  .description("Claude Code leaderboard CLI")
+  .description("AI coding agent leaderboard CLI")
   .version(VERSION);
 
 program.addCommand(authCommand);
@@ -24,7 +24,7 @@ program.addCommand(leaderboardCommand);
 
 program
   .command("hook-sync", { hidden: true })
-  .description("Internal: auto-sync triggered by Claude Code hook")
+  .description("Internal: auto-sync triggered by hook")
   .action(async () => {
     await runHookSync();
   });

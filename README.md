@@ -1,6 +1,6 @@
 # clawdboard
 
-The open-source leaderboard for Claude Code users. Track and compare usage, costs, tokens, streaks, and model breakdowns across developers.
+The open-source leaderboard for AI coding agents. Track and compare usage, costs, tokens, streaks, and model breakdowns across developers. Supports Claude Code, OpenCode, and Codex.
 
 [clawdboard.ai](https://clawdboard.ai)
 
@@ -8,7 +8,7 @@ The open-source leaderboard for Claude Code users. Track and compare usage, cost
 
 1. Run `npx clawdboard` in your terminal
 2. Sign in with GitHub (device flow — no secrets in the terminal)
-3. Your local Claude Code usage logs are extracted, aggregated, and synced
+3. Your local usage logs are extracted, aggregated, and synced
 4. A hook auto-syncs every 2 hours in the background
 
 **Privacy first:** Only aggregate numbers (date, token counts, cost, model names) leave your machine. Prompts, code, file paths, and project names never do.
@@ -68,7 +68,7 @@ src/
   lib/          # Shared utilities (db, auth, env, sync)
   actions/      # Server actions
 cli/            # CLI package (npm: clawdboard)
-plugin/         # Claude Code plugin
+opencode-plugin/# OpenCode plugin (npm: clawdboard-opencode)
 ```
 
 ## Contributing

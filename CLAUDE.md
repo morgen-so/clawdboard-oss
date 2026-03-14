@@ -1,6 +1,6 @@
 # clawdboard
 
-Claude Code usage leaderboard — track and compare usage, costs, tokens, streaks, and model breakdowns across developers.
+AI coding agent leaderboard — track and compare usage, costs, tokens, streaks, and model breakdowns across Claude Code, OpenCode, and Codex.
 
 ## Tech Stack
 
