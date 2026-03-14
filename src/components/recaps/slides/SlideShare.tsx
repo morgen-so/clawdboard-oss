@@ -261,6 +261,14 @@ export function SlideShare({ data, type, periodStart, periodEnd }: SlideSharePro
           )}
         </button>
       </div>
+
+      {/* Past recaps hint */}
+      <p
+        className="font-mono text-[10px] text-white/20 animate-fade-in"
+        style={{ animationDelay: "800ms" }}
+      >
+        You can revisit past recaps on your profile
+      </p>
     </div>
   );
 }

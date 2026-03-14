@@ -36,6 +36,8 @@ import { TeamNudge } from "@/components/profile/TeamNudge";
 import { env } from "@/lib/env";
 import { auth } from "@/lib/auth";
 import { getUserTeams, getUserPublicTeams } from "@/lib/db/teams";
+import { getAllRecaps } from "@/lib/db/recaps";
+import { RecapStrip } from "@/components/recaps/RecapStrip";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
@@ -97,8 +99,8 @@ export async function generateMetadata({
     getUserRank(user.id),
   ]);
 
-  const title = `${username}'s Claude Code Stats — Ranked #${rank.rank}`;
-  const description = `${username} has spent ${fmtCost(summary.totalCost)} on Claude Code and ranks #${rank.rank} of ${rank.totalUsers} developers. View their activity heatmap, model breakdown, and streak on clawdboard.`;
+  const title = `${username}'s AI Coding Stats — Ranked #${rank.rank}`;
+  const description = `${username} has spent ${fmtCost(summary.totalCost)} on AI coding and ranks #${rank.rank} of ${rank.totalUsers} developers. View their activity heatmap, model breakdown, and streak on clawdboard.`;
 
   return {
     title,
@@ -144,7 +146,7 @@ export default async function UserProfilePage({
   const getDaily = isToday ? getUncachedDailyData : getUserDailyData;
   const getModels = isToday ? getUncachedModelBreakdown : getUserModelBreakdown;
 
-  const [summary, filteredDailyData, allDailyData, modelData, rank, session, publicTeams] =
+  const [summary, filteredDailyData, allDailyData, modelData, rank, session, publicTeams, userRecaps] =
     await Promise.all([
       getSummary(user.id, period, range),
       getDaily(user.id, period, range),
@@ -153,6 +155,7 @@ export default async function UserProfilePage({
       getUserRank(user.id),
       auth(),
       getUserPublicTeams(user.id),
+      getAllRecaps(user.id),
     ]);
 
   const currentStreak = computeCurrentStreak(allDailyData);
@@ -308,6 +311,8 @@ export default async function UserProfilePage({
               )}
             </div>
           </ProfileHeader>
+
+          {userRecaps.length > 0 && <RecapStrip recaps={userRecaps} />}
 
           <ActivityGrid data={activityGridData} />
 

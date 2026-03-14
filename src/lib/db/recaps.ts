@@ -55,6 +55,27 @@ export async function markRecapSeen(
 }
 
 /**
+ * Get all recaps for a user (seen + unseen), most recent first.
+ * Used on the profile page recap strip.
+ */
+export async function getAllRecaps(userId: string): Promise<RecapRow[]> {
+  return db
+    .select({
+      id: recaps.id,
+      type: recaps.type,
+      periodStart: recaps.periodStart,
+      periodEnd: recaps.periodEnd,
+      data: recaps.data,
+      seenAt: recaps.seenAt,
+      createdAt: recaps.createdAt,
+    })
+    .from(recaps)
+    .where(eq(recaps.userId, userId))
+    .orderBy(desc(recaps.createdAt))
+    .limit(20);
+}
+
+/**
  * Get a recap by ID (for ownership verification).
  */
 export async function getRecapById(recapId: string) {
