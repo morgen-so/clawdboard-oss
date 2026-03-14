@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
     const [community, models, sourceBreakdown] = await Promise.all([
       getCommunityStats(period, range),
       getModelStats(period, range),
-      getSourceBreakdown(),
+      getSourceBreakdown(period, range),
     ]);
 
     const now = new Date().toISOString();
@@ -64,6 +64,7 @@ export async function GET(req: NextRequest) {
         },
         community: {
           totalUsers: community.totalUsers,
+          activeUsers: community.activeUsers,
           totalEstimatedCost: community.totalCost,
           totalTokens: community.totalTokens,
           totalActiveDays: community.totalActiveDays,

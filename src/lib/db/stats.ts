@@ -37,6 +37,7 @@ function statsDateFilter(period?: Period, range?: DateRange) {
 
 export interface CommunityStats {
   totalUsers: number;
+  activeUsers: number;
   totalCost: string;
   totalTokens: number;
   totalActiveDays: number;
@@ -85,6 +86,7 @@ export async function getCommunityStats(
       db.execute(sql`
         SELECT
           (SELECT COUNT(*)::int FROM users) AS total_users,
+          COUNT(DISTINCT user_id)::int AS active_users,
           COALESCE(SUM(total_cost::numeric), 0)::text AS total_cost,
           COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0)::bigint AS total_tokens,
           COUNT(DISTINCT user_id || '-' || date)::int AS total_active_days
@@ -128,6 +130,7 @@ export async function getCommunityStats(
 
   return {
     totalUsers: Number(t?.total_users ?? 0),
+    activeUsers: Number(t?.active_users ?? 0),
     totalCost: String(t?.total_cost ?? "0"),
     totalTokens: Number(t?.total_tokens ?? 0),
     totalActiveDays: Number(t?.total_active_days ?? 0),
@@ -182,7 +185,7 @@ export async function getModelStats(
         SUM((elem->>'cost')::numeric) AS total_cost,
         SUM((elem->>'inputTokens')::bigint) AS input_tokens,
         SUM((elem->>'outputTokens')::bigint) AS output_tokens,
-        SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint) AS total_tokens,
+        SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint + COALESCE((elem->>'cacheCreationTokens')::bigint, 0) + COALESCE((elem->>'cacheReadTokens')::bigint, 0)) AS total_tokens,
         COUNT(DISTINCT da.user_id) AS user_count
       FROM daily_aggregates da,
         jsonb_array_elements(da.model_breakdowns) AS elem
@@ -267,7 +270,7 @@ export async function getModelDetailStats(
     )
     SELECT
       COALESCE(SUM(m.cost), 0)::text AS total_cost,
-      COALESCE(SUM(m.inp + m.outp), 0)::bigint AS total_tokens,
+      COALESCE(SUM(m.inp + m.outp + m.cache_create + m.cache_read), 0)::bigint AS total_tokens,
       COALESCE(SUM(m.inp), 0)::bigint AS input_tokens,
       COALESCE(SUM(m.outp), 0)::bigint AS output_tokens,
       COALESCE(SUM(m.cache_create), 0)::bigint AS cache_creation_tokens,
@@ -324,7 +327,7 @@ export async function getModelDailyTrends(
     SELECT
       da.date,
       SUM((elem->>'cost')::numeric)::float AS cost,
-      SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint)::bigint AS tokens,
+      SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint + COALESCE((elem->>'cacheCreationTokens')::bigint, 0) + COALESCE((elem->>'cacheReadTokens')::bigint, 0))::bigint AS tokens,
       COUNT(DISTINCT da.user_id)::int AS active_users
     FROM daily_aggregates da,
       jsonb_array_elements(da.model_breakdowns) AS elem
@@ -574,7 +577,7 @@ export async function getSourceModelBreakdown(
           SUM((elem->>'cost')::numeric) AS total_cost,
           SUM((elem->>'inputTokens')::bigint) AS input_tokens,
           SUM((elem->>'outputTokens')::bigint) AS output_tokens,
-          SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint) AS total_tokens,
+          SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint + COALESCE((elem->>'cacheCreationTokens')::bigint, 0) + COALESCE((elem->>'cacheReadTokens')::bigint, 0)) AS total_tokens,
           COUNT(DISTINCT da.user_id) AS user_count
         FROM daily_aggregates da,
           jsonb_array_elements(da.model_breakdowns) AS elem
@@ -669,39 +672,47 @@ export async function getDistinctSources(): Promise<string[]> {
   }
 }
 
-export async function getSourceBreakdown(): Promise<SourceBreakdownEntry[]> {
-  try {
-    const rows = await db
-      .select({
-        source: sql<string>`COALESCE(${dailyAggregates.source}, 'claude-code')`.as("source"),
-        totalCost: sql<number>`COALESCE(SUM(${dailyAggregates.totalCost}::numeric), 0)`.as("total_cost"),
-        totalTokens: sql<number>`COALESCE(SUM(${dailyAggregates.inputTokens} + ${dailyAggregates.outputTokens} + ${dailyAggregates.cacheCreationTokens} + ${dailyAggregates.cacheReadTokens}), 0)`.as("total_tokens"),
-        userCount: sql<number>`COUNT(DISTINCT ${dailyAggregates.userId})`.as("user_count"),
-      })
-      .from(dailyAggregates)
-      .groupBy(sql`COALESCE(${dailyAggregates.source}, 'claude-code')`);
+export async function getSourceBreakdown(
+  period?: Period,
+  range?: DateRange
+): Promise<SourceBreakdownEntry[]> {
+  const { filter } = statsDateFilter(period, range);
 
-    return rows.map((r) => ({
-      source: r.source,
-      totalCost: Number(r.totalCost),
-      totalTokens: Number(r.totalTokens),
-      userCount: Number(r.userCount),
+  try {
+    const result = await db.execute(sql`
+      SELECT
+        COALESCE(source, 'claude-code') AS source,
+        COALESCE(SUM(total_cost::numeric), 0)::float AS total_cost,
+        COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0)::bigint AS total_tokens,
+        COUNT(DISTINCT user_id)::int AS user_count
+      FROM daily_aggregates
+      WHERE ${filter}
+      GROUP BY COALESCE(source, 'claude-code')
+    `);
+
+    return result.rows.map((r) => ({
+      source: String(r.source),
+      totalCost: Number(r.total_cost),
+      totalTokens: Number(r.total_tokens),
+      userCount: Number(r.user_count),
     }));
   } catch {
     // source column may not exist yet (pre-migration) — fall back to all as claude-code
-    const rows = await db
-      .select({
-        totalCost: sql<number>`COALESCE(SUM(${dailyAggregates.totalCost}::numeric), 0)`.as("total_cost"),
-        totalTokens: sql<number>`COALESCE(SUM(${dailyAggregates.inputTokens} + ${dailyAggregates.outputTokens} + ${dailyAggregates.cacheCreationTokens} + ${dailyAggregates.cacheReadTokens}), 0)`.as("total_tokens"),
-        userCount: sql<number>`COUNT(DISTINCT ${dailyAggregates.userId})`.as("user_count"),
-      })
-      .from(dailyAggregates);
+    const result = await db.execute(sql`
+      SELECT
+        COALESCE(SUM(total_cost::numeric), 0)::float AS total_cost,
+        COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0)::bigint AS total_tokens,
+        COUNT(DISTINCT user_id)::int AS user_count
+      FROM daily_aggregates
+      WHERE ${filter}
+    `);
 
+    const row = result.rows[0];
     return [{
       source: "claude-code",
-      totalCost: Number(rows[0]?.totalCost ?? 0),
-      totalTokens: Number(rows[0]?.totalTokens ?? 0),
-      userCount: Number(rows[0]?.userCount ?? 0),
+      totalCost: Number(row?.total_cost ?? 0),
+      totalTokens: Number(row?.total_tokens ?? 0),
+      userCount: Number(row?.user_count ?? 0),
     }];
   }
 }
