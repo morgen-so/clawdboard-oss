@@ -16,6 +16,7 @@ import { StatCard } from "@/components/stats/StatCard";
 import { ChartCard } from "@/components/stats/ChartCard";
 import { StatsFaq } from "@/components/stats/StatsFaq";
 import { StatsCta } from "@/components/stats/StatsCta";
+import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/chart-utils";
 import { getTranslations } from "next-intl/server";
 
@@ -257,6 +258,9 @@ export default async function StatsPage() {
           </ol>
         </nav>
 
+        {/* ── Sub-nav ─────────────────────────────────────────────────── */}
+        <StatsNav />
+
         {/* ── Hero ─────────────────────────────────────────────────────── */}
         <div className="mb-10">
           <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
@@ -449,12 +453,12 @@ export default async function StatsPage() {
 
         {/* ── Analysis: How much does AI coding cost? ────────────────── */}
         <section
-          className="mb-10 rounded-lg border border-border bg-surface p-6"
+          className="mb-10 rounded-lg border border-accent/20 bg-accent/[0.03] p-6 sm:p-8"
           aria-labelledby="cost-heading"
         >
           <h2
             id="cost-heading"
-            className="text-lg font-semibold text-foreground mb-3"
+            className="text-xl font-semibold text-foreground mb-4"
           >
             {t("costAnalysisHeading")}
           </h2>
@@ -503,16 +507,16 @@ export default async function StatsPage() {
 
         {/* ── Data methodology ────────────────────────────────────────── */}
         <section
-          className="mb-10 rounded-lg border border-border bg-surface p-6"
+          className="mb-10"
           aria-labelledby="methodology-heading"
         >
           <h2
             id="methodology-heading"
-            className="text-lg font-semibold text-foreground mb-3"
+            className="text-lg font-semibold text-foreground mb-4"
           >
             {t("methodologyHeading")}
           </h2>
-          <div className="space-y-3 font-mono text-sm leading-relaxed text-muted">
+          <div className="font-mono text-sm leading-relaxed text-muted mb-4">
             <p>
               {t.rich("methodologyP1", {
                 link: (chunks) => (
@@ -532,44 +536,57 @@ export default async function StatsPage() {
                 ),
               })}
             </p>
-            <p>
-              <strong className="text-foreground">
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">
                 {t("methodologyCostEstimation")}
-              </strong>
-              {t("methodologyCostEstimationText")}
-            </p>
-            <p>
-              <strong className="text-foreground">
+              </p>
+              <p className="font-mono text-xs leading-relaxed text-muted">
+                {t("methodologyCostEstimationText")}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">
                 {t("methodologyPrivacy")}
-              </strong>
-              {t.rich("methodologyPrivacyText", {
-                link: (chunks) => (
-                  <Link href="/privacy" className="text-accent hover:underline">
-                    {chunks}
-                  </Link>
-                ),
-              })}
-            </p>
-            <p>
-              <strong className="text-foreground">
+              </p>
+              <p className="font-mono text-xs leading-relaxed text-muted">
+                {t.rich("methodologyPrivacyText", {
+                  link: (chunks) => (
+                    <Link href="/privacy" className="text-accent hover:underline">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border bg-surface p-4">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-muted mb-2">
                 {t("methodologyLimitations")}
-              </strong>
-              {t("methodologyLimitationsText", { totalUsers: stats.totalUsers.toLocaleString() })}
-            </p>
+              </p>
+              <p className="font-mono text-xs leading-relaxed text-muted">
+                {t("methodologyLimitationsText", { totalUsers: stats.totalUsers.toLocaleString() })}
+              </p>
+            </div>
           </div>
         </section>
 
         {/* ── Public API ──────────────────────────────────────────────── */}
         <section
-          className="mb-10 rounded-lg border border-border bg-surface p-6"
+          className="mb-10 rounded-lg border border-border bg-background p-6"
           aria-labelledby="api-heading"
         >
-          <h2
-            id="api-heading"
-            className="text-lg font-semibold text-foreground mb-3"
-          >
-            {t("apiHeading")}
-          </h2>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="inline-flex items-center rounded-full bg-success/10 border border-success/20 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wider text-success">
+              Public
+            </span>
+            <h2
+              id="api-heading"
+              className="text-lg font-semibold text-foreground"
+            >
+              {t("apiHeading")}
+            </h2>
+          </div>
           <div className="space-y-3 font-mono text-sm leading-relaxed text-muted">
             <p>
               {t("apiDescription")}

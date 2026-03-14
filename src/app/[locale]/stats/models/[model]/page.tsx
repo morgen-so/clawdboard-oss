@@ -14,6 +14,7 @@ import { StatCard } from "@/components/stats/StatCard";
 import { ChartCard } from "@/components/stats/ChartCard";
 import { StatsFaq } from "@/components/stats/StatsFaq";
 import { StatsCta } from "@/components/stats/StatsCta";
+import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/chart-utils";
 import { getModelSeoMeta } from "@/lib/models";
 import { getTranslations } from "next-intl/server";
@@ -305,6 +306,9 @@ export default async function ModelPage({ params }: PageProps) {
           </ol>
         </nav>
 
+        {/* ── Sub-nav ─────────────────────────────────────────────── */}
+        <StatsNav />
+
         {/* ── Hero ─────────────────────────────────────────────────── */}
         <div className="mb-10">
           <div className="flex items-center gap-3 flex-wrap">
@@ -495,36 +499,40 @@ export default async function ModelPage({ params }: PageProps) {
             </p>
 
             {/* Visual token bar */}
-            {detail.totalTokens > 0 && (
-              <div className="mt-4">
-                <div className="flex h-4 w-full overflow-hidden rounded-full border border-border">
-                  <div
-                    className="bg-accent"
-                    style={{
-                      width: `${(detail.inputTokens / detail.totalTokens) * 100}%`,
-                    }}
-                    title={`Input: ${formatTokens(detail.inputTokens)}`}
-                  />
-                  <div
-                    className="bg-blue-500"
-                    style={{
-                      width: `${(detail.outputTokens / detail.totalTokens) * 100}%`,
-                    }}
-                    title={`Output: ${formatTokens(detail.outputTokens)}`}
-                  />
+            {detail.totalTokens > 0 && (() => {
+              const inputPct = (detail.inputTokens / detail.totalTokens) * 100;
+              const outputPct = (detail.outputTokens / detail.totalTokens) * 100;
+              return (
+                <div className="mt-4">
+                  <div className="flex h-7 w-full overflow-hidden rounded-full border border-border text-[10px] font-semibold">
+                    <div
+                      className="bg-accent flex items-center justify-center text-background"
+                      style={{ width: `${inputPct}%` }}
+                      title={`Input: ${formatTokens(detail.inputTokens)}`}
+                    >
+                      {inputPct > 15 && `${inputPct.toFixed(0)}% in`}
+                    </div>
+                    <div
+                      className="bg-blue-500 flex items-center justify-center text-background"
+                      style={{ width: `${outputPct}%` }}
+                      title={`Output: ${formatTokens(detail.outputTokens)}`}
+                    >
+                      {outputPct > 15 && `${outputPct.toFixed(0)}% out`}
+                    </div>
+                  </div>
+                  <div className="flex justify-between mt-1.5 text-[11px]">
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-accent" />
+                      {t("tokenBarInputLabel", { percent: inputPct.toFixed(0) })}
+                    </span>
+                    <span className="flex items-center gap-1.5">
+                      <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
+                      {t("tokenBarOutputLabel", { percent: outputPct.toFixed(0) })}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex justify-between mt-1.5 text-[11px]">
-                  <span className="flex items-center gap-1.5">
-                    <span className="inline-block h-2 w-2 rounded-full bg-accent" />
-                    {t("tokenBarInputLabel", { percent: ((detail.inputTokens / detail.totalTokens) * 100).toFixed(0) })}
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <span className="inline-block h-2 w-2 rounded-full bg-blue-500" />
-                    {t("tokenBarOutputLabel", { percent: ((detail.outputTokens / detail.totalTokens) * 100).toFixed(0) })}
-                  </span>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </section>
 

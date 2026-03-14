@@ -34,8 +34,8 @@ export function ModelShareChart({
 }) {
   if (data.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-surface p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-4">
           Model Popularity
         </h3>
         <p className="text-sm text-muted">No model data available yet.</p>
@@ -52,9 +52,9 @@ export function ModelShareChart({
   const chartHeight = Math.max(250, chartData.length * 48);
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-6">
+    <div>
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-foreground">
+        <h3 className="text-base font-semibold text-foreground">
           Model Popularity
         </h3>
         <p className="text-xs text-muted font-mono mt-0.5">

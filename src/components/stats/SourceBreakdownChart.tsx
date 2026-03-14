@@ -49,8 +49,8 @@ export function SourceBreakdownChart({ data }: SourceBreakdownChartProps) {
 
   if (data.length === 0) {
     return (
-      <div className="rounded-lg border border-border bg-surface p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
+      <div>
+        <h3 className="text-base font-semibold text-foreground mb-4">
           {t("sourceBreakdown")}
         </h3>
         <p className="text-sm text-muted">{t("noSourceData")}</p>
@@ -65,8 +65,8 @@ export function SourceBreakdownChart({ data }: SourceBreakdownChartProps) {
   }));
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-6">
-      <h3 className="text-lg font-semibold text-foreground mb-4">
+    <div>
+      <h3 className="text-base font-semibold text-foreground mb-4">
         {t("sourceBreakdown")}
       </h3>
       <ResponsiveContainer width="100%" height={300}>

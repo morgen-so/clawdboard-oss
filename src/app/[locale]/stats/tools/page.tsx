@@ -14,6 +14,7 @@ import { StatCard } from "@/components/stats/StatCard";
 import { ChartCard } from "@/components/stats/ChartCard";
 import { StatsFaq } from "@/components/stats/StatsFaq";
 import { StatsCta } from "@/components/stats/StatsCta";
+import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/chart-utils";
 import { type ToolMeta, getToolMeta, getActiveTools, toolNameList } from "@/lib/tools";
 import { getTranslations } from "next-intl/server";
@@ -285,6 +286,9 @@ export default async function ToolsPage() {
             <li className="text-foreground">{t("breadcrumbTools")}</li>
           </ol>
         </nav>
+
+        {/* ── Sub-nav ─────────────────────────────────────────────── */}
+        <StatsNav />
 
         {/* ── Hero ─────────────────────────────────────────────────── */}
         <div className="mb-10">

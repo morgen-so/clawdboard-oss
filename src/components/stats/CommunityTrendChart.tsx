@@ -50,17 +50,17 @@ export function CommunityTrendChart({ data }: { data: DailyTrendPoint[] }) {
   }, [data]);
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-6">
+    <div>
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">
+          <h3 className="text-base font-semibold text-foreground">
             Daily Community Usage
           </h3>
           <p className="text-xs text-muted font-mono mt-0.5">
             Last {data.length} days &middot; 7-day moving average
           </p>
         </div>
-        <div className="flex items-center rounded-lg border border-border bg-surface overflow-hidden">
+        <div className="flex items-center rounded-lg border border-border bg-background overflow-hidden">
           {(
             [
               { value: "cost", label: "Cost" },

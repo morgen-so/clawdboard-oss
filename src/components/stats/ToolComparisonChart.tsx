@@ -54,7 +54,7 @@ function movingAverage(
 export function ToolComparisonChart({ data }: ToolComparisonChartProps) {
   if (data.length === 0) {
     return (
-      <div className="flex h-64 items-center justify-center rounded-lg border border-border bg-surface">
+      <div className="flex h-64 items-center justify-center">
         <p className="text-sm text-muted">No trend data available yet</p>
       </div>
     );
@@ -63,7 +63,7 @@ export function ToolComparisonChart({ data }: ToolComparisonChartProps) {
   const smoothed = movingAverage(data);
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-4 sm:p-6">
+    <div>
       <ResponsiveContainer width="100%" height={350}>
         <AreaChart data={smoothed} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />

@@ -18,9 +18,9 @@ export function GrowthChart({ data }: { data: GrowthPoint[] }) {
   if (data.length === 0) return null;
 
   return (
-    <div className="rounded-lg border border-border bg-surface p-6">
+    <div>
       <div className="mb-4">
-        <h3 className="text-lg font-semibold text-foreground">
+        <h3 className="text-base font-semibold text-foreground">
           Community Growth
         </h3>
         <p className="text-xs text-muted font-mono mt-0.5">
