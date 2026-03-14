@@ -32,13 +32,32 @@ export async function GET(req: NextRequest) {
     await db.execute(sql`
       ALTER TABLE daily_aggregates ADD COLUMN IF NOT EXISTS source TEXT
     `);
-    // Migrate unique constraint from (user_id, date) to (user_id, date, source)
     await db.execute(sql`
       DROP INDEX IF EXISTS daily_user_date_idx
     `);
+
+    // Deduplicate NULL-source rows: PostgreSQL treats NULLs as distinct in
+    // unique indexes, so the old index allowed multiple rows with the same
+    // (user_id, date, NULL). Keep only the most recently synced row per
+    // (user_id, date, source) combo, delete the rest.
+    const deduped = await db.execute(sql`
+      DELETE FROM daily_aggregates da
+      WHERE da.id NOT IN (
+        SELECT DISTINCT ON (user_id, date, COALESCE(source, ''))
+               id
+        FROM daily_aggregates
+        ORDER BY user_id, date, COALESCE(source, ''), synced_at DESC NULLS LAST
+      )
+    `);
+
+    // Recreate unique index with NULLS NOT DISTINCT (PostgreSQL 15+) so
+    // NULL source values are treated as equal, preventing future duplicates.
     await db.execute(sql`
-      CREATE UNIQUE INDEX IF NOT EXISTS daily_user_date_source_idx
-      ON daily_aggregates (user_id, date, source)
+      DROP INDEX IF EXISTS daily_user_date_source_idx
+    `);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX daily_user_date_source_idx
+      ON daily_aggregates (user_id, date, source) NULLS NOT DISTINCT
     `);
 
     // Recreate the materialized view (drop first to pick up schema changes)
@@ -213,29 +232,13 @@ export async function GET(req: NextRequest) {
     // so caches are fresh even if the cleanup queries below fail.
     revalidateAllCaches();
 
-    // Clean up legacy null-source duplicate rows for ALL users.
-    // When CLIs upgraded to send source="claude-code" etc., old NULL-source
-    // rows were left behind, causing double-counted costs. Delete any NULL-source
-    // row where a non-NULL source row exists for the same (user_id, date).
-    const legacyDupes = await db.execute(sql`
-      DELETE FROM daily_aggregates da
-      USING (
-        SELECT DISTINCT user_id, date
-        FROM daily_aggregates
-        WHERE source IS NOT NULL
-      ) sourced
-      WHERE da.user_id = sourced.user_id
-        AND da.date = sourced.date
-        AND da.source IS NULL
-    `);
-
-    // Reset earned badges for all affected users so they get recomputed
-    // from corrected data on next profile visit. Only runs when dupes were
-    // actually cleaned up (effectively one-time). The badge computation
+    // Reset earned badges when duplicates were cleaned up so badges get
+    // recomputed from corrected data on next profile visit. Badge computation
     // sets isFirstComputation=true when earnedBadges is empty, which
     // suppresses the unlock modal — so users won't get spammed.
     let badgesReset = 0;
-    if ((legacyDupes.rowCount ?? 0) > 0) {
+    const dedupedCount = deduped.rowCount ?? 0;
+    if (dedupedCount > 0) {
       const resetResult = await db.execute(sql`
         UPDATE users SET earned_badges = '[]'::jsonb
         WHERE earned_badges IS NOT NULL
@@ -257,7 +260,7 @@ export async function GET(req: NextRequest) {
       refreshedAt: new Date().toISOString(),
       snapshotsCaptured,
       cleanup: {
-        legacyNullSourceRows: legacyDupes.rowCount ?? 0,
+        duplicateRowsRemoved: dedupedCount,
         badgesReset,
         expiredDeviceCodes: expiredCodes.rowCount ?? 0,
         oldPageVisits: oldVisits.rowCount ?? 0,

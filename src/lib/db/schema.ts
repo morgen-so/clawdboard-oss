@@ -99,6 +99,9 @@ export const dailyAggregates = pgTable(
     syncedAt: timestamp("synced_at").defaultNow(),
   },
   (table) => [
+    // NULLS NOT DISTINCT: treats NULL source values as equal, preventing
+    // duplicate rows for (user_id, date, NULL). Created via raw SQL in
+    // the cron/refresh route since Drizzle doesn't support NULLS NOT DISTINCT.
     uniqueIndex("daily_user_date_source_idx").on(table.userId, table.date, table.source),
   ]
 );
