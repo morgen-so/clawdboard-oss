@@ -213,6 +213,22 @@ export async function GET(req: NextRequest) {
     // so caches are fresh even if the cleanup queries below fail.
     revalidateAllCaches();
 
+    // Clean up legacy null-source duplicate rows for ALL users.
+    // When CLIs upgraded to send source="claude-code" etc., old NULL-source
+    // rows were left behind, causing double-counted costs. Delete any NULL-source
+    // row where a non-NULL source row exists for the same (user_id, date).
+    const legacyDupes = await db.execute(sql`
+      DELETE FROM daily_aggregates da
+      USING (
+        SELECT DISTINCT user_id, date
+        FROM daily_aggregates
+        WHERE source IS NOT NULL
+      ) sourced
+      WHERE da.user_id = sourced.user_id
+        AND da.date = sourced.date
+        AND da.source IS NULL
+    `);
+
     // Data retention cleanup
     const expiredCodes = await db.execute(sql`
       DELETE FROM device_codes WHERE expires_at < NOW()
@@ -226,6 +242,7 @@ export async function GET(req: NextRequest) {
       refreshedAt: new Date().toISOString(),
       snapshotsCaptured,
       cleanup: {
+        legacyNullSourceRows: legacyDupes.rowCount ?? 0,
         expiredDeviceCodes: expiredCodes.rowCount ?? 0,
         oldPageVisits: oldVisits.rowCount ?? 0,
       },
