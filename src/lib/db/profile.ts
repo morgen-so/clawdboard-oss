@@ -202,19 +202,28 @@ export async function getUserDailyData(
   const conditions = [eq(dailyAggregates.userId, userId)];
   if (period) conditions.push(getProfileDateFilter(period, range));
 
-  return db
+  const rows = await db
     .select({
       date: dailyAggregates.date,
       totalCost: sql<string>`SUM(${dailyAggregates.totalCost}::numeric)::text`,
-      inputTokens: sql<number>`SUM(${dailyAggregates.inputTokens})`,
-      outputTokens: sql<number>`SUM(${dailyAggregates.outputTokens})`,
-      cacheCreationTokens: sql<number>`SUM(${dailyAggregates.cacheCreationTokens})`,
-      cacheReadTokens: sql<number>`SUM(${dailyAggregates.cacheReadTokens})`,
+      inputTokens: sql<string>`COALESCE(SUM(${dailyAggregates.inputTokens}), 0)`,
+      outputTokens: sql<string>`COALESCE(SUM(${dailyAggregates.outputTokens}), 0)`,
+      cacheCreationTokens: sql<string>`COALESCE(SUM(${dailyAggregates.cacheCreationTokens}), 0)`,
+      cacheReadTokens: sql<string>`COALESCE(SUM(${dailyAggregates.cacheReadTokens}), 0)`,
     })
     .from(dailyAggregates)
     .where(and(...conditions))
     .groupBy(dailyAggregates.date)
     .orderBy(asc(dailyAggregates.date));
+
+  return rows.map((row) => ({
+    date: row.date,
+    totalCost: row.totalCost,
+    inputTokens: Number(row.inputTokens),
+    outputTokens: Number(row.outputTokens),
+    cacheCreationTokens: Number(row.cacheCreationTokens),
+    cacheReadTokens: Number(row.cacheReadTokens),
+  }));
 }
 
 /**
