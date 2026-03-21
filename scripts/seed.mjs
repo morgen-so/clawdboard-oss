@@ -153,6 +153,7 @@ for (const user of seedUsers) {
         };
       });
 
+      // machine_id intentionally omitted — seed data simulates legacy rows without machine tracking
       await client.query(
         `INSERT INTO daily_aggregates
          (id, user_id, date, source, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_cost, models_used, model_breakdowns, synced_at)

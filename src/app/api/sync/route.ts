@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
     // When a CLI upgrades to a version that sends machineId, existing rows
     // (from before multi-machine support) have NULL machine_id. The first
     // machine to sync claims those rows so historical data isn't orphaned.
-    // Only claims rows that don't already have a machine_id assigned.
+    // If the user has multiple machines, the attribution is arbitrary but
+    // prevents data loss. Only claims rows without a machine_id assigned.
     if (machineId) {
       const syncedDates = [...new Set(days.map(d => d.date))];
       if (syncedDates.length > 0) {
