@@ -199,6 +199,19 @@ for (let i = 0; i < 3; i++) {
 }
 console.log("  Created team 'dev-team' with 3 members");
 
+// ─── Recreate unique index with NULLS NOT DISTINCT ──────────────────────────
+// drizzle-kit push creates a plain unique index that treats NULLs as distinct.
+// Recreate it with NULLS NOT DISTINCT so (user_id, date, NULL, NULL) is unique.
+
+console.log("Recreating unique index with NULLS NOT DISTINCT...");
+await client.query(`DROP INDEX IF EXISTS daily_user_date_source_machine_idx`);
+await client.query(`DROP INDEX IF EXISTS daily_user_date_source_idx`);
+await client.query(`
+  CREATE UNIQUE INDEX daily_user_date_source_machine_idx
+  ON daily_aggregates (user_id, date, source, machine_id) NULLS NOT DISTINCT
+`);
+console.log("  Index recreated");
+
 // ─── Create materialized view ────────────────────────────────────────────────
 
 console.log("Creating leaderboard materialized view...");
