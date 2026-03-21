@@ -30,6 +30,7 @@ export const SyncDaySchema = z.object({
 export const SyncPayloadSchema = z.object({
   days: z.array(SyncDaySchema).max(365),
   syncIntervalMs: z.number().int().positive().optional(),
+  machineId: z.string().min(1).max(64).optional(),
 });
 
 export type SyncDay = z.infer<typeof SyncDaySchema>;

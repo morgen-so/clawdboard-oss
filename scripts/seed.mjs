@@ -157,7 +157,7 @@ for (const user of seedUsers) {
         `INSERT INTO daily_aggregates
          (id, user_id, date, source, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_cost, models_used, model_breakdowns, synced_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-         ON CONFLICT (user_id, date, source) DO NOTHING`,
+         ON CONFLICT (user_id, date, source, machine_id) DO NOTHING`,
         [
           uuid(),
           user.id,

@@ -76,6 +76,7 @@ export const dailyAggregates = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     date: text("date").notNull(), // "YYYY-MM-DD"
     source: text("source"), // "claude-code" | "opencode" | "codex" | null (legacy)
+    machineId: text("machine_id"), // stable per-machine identifier (SHA-256 of hostname)
     inputTokens: bigint("input_tokens", { mode: "number" }).default(0),
     outputTokens: bigint("output_tokens", { mode: "number" }).default(0),
     cacheCreationTokens: bigint("cache_creation_tokens", {
@@ -99,10 +100,10 @@ export const dailyAggregates = pgTable(
     syncedAt: timestamp("synced_at").defaultNow(),
   },
   (table) => [
-    // NULLS NOT DISTINCT: treats NULL source values as equal, preventing
-    // duplicate rows for (user_id, date, NULL). Created via raw SQL in
-    // the cron/refresh route since Drizzle doesn't support NULLS NOT DISTINCT.
-    uniqueIndex("daily_user_date_source_idx").on(table.userId, table.date, table.source),
+    // NULLS NOT DISTINCT: treats NULL values as equal, preventing
+    // duplicate rows. Created via raw SQL in the cron/refresh route
+    // since Drizzle doesn't support NULLS NOT DISTINCT.
+    uniqueIndex("daily_user_date_source_machine_idx").on(table.userId, table.date, table.source, table.machineId),
   ]
 );
 

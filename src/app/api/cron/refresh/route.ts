@@ -28,36 +28,41 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Ensure source column exists on daily_aggregates (idempotent migration)
+    // Ensure source and machine_id columns exist on daily_aggregates (idempotent migration)
     await db.execute(sql`
       ALTER TABLE daily_aggregates ADD COLUMN IF NOT EXISTS source TEXT
+    `);
+    await db.execute(sql`
+      ALTER TABLE daily_aggregates ADD COLUMN IF NOT EXISTS machine_id TEXT
     `);
     await db.execute(sql`
       DROP INDEX IF EXISTS daily_user_date_idx
     `);
 
-    // Deduplicate NULL-source rows: PostgreSQL treats NULLs as distinct in
-    // unique indexes, so the old index allowed multiple rows with the same
-    // (user_id, date, NULL). Keep only the most recently synced row per
-    // (user_id, date, source) combo, delete the rest.
+    // Deduplicate rows: keep only the most recently synced row per
+    // (user_id, date, source, machine_id) combo, delete the rest.
     const deduped = await db.execute(sql`
       DELETE FROM daily_aggregates da
       WHERE da.id NOT IN (
-        SELECT DISTINCT ON (user_id, date, COALESCE(source, ''))
+        SELECT DISTINCT ON (user_id, date, COALESCE(source, ''), COALESCE(machine_id, ''))
                id
         FROM daily_aggregates
-        ORDER BY user_id, date, COALESCE(source, ''), synced_at DESC NULLS LAST
+        ORDER BY user_id, date, COALESCE(source, ''), COALESCE(machine_id, ''), synced_at DESC NULLS LAST
       )
     `);
 
     // Recreate unique index with NULLS NOT DISTINCT (PostgreSQL 15+) so
-    // NULL source values are treated as equal, preventing future duplicates.
+    // NULL values are treated as equal, preventing future duplicates.
+    // Drop old indexes and create the new 4-column version.
     await db.execute(sql`
       DROP INDEX IF EXISTS daily_user_date_source_idx
     `);
     await db.execute(sql`
-      CREATE UNIQUE INDEX daily_user_date_source_idx
-      ON daily_aggregates (user_id, date, source) NULLS NOT DISTINCT
+      DROP INDEX IF EXISTS daily_user_date_source_machine_idx
+    `);
+    await db.execute(sql`
+      CREATE UNIQUE INDEX daily_user_date_source_machine_idx
+      ON daily_aggregates (user_id, date, source, machine_id) NULLS NOT DISTINCT
     `);
 
     // Recreate the materialized view (drop first to pick up schema changes)

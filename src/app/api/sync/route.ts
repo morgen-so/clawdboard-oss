@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Upsert each day (Pitfall 6: avoid Vercel timeout)
-    const { days, syncIntervalMs } = result.data;
+    const { days, syncIntervalMs, machineId } = result.data;
 
     // 4a. Clean up legacy null-source rows that would cause double-counting.
     // When a CLI upgrade starts sending source="claude-code" (or other), the
@@ -96,36 +96,49 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4b. Upsert the actual data
+    // 4b. Migrate existing NULL-machineId rows to this machine on first sync.
+    // When a CLI upgrades to a version that sends machineId, existing rows
+    // (from before multi-machine support) have NULL machine_id. The first
+    // machine to sync claims those rows so historical data isn't orphaned.
+    // Only claims rows that don't already have a machine_id assigned.
+    if (machineId) {
+      const syncedDates = [...new Set(days.map(d => d.date))];
+      if (syncedDates.length > 0) {
+        await db.execute(sql`
+          UPDATE daily_aggregates
+          SET machine_id = ${machineId}
+          WHERE user_id = ${user.id}
+            AND machine_id IS NULL
+            AND date = ANY(${syncedDates})
+        `);
+      }
+    }
+
+    // 4c. Upsert the actual data — uses (user_id, date, source, machine_id)
+    // so each machine's data is stored independently.
     await Promise.all(
       days.map((day) =>
-        db
-          .insert(dailyAggregates)
-          .values({
-            userId: user.id,
-            date: day.date,
-            source: day.source ?? null,
-            inputTokens: day.inputTokens,
-            outputTokens: day.outputTokens,
-            cacheCreationTokens: day.cacheCreationTokens,
-            cacheReadTokens: day.cacheReadTokens,
-            totalCost: day.totalCost.toString(),
-            modelsUsed: day.modelsUsed,
-            modelBreakdowns: day.modelBreakdowns,
-          })
-          .onConflictDoUpdate({
-            target: [dailyAggregates.userId, dailyAggregates.date, dailyAggregates.source],
-            set: {
-              inputTokens: day.inputTokens,
-              outputTokens: day.outputTokens,
-              cacheCreationTokens: day.cacheCreationTokens,
-              cacheReadTokens: day.cacheReadTokens,
-              totalCost: day.totalCost.toString(),
-              modelsUsed: day.modelsUsed,
-              modelBreakdowns: day.modelBreakdowns,
-              syncedAt: new Date(),
-            },
-          })
+        db.execute(sql`
+          INSERT INTO daily_aggregates (
+            id, user_id, date, source, machine_id,
+            input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
+            total_cost, models_used, model_breakdowns, synced_at
+          ) VALUES (
+            gen_random_uuid(), ${user.id}, ${day.date}, ${day.source ?? null}, ${machineId ?? null},
+            ${day.inputTokens}, ${day.outputTokens}, ${day.cacheCreationTokens}, ${day.cacheReadTokens},
+            ${day.totalCost.toString()}, ${JSON.stringify(day.modelsUsed)}::jsonb, ${JSON.stringify(day.modelBreakdowns)}::jsonb, NOW()
+          )
+          ON CONFLICT (user_id, date, source, machine_id)
+          DO UPDATE SET
+            input_tokens = EXCLUDED.input_tokens,
+            output_tokens = EXCLUDED.output_tokens,
+            cache_creation_tokens = EXCLUDED.cache_creation_tokens,
+            cache_read_tokens = EXCLUDED.cache_read_tokens,
+            total_cost = EXCLUDED.total_cost,
+            models_used = EXCLUDED.models_used,
+            model_breakdowns = EXCLUDED.model_breakdowns,
+            synced_at = NOW()
+        `)
       )
     );
 
