@@ -76,7 +76,7 @@ export const dailyAggregates = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     date: text("date").notNull(), // "YYYY-MM-DD"
     source: text("source"), // "claude-code" | "opencode" | "codex" | null (legacy)
-    machineId: text("machine_id"), // stable per-machine identifier (SHA-256 of hostname)
+    machineId: text("machine_id"), // stable per-machine identifier (random UUID)
     inputTokens: bigint("input_tokens", { mode: "number" }).default(0),
     outputTokens: bigint("output_tokens", { mode: "number" }).default(0),
     cacheCreationTokens: bigint("cache_creation_tokens", {
