@@ -8,6 +8,7 @@ import { extractAndSanitize } from "./extract.js";
 import { readSettings, writeSettings, installHook } from "./settings.js";
 import { installOpenCodePlugin } from "./opencode-setup.js";
 import { installCodexHook } from "./codex-setup.js";
+import { getMachineId } from "./machine-id.js";
 
 export const DEBOUNCE_MS = 2 * 60 * 60 * 1000; // 2 hours
 export const DEBOUNCE_MINUTES = DEBOUNCE_MS / 60_000; // used by shell-level debounce in settings.ts
@@ -96,9 +97,10 @@ export async function runHookSync(): Promise<void> {
     }
 
     // Step 5: Upload to server
+    const machineId = await getMachineId();
     const serverUrl = getServerUrl(config);
     const client = new ApiClient(serverUrl, config.apiToken);
-    await client.sync({ ...payload, syncIntervalMs: DEBOUNCE_MS });
+    await client.sync({ ...payload, syncIntervalMs: DEBOUNCE_MS, machineId });
 
     // Step 6: Auto-upgrade hooks if running old versions.
     // This is the last thing we do — if it fails, the sync already succeeded.

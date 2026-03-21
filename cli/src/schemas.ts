@@ -50,6 +50,7 @@ export const SyncDaySchema = z.object({
 export const SyncPayloadSchema = z.object({
   days: z.array(SyncDaySchema).max(365),
   syncIntervalMs: z.number().int().positive().optional(),
+  machineId: z.string().uuid().optional(),
 });
 
 /** TypeScript type for a single day's sync data. */
