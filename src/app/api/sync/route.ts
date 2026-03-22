@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { revalidateAllCaches } from "@/lib/db/cached";
 import { db } from "@/lib/db";
 import { dailyAggregates, users } from "@/lib/db/schema";
-import { eq, and, isNull, inArray, sql } from "drizzle-orm";
+import { eq, and, or, isNull, inArray, sql } from "drizzle-orm";
 import { SyncPayloadSchema } from "@/lib/sync/validate";
 import { rateLimit } from "@/lib/rate-limit";
 import { isOrgDataStale, syncUserGitHubOrgs } from "@/lib/db/github-orgs";
@@ -106,15 +106,21 @@ export async function POST(req: NextRequest) {
       const syncedDates = [...new Set(days.map(d => d.date))];
       const syncedSources = [...new Set(days.map(d => d.source).filter(Boolean))] as string[];
       if (syncedDates.length > 0) {
-        const migrationResult = await db.execute(sql`
-          UPDATE daily_aggregates
-          SET machine_id = ${machineId}
-          WHERE user_id = ${user.id}
-            AND machine_id IS NULL
-            AND date = ANY(${syncedDates})
-            AND (source IS NULL OR source = ANY(${syncedSources}))
-        `);
-        const migratedRows = migrationResult.rowCount ?? 0;
+        const conditions = [
+          eq(dailyAggregates.userId, user.id),
+          isNull(dailyAggregates.machineId),
+          inArray(dailyAggregates.date, syncedDates),
+        ];
+        if (syncedSources.length > 0) {
+          conditions.push(
+            or(isNull(dailyAggregates.source), inArray(dailyAggregates.source, syncedSources))!
+          );
+        }
+        const migrationResult = await db
+          .update(dailyAggregates)
+          .set({ machineId })
+          .where(and(...conditions));
+        const migratedRows = (migrationResult as unknown as { rowCount?: number }).rowCount ?? 0;
         if (migratedRows > 0) {
           console.log(`[sync] Migrated ${migratedRows} legacy rows to machineId=${machineId} for user=${user.id}`);
         }
