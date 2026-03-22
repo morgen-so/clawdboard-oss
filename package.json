@@ -22,7 +22,7 @@
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
     "html-to-image": "^1.11.13",
-    "next": "^15.5.12",
+    "next": "^15.5.14",
     "next-auth": "5.0.0-beta.30",
     "next-intl": "^4.8.3",
     "pg": "^8.20.0",
