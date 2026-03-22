@@ -115,6 +115,9 @@ export async function POST(req: NextRequest) {
           conditions.push(
             or(isNull(dailyAggregates.source), inArray(dailyAggregates.source, syncedSources))!
           );
+        } else {
+          // No explicit source in this payload: only claim legacy NULL-source rows.
+          conditions.push(isNull(dailyAggregates.source));
         }
         const migrationResult = await db
           .update(dailyAggregates)
