@@ -4,12 +4,13 @@
 
 /**
  * Build the share text for a user's profile.
- * Format: "Rank #4 | 12-day streak | $1,234 total -- check out my vibecoding stats"
+ * Uses challenge framing to provoke engagement from readers.
  */
 export function buildShareText(
   rank: number,
   streak: number,
-  totalCost: string
+  totalCost: string,
+  totalUsers?: number
 ): string {
   const formattedCost = new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -17,14 +18,15 @@ export function buildShareText(
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(parseFloat(totalCost));
-  return `Rank #${rank} | ${streak}-day streak | ${formattedCost} total \u2014 check out my vibecoding stats`;
+  const rankOf = totalUsers ? ` of ${totalUsers} devs` : "";
+  return `I'm ranked #${rank}${rankOf} on clawdboard \u2014 ${streak}-day streak, ${formattedCost} spent vibecoding. Think you can beat me?`;
 }
 
 /**
  * Build share text for a streak tier-up celebration.
  */
 export function buildStreakShareText(streak: number): string {
-  return `I've been vibecoding for ${streak} days straight \u2014 come compete with me on clawdboard.ai!`;
+  return `${streak}-day vibecoding streak and counting. Can you keep up? \uD83D\uDD25`;
 }
 
 /**

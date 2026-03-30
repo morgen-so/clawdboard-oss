@@ -1,5 +1,12 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# product loop logs
+.scripts/
+
+# local tooling
+.gstack/
+.claude/
+
 # dependencies
 /node_modules
 /.pnp
@@ -55,3 +62,4 @@ docker-compose.override.yml
 
 # local MCP servers
 .plausible-mcp/
+.gstack/

@@ -154,7 +154,7 @@ export function ShareModal({
 
   if (!open) return null;
 
-  const shareText = buildShareText(rank, streak, totalCost);
+  const shareText = buildShareText(rank, streak, totalCost, totalUsers);
 
   const handleDownload = async () => {
     if (!cardRef.current || downloading) return;

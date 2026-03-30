@@ -33,6 +33,7 @@ import { PinnedBadges } from "@/components/profile/PinnedBadges";
 import { BadgeUnlockModal } from "@/components/profile/BadgeUnlockModal";
 import { StreakCelebration } from "@/components/profile/StreakCelebration";
 import { TeamNudge } from "@/components/profile/TeamNudge";
+import { ProfileJoinCta } from "@/components/profile/ProfileJoinCta";
 import { env } from "@/lib/env";
 import { seoAlternates } from "@/lib/seo";
 import { auth } from "@/lib/auth";
@@ -312,6 +313,9 @@ export default async function UserProfilePage({
               )}
             </div>
           </ProfileHeader>
+
+          {/* Join CTA for unauthenticated visitors */}
+          {!session?.user && <ProfileJoinCta />}
 
           {userRecaps.length > 0 && <RecapStrip recaps={userRecaps} />}
 
