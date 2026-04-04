@@ -3,7 +3,7 @@ import { revalidatePath } from "next/cache";
 import { revalidateAllCaches } from "@/lib/db/cached";
 import { db } from "@/lib/db";
 import { dailyAggregates, users } from "@/lib/db/schema";
-import { eq, and, isNull, inArray, sql } from "drizzle-orm";
+import { eq, and, or, isNull, inArray, sql } from "drizzle-orm";
 import { SyncPayloadSchema } from "@/lib/sync/validate";
 import { rateLimit } from "@/lib/rate-limit";
 import { isOrgDataStale, syncUserGitHubOrgs } from "@/lib/db/github-orgs";
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Upsert each day (Pitfall 6: avoid Vercel timeout)
-    const { days, syncIntervalMs } = result.data;
+    const { days, syncIntervalMs, machineId } = result.data;
 
     // 4a. Clean up legacy null-source rows that would cause double-counting.
     // When a CLI upgrade starts sending source="claude-code" (or other), the
@@ -96,36 +96,76 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 4b. Upsert the actual data
+    // 4b. Migrate existing NULL-machineId rows to this machine on first sync.
+    // When a CLI upgrades to a version that sends machineId, existing rows
+    // (from before multi-machine support) have NULL machine_id. The first
+    // machine to sync claims rows matching its sources so historical data
+    // isn't orphaned. Scoped to the sources in the current payload to avoid
+    // claiming rows from other sources that may belong to a different machine.
+    if (machineId) {
+      const syncedDates = [...new Set(days.map(d => d.date))];
+      const syncedSources = [...new Set(days.map(d => d.source).filter(Boolean))] as string[];
+      if (syncedDates.length > 0) {
+        const conditions = [
+          eq(dailyAggregates.userId, user.id),
+          isNull(dailyAggregates.machineId),
+          inArray(dailyAggregates.date, syncedDates),
+          // Skip rows where this machine already owns the (date, source) pair.
+          // Without this guard, an old CLI (no machineId) could create a new
+          // NULL-machineId row, and the next machine-aware sync would try to
+          // claim it — violating the unique constraint.
+          sql`NOT EXISTS (
+            SELECT 1 FROM daily_aggregates existing
+            WHERE existing.user_id = ${dailyAggregates.userId}
+              AND existing.date = ${dailyAggregates.date}
+              AND existing.source IS NOT DISTINCT FROM ${dailyAggregates.source}
+              AND existing.machine_id = ${machineId}
+          )`,
+        ];
+        if (syncedSources.length > 0) {
+          conditions.push(
+            or(isNull(dailyAggregates.source), inArray(dailyAggregates.source, syncedSources))!
+          );
+        } else {
+          // No explicit source in this payload: only claim legacy NULL-source rows.
+          conditions.push(isNull(dailyAggregates.source));
+        }
+        const migrationResult = await db
+          .update(dailyAggregates)
+          .set({ machineId })
+          .where(and(...conditions));
+        const migratedRows = (migrationResult as unknown as { rowCount?: number }).rowCount ?? 0;
+        if (migratedRows > 0) {
+          console.log(`[sync] Migrated ${migratedRows} legacy rows to machineId=${machineId} for user=${user.id}`);
+        }
+      }
+    }
+
+    // 4c. Upsert the actual data — uses (user_id, date, source, machine_id)
+    // so each machine's data is stored independently.
     await Promise.all(
       days.map((day) =>
-        db
-          .insert(dailyAggregates)
-          .values({
-            userId: user.id,
-            date: day.date,
-            source: day.source ?? null,
-            inputTokens: day.inputTokens,
-            outputTokens: day.outputTokens,
-            cacheCreationTokens: day.cacheCreationTokens,
-            cacheReadTokens: day.cacheReadTokens,
-            totalCost: day.totalCost.toString(),
-            modelsUsed: day.modelsUsed,
-            modelBreakdowns: day.modelBreakdowns,
-          })
-          .onConflictDoUpdate({
-            target: [dailyAggregates.userId, dailyAggregates.date, dailyAggregates.source],
-            set: {
-              inputTokens: day.inputTokens,
-              outputTokens: day.outputTokens,
-              cacheCreationTokens: day.cacheCreationTokens,
-              cacheReadTokens: day.cacheReadTokens,
-              totalCost: day.totalCost.toString(),
-              modelsUsed: day.modelsUsed,
-              modelBreakdowns: day.modelBreakdowns,
-              syncedAt: new Date(),
-            },
-          })
+        db.execute(sql`
+          INSERT INTO daily_aggregates (
+            id, user_id, date, source, machine_id,
+            input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
+            total_cost, models_used, model_breakdowns, synced_at
+          ) VALUES (
+            gen_random_uuid(), ${user.id}, ${day.date}, ${day.source ?? null}, ${machineId ?? null},
+            ${day.inputTokens}, ${day.outputTokens}, ${day.cacheCreationTokens}, ${day.cacheReadTokens},
+            ${day.totalCost.toString()}, ${JSON.stringify(day.modelsUsed)}::jsonb, ${JSON.stringify(day.modelBreakdowns)}::jsonb, NOW()
+          )
+          ON CONFLICT (user_id, date, source, machine_id)
+          DO UPDATE SET
+            input_tokens = EXCLUDED.input_tokens,
+            output_tokens = EXCLUDED.output_tokens,
+            cache_creation_tokens = EXCLUDED.cache_creation_tokens,
+            cache_read_tokens = EXCLUDED.cache_read_tokens,
+            total_cost = EXCLUDED.total_cost,
+            models_used = EXCLUDED.models_used,
+            model_breakdowns = EXCLUDED.model_breakdowns,
+            synced_at = NOW()
+        `)
       )
     );
 

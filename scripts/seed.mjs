@@ -153,11 +153,12 @@ for (const user of seedUsers) {
         };
       });
 
+      // machine_id intentionally omitted — seed data simulates legacy rows without machine tracking
       await client.query(
         `INSERT INTO daily_aggregates
          (id, user_id, date, source, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_cost, models_used, model_breakdowns, synced_at)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
-         ON CONFLICT (user_id, date, source) DO NOTHING`,
+         ON CONFLICT (user_id, date, source, machine_id) DO NOTHING`,
         [
           uuid(),
           user.id,
@@ -198,6 +199,19 @@ for (let i = 0; i < 3; i++) {
   );
 }
 console.log("  Created team 'dev-team' with 3 members");
+
+// ─── Recreate unique index with NULLS NOT DISTINCT ──────────────────────────
+// drizzle-kit push creates a plain unique index that treats NULLs as distinct.
+// Recreate it with NULLS NOT DISTINCT so (user_id, date, NULL, NULL) is unique.
+
+console.log("Recreating unique index with NULLS NOT DISTINCT...");
+await client.query(`DROP INDEX IF EXISTS daily_user_date_source_machine_idx`);
+await client.query(`DROP INDEX IF EXISTS daily_user_date_source_idx`);
+await client.query(`
+  CREATE UNIQUE INDEX daily_user_date_source_machine_idx
+  ON daily_aggregates (user_id, date, source, machine_id) NULLS NOT DISTINCT
+`);
+console.log("  Index recreated");
 
 // ─── Create materialized view ────────────────────────────────────────────────
 

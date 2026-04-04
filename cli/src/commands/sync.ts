@@ -5,6 +5,7 @@ import { loadConfig, getServerUrl, type Config } from "../config.js";
 import { ApiClient, ApiError } from "../api-client.js";
 import { extractAndSanitize } from "../extract.js";
 import { markSynced, DEBOUNCE_MS } from "../hook.js";
+import { getMachineId } from "../machine-id.js";
 
 /**
  * Core sync logic -- extract, sanitize, and upload usage data.
@@ -82,8 +83,9 @@ export async function runSync(
   // Step 5: Upload to server
   s.start("Uploading to clawdboard...");
 
+  const machineId = await getMachineId();
   const client = new ApiClient(serverUrl, config.apiToken);
-  const result = await client.sync({ ...payload, syncIntervalMs: DEBOUNCE_MS });
+  const result = await client.sync({ ...payload, syncIntervalMs: DEBOUNCE_MS, machineId });
 
   s.stop();
 
