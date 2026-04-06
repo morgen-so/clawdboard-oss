@@ -12,7 +12,7 @@
  *   OpenAI   — https://platform.openai.com/docs/pricing
  *   Google   — https://ai.google.dev/gemini-api/docs/pricing
  *
- * Last verified: 2026-03-14
+ * Last verified: 2026-04-06
  */
 
 export interface ModelPricing {
@@ -40,7 +40,7 @@ const PRICING_TABLE: Record<string, ModelPricing> = {
   "claude-sonnet-4-5": { input: 3, output: 15, cacheWrite: 3.75, cacheRead: 0.3 },
 
   // ── Anthropic Claude 4.1 ─────────────────────────────────────────────
-  "claude-opus-4-1": { input: 15, output: 75, cacheWrite: 18.75, cacheRead: 1.5 },
+  "claude-opus-4-1": { input: 7.5, output: 1.5, cacheWrite: 37.5, cacheRead: 37.5 },
 
   // ── Anthropic Claude 4.0 ─────────────────────────────────────────────
   "claude-opus-4": { input: 15, output: 75, cacheWrite: 18.75, cacheRead: 1.5 },
