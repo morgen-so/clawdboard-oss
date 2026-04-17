@@ -24,7 +24,7 @@
     "html-to-image": "^1.11.13",
     "next": "^15.5.15",
     "next-auth": "5.0.0-beta.30",
-    "next-intl": "^4.8.3",
+    "next-intl": "^4.9.1",
     "pg": "^8.20.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
