@@ -1,11 +1,16 @@
 /**
  * Codex CLI hook auto-installation.
  *
- * Installs a Stop hook in ~/.codex/config.toml that triggers
- * `npx clawdboard hook-sync` on session end.
+ * Codex's hook engine (verified against openai/codex codex-rs/hooks/src/
+ * engine/discovery.rs and codex-rs/core/config.schema.json) reads hooks from
+ * `<codex_folder>/hooks.json` — NOT from config.toml — and is gated by
+ * `features.codex_hooks = true` in config.toml.
  *
- * Codex uses TOML config (not JSON like Claude Code), so we do
- * minimal TOML manipulation — append the hook block if not present.
+ * Pre-v0.2.5 this module wrote a [[hooks.Stop]] block into config.toml.
+ * Codex silently ignored it, and embedded `"` chars in the shell command
+ * broke TOML parsing entirely (see GitHub issue reports). We now write the
+ * hook into hooks.json (quote-safe JSON) and flip the feature flag in
+ * config.toml, cleaning up any legacy block on upgrade.
  */
 
 import { readFile, writeFile, mkdir } from "node:fs/promises";
@@ -15,89 +20,168 @@ import { join } from "node:path";
 import { DEBOUNCE_MINUTES } from "./hook.js";
 import { buildDebounceCommand, type InstallResult } from "./accumulator.js";
 
-const CODEX_DIR = join(homedir(), ".codex");
-const CONFIG_PATH = join(CODEX_DIR, "config.toml");
+const LEGACY_MARKER = "# clawdboard auto-sync";
 
-const HOOK_MARKER = "# clawdboard auto-sync";
+function codexPaths() {
+  const dir = join(homedir(), ".codex");
+  return {
+    dir,
+    config: join(dir, "config.toml"),
+    hooks: join(dir, "hooks.json"),
+  };
+}
 
-/**
- * Build the TOML hook block to append to config.toml.
- */
-function buildHookBlock(): string {
-  const command = buildDebounceCommand(DEBOUNCE_MINUTES);
+interface CodexHookHandler {
+  type: string;
+  command: string;
+  timeout?: number;
+}
 
-  return `
-${HOOK_MARKER}
-[[hooks.Stop]]
-hooks = [{ type = "command", command = "${command}", timeout = 120 }]
-`;
+interface CodexMatcherGroup {
+  matcher?: string;
+  hooks: CodexHookHandler[];
+}
+
+type CodexEventName =
+  | "PreToolUse"
+  | "PostToolUse"
+  | "SessionStart"
+  | "UserPromptSubmit"
+  | "Stop";
+
+export interface CodexHooksFile {
+  hooks?: Partial<Record<CodexEventName, CodexMatcherGroup[]>>;
 }
 
 /**
- * Check if the clawdboard hook is already installed in Codex config.
+ * Strip the legacy `# clawdboard auto-sync` block from a config.toml source.
+ * Older CLI versions wrote [[hooks.Stop]] into config.toml; codex ignored the
+ * block and the unescaped `"` chars inside the command broke TOML parsing.
  */
+export function stripLegacyHookBlock(source: string): string {
+  if (!source.includes(LEGACY_MARKER)) return source;
+
+  const lines = source.split("\n");
+  const cleaned: string[] = [];
+  let skipping = false;
+
+  for (const line of lines) {
+    if (line.includes(LEGACY_MARKER)) {
+      skipping = true;
+      continue;
+    }
+    if (skipping) {
+      if (line.trim() === "") continue;
+      if (line.startsWith("[[hooks.") || line.startsWith("hooks = ")) continue;
+      skipping = false;
+    }
+    cleaned.push(line);
+  }
+
+  return cleaned.join("\n");
+}
+
+/**
+ * Ensure `codex_hooks = true` under the [features] table.
+ * Idempotent: if any `codex_hooks = ...` assignment is already present, the
+ * source is returned unchanged — we respect an explicit false, even though
+ * our hooks.json won't fire in that case.
+ */
+export function ensureCodexHooksFeature(source: string): string {
+  if (/\bcodex_hooks\s*=/.test(source)) return source;
+
+  const headerMatch = source.match(/^\[features\]\s*$/m);
+  if (headerMatch && headerMatch.index !== undefined) {
+    const insertAt = headerMatch.index + headerMatch[0].length;
+    return source.slice(0, insertAt) + "\ncodex_hooks = true" + source.slice(insertAt);
+  }
+
+  const trimmed = source.replace(/\s+$/, "");
+  const separator = trimmed.length === 0 ? "" : "\n\n";
+  return trimmed + separator + "[features]\ncodex_hooks = true\n";
+}
+
+/**
+ * Insert or replace the clawdboard Stop hook in a hooks.json structure.
+ * Existing non-clawdboard hooks (across all events) are preserved.
+ */
+export function upsertClawdboardStopHook(existing: CodexHooksFile): CodexHooksFile {
+  const command = buildDebounceCommand(DEBOUNCE_MINUTES);
+  const newHook: CodexHookHandler = { type: "command", command, timeout: 120 };
+
+  const stop = existing.hooks?.Stop ?? [];
+  const filtered = stop
+    .map((group) => ({
+      ...group,
+      hooks: group.hooks.filter((h) => !h.command.includes("clawdboard")),
+    }))
+    .filter((group) => group.hooks.length > 0);
+
+  filtered.push({ hooks: [newHook] });
+
+  return {
+    ...existing,
+    hooks: {
+      ...(existing.hooks ?? {}),
+      Stop: filtered,
+    },
+  };
+}
+
 export function isCodexHookInstalled(): boolean {
-  if (!existsSync(CONFIG_PATH)) return false;
+  const { config, hooks } = codexPaths();
+  if (!existsSync(hooks)) return false;
   try {
-    const content = readFileSync(CONFIG_PATH, "utf-8");
-    return content.includes("clawdboard");
+    const hooksContent = readFileSync(hooks, "utf-8");
+    if (!hooksContent.includes("clawdboard")) return false;
+    if (!hooksContent.includes(`mmin -${DEBOUNCE_MINUTES}`)) return false;
+    const configContent = existsSync(config) ? readFileSync(config, "utf-8") : "";
+    return /\bcodex_hooks\s*=\s*true\b/.test(configContent);
   } catch {
     return false;
   }
 }
 
-/**
- * Install the clawdboard Stop hook into Codex's config.toml.
- * Appends the hook block — does not parse or rewrite existing TOML.
- *
- * @returns Object indicating whether installation happened or was skipped
- */
 export async function installCodexHook(): Promise<InstallResult> {
-  // Read existing config (if any)
-  let existing = "";
-  if (existsSync(CONFIG_PATH)) {
+  const { dir, config: configPath, hooks: hooksPath } = codexPaths();
+  await mkdir(dir, { recursive: true });
+
+  const configBefore = existsSync(configPath)
+    ? await readFile(configPath, "utf-8").catch(() => "")
+    : "";
+
+  const hooksBeforeStr = existsSync(hooksPath)
+    ? await readFile(hooksPath, "utf-8").catch(() => "")
+    : "";
+
+  let hooksBefore: CodexHooksFile = {};
+  if (hooksBeforeStr.trim()) {
     try {
-      existing = await readFile(CONFIG_PATH, "utf-8");
+      hooksBefore = JSON.parse(hooksBeforeStr) as CodexHooksFile;
     } catch {
-      // Can't read — will create new
+      hooksBefore = {};
     }
   }
 
-  // Check if already installed
-  if (existing.includes("clawdboard")) {
-    // Check if it has the current debounce value
-    if (existing.includes(`mmin -${DEBOUNCE_MINUTES}`)) {
-      return { installed: false, alreadyInstalled: true, updated: false };
-    }
+  const hadLegacy = configBefore.includes(LEGACY_MARKER);
+  const configAfter = ensureCodexHooksFeature(stripLegacyHookBlock(configBefore));
+  const hooksAfter = upsertClawdboardStopHook(hooksBefore);
+  const hooksAfterStr = JSON.stringify(hooksAfter, null, 2) + "\n";
 
-    // Update: remove old hook block and append new one
-    const lines = existing.split("\n");
-    const cleaned: string[] = [];
-    let skipping = false;
+  const configChanged = configBefore !== configAfter;
+  const hooksChanged = hooksBeforeStr !== hooksAfterStr;
 
-    for (const line of lines) {
-      if (line.includes(HOOK_MARKER)) {
-        skipping = true;
-        continue;
-      }
-      // The hook block is 2 lines after the marker (the [[hooks.Stop]] and hooks = [...])
-      if (skipping) {
-        if (line.startsWith("[[hooks.") || line.startsWith("hooks = ")) {
-          continue;
-        }
-        skipping = false;
-      }
-      cleaned.push(line);
-    }
-
-    const updated = cleaned.join("\n").trimEnd() + "\n" + buildHookBlock();
-    await writeFile(CONFIG_PATH, updated, "utf-8");
-    return { installed: false, alreadyInstalled: false, updated: true };
+  if (!configChanged && !hooksChanged) {
+    return { installed: false, alreadyInstalled: true, updated: false };
   }
 
-  // Fresh install — append to existing config or create new
-  await mkdir(CODEX_DIR, { recursive: true });
-  const content = existing.trimEnd() + "\n" + buildHookBlock();
-  await writeFile(CONFIG_PATH, content, "utf-8");
-  return { installed: true, alreadyInstalled: false, updated: false };
+  if (configChanged) await writeFile(configPath, configAfter, "utf-8");
+  if (hooksChanged) await writeFile(hooksPath, hooksAfterStr, "utf-8");
+
+  const hadPrior = hadLegacy || hooksBeforeStr.includes("clawdboard");
+  return {
+    installed: !hadPrior,
+    alreadyInstalled: false,
+    updated: hadPrior,
+  };
 }

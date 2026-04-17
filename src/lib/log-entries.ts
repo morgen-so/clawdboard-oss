@@ -12,6 +12,17 @@ export interface LogEntry {
 
 export const logEntries: LogEntry[] = [
   {
+    date: "2026-04-17",
+    items: [
+      {
+        title: "Fix Codex CLI hook installation",
+        type: "fix",
+        description:
+          "The Codex auto-sync hook was writing to config.toml with unescaped quotes, which broke Codex's TOML parser and prevented the CLI from starting. It was also using the wrong file — Codex reads hooks from hooks.json, not config.toml. The CLI now writes a valid ~/.codex/hooks.json and sets features.codex_hooks = true in config.toml, and auto-heals any legacy broken block on upgrade. Affected users: run `npx clawdboard@latest setup` (or manually delete the `# clawdboard auto-sync` block from ~/.codex/config.toml first if Codex won't start).",
+      },
+    ],
+  },
+  {
     date: "2026-04-01",
     items: [
       {

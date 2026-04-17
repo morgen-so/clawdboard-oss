@@ -44,12 +44,22 @@ export async function runSetupHook(): Promise<boolean> {
     // OpenCode plugin install failure is non-fatal
   }
 
-  // Codex: install Stop hook in ~/.codex/config.toml
+  // Codex: install Stop hook in ~/.codex/hooks.json + features.codex_hooks flag
   let codexAlready = false;
   try {
     const result = await installCodexHook();
     codexAlready = result.alreadyInstalled;
-    if (result.installed || result.updated) anyInstalled = true;
+    if (result.installed || result.updated) {
+      anyInstalled = true;
+      // codex_hooks is Stage::UnderDevelopment in codex; enabling it surfaces
+      // an "Under-development features enabled" warning on every codex session.
+      // That warning comes from codex itself — the hook is still working.
+      console.log(
+        chalk.dim(
+          "Codex will print an 'under-development features' warning each session — that's expected while OpenAI's hooks API is unstable."
+        )
+      );
+    }
   } catch {
     // Codex hook install failure is non-fatal
   }
