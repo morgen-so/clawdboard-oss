@@ -6,6 +6,7 @@ import { users, pageVisits, feedback } from "@/lib/db/schema";
 import { sql, count, countDistinct, gte, desc } from "drizzle-orm";
 import { AdminLogin } from "./AdminLogin";
 import { ADMIN_COOKIE_NAME, verifyAdminToken } from "@/lib/admin-session";
+import { toggleFeedbackResolved } from "@/actions/feedback";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -102,13 +103,15 @@ export default async function AdminPage() {
       FROM visit_counts
     `),
 
-    // Recent feedback
+    // Recent feedback — unresolved first (NULL resolved_at), then newest first within each group
     db
       .select()
       .from(feedback)
-      .orderBy(desc(feedback.createdAt))
+      .orderBy(sql`${feedback.resolvedAt} ASC NULLS FIRST`, desc(feedback.createdAt))
       .limit(50),
   ]);
+
+  const openFeedbackCount = feedbackResult.filter((r) => r.resolvedAt === null).length;
 
   const totalUsers = totalUsersResult[0]?.value ?? 0;
   const dau = dauResult[0]?.value ?? 0;
@@ -256,41 +259,73 @@ export default async function AdminPage() {
         <div className="mb-8">
           <h2 className="font-display text-sm font-semibold text-foreground mb-3">
             <span className="text-accent">$</span> feedback --recent
+            <span className="ml-2 text-[10px] text-muted font-mono">
+              ({openFeedbackCount} open / {feedbackResult.length} total)
+            </span>
           </h2>
           <div className="border border-border rounded-lg overflow-hidden">
             <table className="w-full text-xs font-mono">
               <thead>
                 <tr className="border-b border-border bg-surface">
+                  <th className="text-left px-4 py-2 text-muted font-medium">Status</th>
                   <th className="text-left px-4 py-2 text-muted font-medium">Date</th>
                   <th className="text-left px-4 py-2 text-muted font-medium">User</th>
                   <th className="text-left px-4 py-2 text-muted font-medium">Message</th>
                   <th className="text-left px-4 py-2 text-muted font-medium">Email</th>
+                  <th className="text-right px-4 py-2 text-muted font-medium">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {feedbackResult.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-4 py-6 text-center text-muted">
+                    <td colSpan={6} className="px-4 py-6 text-center text-muted">
                       No feedback yet
                     </td>
                   </tr>
                 ) : (
-                  feedbackResult.map((row) => (
-                    <tr key={row.id} className="border-b border-border last:border-0 hover:bg-surface-hover align-top">
-                      <td className="px-4 py-2 text-muted whitespace-nowrap">
-                        {row.createdAt.toISOString().slice(0, 10)}
-                      </td>
-                      <td className="px-4 py-2 text-foreground whitespace-nowrap">
-                        {row.username ? `@${row.username}` : "anonymous"}
-                      </td>
-                      <td className="px-4 py-2 text-foreground max-w-md">
-                        {row.message}
-                      </td>
-                      <td className="px-4 py-2 text-muted whitespace-nowrap">
-                        {row.email ?? "—"}
-                      </td>
-                    </tr>
-                  ))
+                  feedbackResult.map((row) => {
+                    const resolved = row.resolvedAt !== null;
+                    return (
+                      <tr
+                        key={row.id}
+                        className={`border-b border-border last:border-0 hover:bg-surface-hover align-top ${
+                          resolved ? "opacity-50" : ""
+                        }`}
+                      >
+                        <td className="px-4 py-2 whitespace-nowrap">
+                          {resolved ? (
+                            <span className="text-dim">done</span>
+                          ) : (
+                            <span className="text-accent">● open</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-2 text-muted whitespace-nowrap">
+                          {row.createdAt.toISOString().slice(0, 10)}
+                        </td>
+                        <td className="px-4 py-2 text-foreground whitespace-nowrap">
+                          {row.username ? `@${row.username}` : "anonymous"}
+                        </td>
+                        <td className="px-4 py-2 text-foreground max-w-md">
+                          {row.message}
+                        </td>
+                        <td className="px-4 py-2 text-muted whitespace-nowrap">
+                          {row.email ?? "—"}
+                        </td>
+                        <td className="px-4 py-2 text-right whitespace-nowrap">
+                          <form action={toggleFeedbackResolved}>
+                            <input type="hidden" name="id" value={row.id} />
+                            <input type="hidden" name="resolve" value={resolved ? "0" : "1"} />
+                            <button
+                              type="submit"
+                              className="text-[10px] text-muted hover:text-accent underline underline-offset-2"
+                            >
+                              {resolved ? "reopen" : "mark done"}
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

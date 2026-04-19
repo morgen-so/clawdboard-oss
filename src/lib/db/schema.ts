@@ -298,6 +298,7 @@ export const feedback = pgTable("feedback", {
   email: text("email"),
   message: text("message").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  resolvedAt: timestamp("resolved_at"),
 });
 
 // ─── Leaderboard materialized view ──────────────────────────────────────────
