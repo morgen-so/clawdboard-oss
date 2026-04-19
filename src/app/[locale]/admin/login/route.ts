@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 import { env } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
 import {
@@ -29,12 +29,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  const provided = Buffer.from(password, "utf-8");
-  const expected = Buffer.from(adminPassword, "utf-8");
-  const passwordOk =
-    provided.length === expected.length && timingSafeEqual(provided, expected);
+  // Hash both sides to fixed-length digests so the comparison has no
+  // length-dependent branch that could leak the expected password length.
+  const provided = createHash("sha256").update(password, "utf-8").digest();
+  const expected = createHash("sha256").update(adminPassword, "utf-8").digest();
 
-  if (!passwordOk) {
+  if (!timingSafeEqual(provided, expected)) {
     return NextResponse.json({ error: "Wrong password" }, { status: 401 });
   }
 

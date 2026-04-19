@@ -3,15 +3,20 @@ import { createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { env } from "@/lib/env";
 
 // To revoke all admin sessions (suspected compromise, offboarding):
-// rotate AUTH_SECRET. Changing ADMIN_PASSWORD alone does NOT invalidate
-// existing cookies — tokens are HMAC-signed against AUTH_SECRET, not the
-// password. Without rotation, sessions expire naturally after ADMIN_SESSION_TTL_MS.
+// rotate ADMIN_PASSWORD or AUTH_SECRET — either invalidates every existing
+// cookie because the HMAC key depends on both. Without rotation, sessions
+// expire naturally after ADMIN_SESSION_TTL_MS.
 export const ADMIN_COOKIE_NAME = "admin_session";
 export const ADMIN_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 function sessionKey(): Buffer {
+  // Binding the key to ADMIN_PASSWORD means rotating the password
+  // invalidates all outstanding sessions — matches the mental model of
+  // "changing the password logs everyone out."
   return createHmac("sha256", env.AUTH_SECRET)
     .update("clawdboard/admin-session/v1")
+    .update("\0")
+    .update(env.ADMIN_PASSWORD ?? "")
     .digest();
 }
 

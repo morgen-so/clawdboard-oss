@@ -52,8 +52,10 @@ export async function GET(req: NextRequest) {
     `);
 
     // Drop legacy index name (one-time cleanup; no-op after first run).
+    // CONCURRENTLY avoids the ACCESS EXCLUSIVE lock that would block writers
+    // during the brief window the lookup is taking place.
     await db.execute(sql`
-      DROP INDEX IF EXISTS daily_user_date_source_idx
+      DROP INDEX CONCURRENTLY IF EXISTS daily_user_date_source_idx
     `);
 
     // Ensure the unique index exists with NULLS NOT DISTINCT (PG 15+) so NULL
@@ -61,30 +63,53 @@ export async function GET(req: NextRequest) {
     // missing or was created without NULLS NOT DISTINCT — previously this ran
     // DROP+CREATE every cron tick, which left concurrent /api/sync ON CONFLICT
     // queries without a conflict target for a moment and surfaced as 500s.
+    // The pg_index lookup is scoped to daily_aggregates so a same-named index
+    // on another table can't shadow the check.
     const indexStatus = await db.execute<{ indnullsnotdistinct: boolean | null }>(sql`
       SELECT i.indnullsnotdistinct
       FROM pg_class c
       JOIN pg_index i ON i.indexrelid = c.oid
       WHERE c.relname = 'daily_user_date_source_machine_idx'
+        AND i.indrelid = 'daily_aggregates'::regclass
       LIMIT 1
     `);
     const existingIndex = indexStatus.rows?.[0];
     const needsIndexMigration =
       !existingIndex || existingIndex.indnullsnotdistinct !== true;
     if (needsIndexMigration) {
-      // CONCURRENTLY avoids blocking writes during the (one-time) rebuild.
-      // Build the new version under a temp name first, then atomically swap.
-      // Drop any leftover temp index first — a previously failed CONCURRENTLY
-      // build leaves an INVALID index that IF NOT EXISTS would silently skip.
-      await db.execute(sql`
-        DROP INDEX IF EXISTS daily_user_date_source_machine_idx_new
+      // Check whether a valid _new index already exists from a previous
+      // partial migration. If CREATE CONCURRENTLY succeeded but RENAME
+      // failed, _new is valid and has NULLS NOT DISTINCT — dropping it
+      // would briefly leave the table with no unique constraint. Reuse it.
+      const newIdx = await db.execute<{
+        indisvalid: boolean;
+        indnullsnotdistinct: boolean;
+      }>(sql`
+        SELECT i.indisvalid, i.indnullsnotdistinct
+        FROM pg_class c
+        JOIN pg_index i ON i.indexrelid = c.oid
+        WHERE c.relname = 'daily_user_date_source_machine_idx_new'
+          AND i.indrelid = 'daily_aggregates'::regclass
+        LIMIT 1
       `);
+      const existingNew = newIdx.rows?.[0];
+      const canReuseNew =
+        existingNew?.indisvalid === true &&
+        existingNew?.indnullsnotdistinct === true;
+
+      if (!canReuseNew) {
+        // Either no _new index or it's INVALID (from a prior failed build).
+        // CONCURRENTLY avoids blocking writes during the (one-time) rebuild.
+        await db.execute(sql`
+          DROP INDEX CONCURRENTLY IF EXISTS daily_user_date_source_machine_idx_new
+        `);
+        await db.execute(sql`
+          CREATE UNIQUE INDEX CONCURRENTLY daily_user_date_source_machine_idx_new
+          ON daily_aggregates (user_id, date, source, machine_id) NULLS NOT DISTINCT
+        `);
+      }
       await db.execute(sql`
-        CREATE UNIQUE INDEX CONCURRENTLY daily_user_date_source_machine_idx_new
-        ON daily_aggregates (user_id, date, source, machine_id) NULLS NOT DISTINCT
-      `);
-      await db.execute(sql`
-        DROP INDEX IF EXISTS daily_user_date_source_machine_idx
+        DROP INDEX CONCURRENTLY IF EXISTS daily_user_date_source_machine_idx
       `);
       await db.execute(sql`
         ALTER INDEX daily_user_date_source_machine_idx_new
