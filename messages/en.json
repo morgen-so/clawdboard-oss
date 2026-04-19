@@ -61,7 +61,7 @@
   },
   "errors": {
     "pageNotFound": "Page not found",
-    "pageNotFoundDescription": "The page you're looking for doesn't exist or has been moved.",
+    "pageNotFoundDescription": "The page you’re looking for doesn’t exist or has been moved.",
     "backToLeaderboard": "Back to Leaderboard",
     "somethingWentWrong": "Something went wrong",
     "errorDescription": "An unexpected error occurred. You can try again or head back to the leaderboard.",
