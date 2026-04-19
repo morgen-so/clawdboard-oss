@@ -56,6 +56,66 @@ describe("stripLegacyHookBlock", () => {
     expect(stripLegacyHookBlock(src)).toBe(src);
   });
 
+  it("preserves user-authored [[hooks.*]] sections that follow the legacy block", () => {
+    const src = [
+      "# clawdboard auto-sync",
+      "[[hooks.Stop]]",
+      'hooks = [{ type = "command", command = "clawdboard-legacy", timeout = 120 }]',
+      "",
+      "[[hooks.PreToolUse]]",
+      'hooks = [{ type = "command", command = "echo user-pre" }]',
+      "",
+      "[[hooks.SessionStart]]",
+      'hooks = [{ type = "command", command = "echo user-start" }]',
+      "",
+    ].join("\n");
+
+    const out = stripLegacyHookBlock(src);
+    expect(out).not.toContain("clawdboard-legacy");
+    expect(out).not.toContain("# clawdboard auto-sync");
+    expect(out).toContain("[[hooks.PreToolUse]]");
+    expect(out).toContain("echo user-pre");
+    expect(out).toContain("[[hooks.SessionStart]]");
+    expect(out).toContain("echo user-start");
+  });
+
+  it("strips only the marker line when the legacy shape doesn't match", () => {
+    // User hand-edited the file — marker comment is orphaned, no [[hooks.Stop]]
+    // follows. We remove just the stale comment and leave their content alone.
+    const src = [
+      "# clawdboard auto-sync",
+      "",
+      "[model]",
+      'name = "gpt-5"',
+      "",
+    ].join("\n");
+
+    const out = stripLegacyHookBlock(src);
+    expect(out).not.toContain("# clawdboard auto-sync");
+    expect(out).toContain("[model]");
+    expect(out).toContain('name = "gpt-5"');
+  });
+
+  it("preserves a top-level `hooks = ...` assignment the user wrote", () => {
+    // After the legacy block has been cleaned, a user-authored top-level
+    // `hooks = ...` line further down must survive. (Previous implementation
+    // ate any line starting with `hooks = ` while in skip mode.)
+    const src = [
+      "# clawdboard auto-sync",
+      "[[hooks.Stop]]",
+      'hooks = [{ type = "command", command = "legacy", timeout = 120 }]',
+      "",
+      "[user]",
+      'hooks = "my-value"',
+      "",
+    ].join("\n");
+
+    const out = stripLegacyHookBlock(src);
+    expect(out).not.toContain("legacy");
+    expect(out).toContain("[user]");
+    expect(out).toContain('hooks = "my-value"');
+  });
+
   it("heals the real-world broken TOML from the bug report", () => {
     // Reproduces alaa's config exactly (unescaped quotes inside TOML string).
     const broken = [

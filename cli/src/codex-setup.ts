@@ -57,28 +57,51 @@ export interface CodexHooksFile {
  * Strip the legacy `# clawdboard auto-sync` block from a config.toml source.
  * Older CLI versions wrote [[hooks.Stop]] into config.toml; codex ignored the
  * block and the unescaped `"` chars inside the command broke TOML parsing.
+ *
+ * The legacy block we wrote was always exactly 3 lines:
+ *   # clawdboard auto-sync
+ *   [[hooks.Stop]]
+ *   hooks = [{ type = "command", command = "...", timeout = 120 }]
+ *
+ * Match that exact shape only. Anything else the user wrote (including their
+ * own [[hooks.*]] sections) is left alone. If the marker is orphaned — no
+ * [[hooks.Stop]] on the next line — strip just the marker comment.
  */
 export function stripLegacyHookBlock(source: string): string {
-  if (!source.includes(LEGACY_MARKER)) return source;
+  const markerIdx = source.indexOf(LEGACY_MARKER);
+  if (markerIdx === -1) return source;
 
   const lines = source.split("\n");
-  const cleaned: string[] = [];
-  let skipping = false;
+  const out: string[] = [];
 
-  for (const line of lines) {
-    if (line.includes(LEGACY_MARKER)) {
-      skipping = true;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (!line.includes(LEGACY_MARKER)) {
+      out.push(line);
       continue;
     }
-    if (skipping) {
-      if (line.trim() === "") continue;
-      if (line.startsWith("[[hooks.") || line.startsWith("hooks = ")) continue;
-      skipping = false;
+
+    // Found the marker. Check whether the next two lines match the known
+    // legacy shape: [[hooks.Stop]] followed by a `hooks = ...` line.
+    const next = lines[i + 1];
+    const afterNext = lines[i + 2];
+    const isLegacyShape =
+      next !== undefined &&
+      next.trim() === "[[hooks.Stop]]" &&
+      afterNext !== undefined &&
+      /^\s*hooks\s*=\s*/.test(afterNext);
+
+    if (isLegacyShape) {
+      // Consume marker + [[hooks.Stop]] + hooks = ... line.
+      i += 2;
+      // Swallow a single trailing blank line so we don't leave a widening gap.
+      if (lines[i + 1]?.trim() === "") i += 1;
     }
-    cleaned.push(line);
+    // If the shape didn't match, we've already skipped the marker by not
+    // pushing it — leave everything else untouched.
   }
 
-  return cleaned.join("\n");
+  return out.join("\n");
 }
 
 /**

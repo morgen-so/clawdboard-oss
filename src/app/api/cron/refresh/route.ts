@@ -51,24 +51,78 @@ export async function GET(req: NextRequest) {
       )
     `);
 
-    // Recreate unique index with NULLS NOT DISTINCT (PostgreSQL 15+) so
-    // NULL values are treated as equal, preventing future duplicates.
-    // Drop old indexes and create the new 4-column version.
+    // Drop legacy index name (one-time cleanup; no-op after first run).
+    // CONCURRENTLY avoids the ACCESS EXCLUSIVE lock that would block writers
+    // during the brief window the lookup is taking place.
     await db.execute(sql`
-      DROP INDEX IF EXISTS daily_user_date_source_idx
-    `);
-    await db.execute(sql`
-      DROP INDEX IF EXISTS daily_user_date_source_machine_idx
-    `);
-    await db.execute(sql`
-      CREATE UNIQUE INDEX daily_user_date_source_machine_idx
-      ON daily_aggregates (user_id, date, source, machine_id) NULLS NOT DISTINCT
+      DROP INDEX CONCURRENTLY IF EXISTS daily_user_date_source_idx
     `);
 
-    // Recreate the materialized view (drop first to pick up schema changes)
-    await db.execute(sql`DROP MATERIALIZED VIEW IF EXISTS leaderboard_mv`);
+    // Ensure the unique index exists with NULLS NOT DISTINCT (PG 15+) so NULL
+    // source/machine_id are treated as equal. Only migrate if the index is
+    // missing or was created without NULLS NOT DISTINCT — previously this ran
+    // DROP+CREATE every cron tick, which left concurrent /api/sync ON CONFLICT
+    // queries without a conflict target for a moment and surfaced as 500s.
+    // The pg_index lookup is scoped to daily_aggregates so a same-named index
+    // on another table can't shadow the check.
+    const indexStatus = await db.execute<{ indnullsnotdistinct: boolean | null }>(sql`
+      SELECT i.indnullsnotdistinct
+      FROM pg_class c
+      JOIN pg_index i ON i.indexrelid = c.oid
+      WHERE c.relname = 'daily_user_date_source_machine_idx'
+        AND i.indrelid = 'daily_aggregates'::regclass
+      LIMIT 1
+    `);
+    const existingIndex = indexStatus.rows?.[0];
+    const needsIndexMigration =
+      !existingIndex || existingIndex.indnullsnotdistinct !== true;
+    if (needsIndexMigration) {
+      // Check whether a valid _new index already exists from a previous
+      // partial migration. If CREATE CONCURRENTLY succeeded but RENAME
+      // failed, _new is valid and has NULLS NOT DISTINCT — dropping it
+      // would briefly leave the table with no unique constraint. Reuse it.
+      const newIdx = await db.execute<{
+        indisvalid: boolean;
+        indnullsnotdistinct: boolean;
+      }>(sql`
+        SELECT i.indisvalid, i.indnullsnotdistinct
+        FROM pg_class c
+        JOIN pg_index i ON i.indexrelid = c.oid
+        WHERE c.relname = 'daily_user_date_source_machine_idx_new'
+          AND i.indrelid = 'daily_aggregates'::regclass
+        LIMIT 1
+      `);
+      const existingNew = newIdx.rows?.[0];
+      const canReuseNew =
+        existingNew?.indisvalid === true &&
+        existingNew?.indnullsnotdistinct === true;
+
+      if (!canReuseNew) {
+        // Either no _new index or it's INVALID (from a prior failed build).
+        // CONCURRENTLY avoids blocking writes during the (one-time) rebuild.
+        await db.execute(sql`
+          DROP INDEX CONCURRENTLY IF EXISTS daily_user_date_source_machine_idx_new
+        `);
+        await db.execute(sql`
+          CREATE UNIQUE INDEX CONCURRENTLY daily_user_date_source_machine_idx_new
+          ON daily_aggregates (user_id, date, source, machine_id) NULLS NOT DISTINCT
+        `);
+      }
+      await db.execute(sql`
+        DROP INDEX CONCURRENTLY IF EXISTS daily_user_date_source_machine_idx
+      `);
+      await db.execute(sql`
+        ALTER INDEX daily_user_date_source_machine_idx_new
+        RENAME TO daily_user_date_source_machine_idx
+      `);
+    }
+
+    // Create the materialized view on first run only. Subsequent ticks use
+    // REFRESH MATERIALIZED VIEW CONCURRENTLY (below) to pick up fresh data
+    // without blocking readers. If the MV definition below ever changes,
+    // drop it manually in a migration so this branch rebuilds it.
     await db.execute(sql`
-      CREATE MATERIALIZED VIEW leaderboard_mv AS
+      CREATE MATERIALIZED VIEW IF NOT EXISTS leaderboard_mv AS
       WITH user_totals AS (
         SELECT
           u.id AS user_id,
@@ -127,6 +181,10 @@ export async function GET(req: NextRequest) {
       CREATE UNIQUE INDEX IF NOT EXISTS leaderboard_mv_user_id_idx
       ON leaderboard_mv (user_id)
     `);
+
+    // Refresh the materialized view without blocking reads. CONCURRENTLY
+    // requires the unique index above to already exist.
+    await db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY leaderboard_mv`);
 
     // Ensure rank_snapshots table exists (idempotent — first run creates it)
     await db.execute(sql`
@@ -216,8 +274,6 @@ export async function GET(req: NextRequest) {
       CREATE INDEX IF NOT EXISTS recap_user_unseen_idx
       ON recaps (user_id, seen_at)
     `);
-
-    // No separate refresh needed — view is recreated with fresh data above
 
     // Capture rank snapshots from the refreshed materialized view (single batch)
     const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"

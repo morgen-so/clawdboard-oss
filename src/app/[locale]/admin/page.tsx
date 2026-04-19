@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { users, pageVisits, feedback } from "@/lib/db/schema";
 import { sql, count, countDistinct, gte, desc } from "drizzle-orm";
 import { AdminLogin } from "./AdminLogin";
+import { ADMIN_COOKIE_NAME, verifyAdminToken } from "@/lib/admin-session";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -12,22 +13,9 @@ export const metadata: Metadata = {
 };
 
 async function verifyAdmin(): Promise<boolean> {
-  const adminPassword = env.ADMIN_PASSWORD;
-  if (!adminPassword) return false;
-
+  if (!env.ADMIN_PASSWORD) return false;
   const cookieStore = await cookies();
-  const token = cookieStore.get("admin_session")?.value;
-  if (!token) return false;
-
-  const encoder = new TextEncoder();
-  const data = encoder.encode(adminPassword);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const expected = hashArray
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  return token === expected;
+  return verifyAdminToken(cookieStore.get(ADMIN_COOKIE_NAME)?.value);
 }
 
 function daysAgo(n: number): Date {
