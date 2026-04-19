@@ -53,7 +53,18 @@ const UsageChart = nextDynamic(
     })),
   {
     loading: () => (
-      <div className="rounded-lg border border-border bg-surface p-6 h-[364px] animate-pulse" />
+      <div className="rounded-lg border border-border bg-surface p-6 h-[364px]">
+        <div className="h-5 w-40 animate-pulse rounded bg-border/50" />
+        <div className="mt-6 flex h-[260px] items-end gap-2 border-b border-l border-border/60 pl-2 pb-1">
+          {[38, 62, 48, 74, 55, 81, 46].map((h, i) => (
+            <div
+              key={i}
+              className="flex-1 animate-pulse rounded-t bg-border/60"
+              style={{ height: `${h}%`, animationDelay: `${i * 80}ms` }}
+            />
+          ))}
+        </div>
+      </div>
     ),
   }
 );
@@ -65,7 +76,20 @@ const ModelBreakdown = nextDynamic(
     })),
   {
     loading: () => (
-      <div className="rounded-lg border border-border bg-surface p-6 h-[300px] animate-pulse" />
+      <div className="rounded-lg border border-border bg-surface p-6 h-[300px]">
+        <div className="h-5 w-44 animate-pulse rounded bg-border/50" />
+        <div className="mt-6 space-y-3">
+          {[72, 58, 44, 32, 22, 14].map((w, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div className="h-3 w-16 animate-pulse rounded bg-border/50" />
+              <div
+                className="h-3 animate-pulse rounded bg-border/60"
+                style={{ width: `${w}%`, animationDelay: `${i * 70}ms` }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
     ),
   }
 );
