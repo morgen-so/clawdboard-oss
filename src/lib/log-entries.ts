@@ -15,6 +15,12 @@ export const logEntries: LogEntry[] = [
     date: "2026-04-19",
     items: [
       {
+        title: "More reliable leaderboard around the top of the hour",
+        type: "fix",
+        description:
+          "The hourly job that refreshes the leaderboard was briefly taking the data offline while it rebuilt, causing occasional 500 errors on page loads and CLI sync requests near each refresh. It now refreshes in place without blocking reads or writes — the site stays available through every tick.",
+      },
+      {
         title: "Safer Codex config cleanup on upgrade",
         type: "improvement",
         description:
