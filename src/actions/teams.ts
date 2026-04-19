@@ -35,20 +35,20 @@ export async function createTeam(
   const slug = await generateUniqueSlug(name);
   const inviteToken = crypto.randomBytes(24).toString("base64url");
   const teamId = crypto.randomUUID();
+  const userId = session.user.id;
 
-  await db.insert(teams).values({
-    id: teamId,
-    name,
-    slug,
-    inviteToken,
-    createdBy: session.user.id,
-  });
-
-  await db.insert(teamMembers).values({
-    teamId,
-    userId: session.user.id,
-    role: "owner",
-  });
+  // Single-statement atomicity via modifying CTE — Postgres guarantees both
+  // INSERTs succeed or fail together, compensating for Neon HTTP's lack of
+  // transaction support.
+  await db.execute(sql`
+    WITH new_team AS (
+      INSERT INTO teams (id, name, slug, invite_token, created_by)
+      VALUES (${teamId}, ${name}, ${slug}, ${inviteToken}, ${userId})
+      RETURNING id
+    )
+    INSERT INTO team_members (id, team_id, user_id, role)
+    SELECT gen_random_uuid(), id, ${userId}, 'owner' FROM new_team
+  `);
 
   revalidatePath("/team", "layout");
   redirect(`/team/${slug}?created=true`);

@@ -7,7 +7,7 @@ import { env } from "@/lib/env";
 // cookie because the HMAC key depends on both. Without rotation, sessions
 // expire naturally after ADMIN_SESSION_TTL_MS.
 export const ADMIN_COOKIE_NAME = "admin_session";
-export const ADMIN_SESSION_TTL_MS = 24 * 60 * 60 * 1000;
+export const ADMIN_SESSION_TTL_MS = 4 * 60 * 60 * 1000;
 
 function sessionKey(): Buffer {
   // Binding the key to ADMIN_PASSWORD means rotating the password
