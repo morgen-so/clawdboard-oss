@@ -38,7 +38,7 @@ export default function RootNotFound() {
               maxWidth: 360,
             }}
           >
-            The page you&apos;re looking for doesn&apos;t exist or has been
+            The page you’re looking for doesn’t exist or has been
             moved.
           </p>
           <Link
