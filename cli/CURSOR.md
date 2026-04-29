@@ -80,9 +80,12 @@ Implemented in [`extractCursorData()`](src/cursor.ts):
    - Apply the optional `since` filter at this stage so we don't waste
      accumulator work.
 6. **Distribute composer cost across its bubbles** (`distributeComposerCosts`),
-   weighted by `(inputTokens + outputTokens)`. The last bubble in each composer
-   receives the remainder so the per-composer sum equals
-   `totalCostInCents` exactly (no rounding drift). Cents → dollars happens here.
+   weighted by `(inputTokens + outputTokens)`. Each bubble's exact fractional
+   cent share is computed and floored to an integer; any leftover cents are
+   then allocated to the bubbles with the largest fractional remainders.
+   This largest-remainder method guarantees the per-composer sum equals
+   `totalCostInCents` exactly with no rounding drift. Cents → dollars
+   happens here.
 7. **Accumulate** into the shared `Record<date, DayAccumulator>` map using the
    composer's primary model name.
 8. **Convert and return** via `accumulatorToSyncDays(byDate, "cursor")`.

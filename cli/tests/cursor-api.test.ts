@@ -371,4 +371,19 @@ describe("extractCursorApiData — env-driven inputs don't crash on junk", () =>
   it("returns [] when `since` is in the future", async () => {
     await expect(extractCursorApiData("2999-01-01")).resolves.toEqual([]);
   });
+
+  it("returns [] when `since` is a calendar-impossible date (out-of-range month/day)", async () => {
+    // The regex alone accepts /\d{4}-\d{2}-\d{2}/, and Date.UTC silently
+    // normalizes nonsense like (2026, 12, 40) to Feb 9, 2027. The parser
+    // must round-trip the components and reject inputs that don't survive.
+    await expect(extractCursorApiData("2026-13-40")).resolves.toEqual([]);
+    await expect(extractCursorApiData("2026-00-15")).resolves.toEqual([]);
+    await expect(extractCursorApiData("2026-06-31")).resolves.toEqual([]);
+  });
+
+  it("returns [] when `since` is Feb 29 in a non-leap year", async () => {
+    // 2026 is not a leap year; Feb 29 doesn't exist. Date.UTC would otherwise
+    // silently roll forward to Mar 1.
+    await expect(extractCursorApiData("2026-02-29")).resolves.toEqual([]);
+  });
 });

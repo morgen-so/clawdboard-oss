@@ -345,6 +345,25 @@ interface ApiResponse {
   aggregations?: ApiAggregation[];
 }
 
+/**
+ * Marks an HTTP error as non-retryable so the retry loop can exit immediately.
+ * Used for 4xx responses (auth, bad request, etc.) where retrying just wastes
+ * time -- the response won't change without intervention. Carries the status
+ * and body so callers/logs can distinguish auth failures from other 4xx cases
+ * if/when the silent-skip behavior in `extractCursorApiData` is ever loosened.
+ */
+class NonRetryableHttpError extends Error {
+  readonly status: number;
+  readonly body: string;
+  readonly nonRetryable = true;
+  constructor(status: number, body: string) {
+    super(`Cursor API returned HTTP ${status}`);
+    this.name = "NonRetryableHttpError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
 async function fetchDayAggregations(
   startMs: number,
   endMs: number,
@@ -386,14 +405,19 @@ async function fetchDayAggregations(
         continue;
       }
       if (!res.ok) {
-        // Non-transient (auth, etc.) -- swallow body to avoid leaking it.
-        await res.text().catch(() => "");
-        throw new Error(`Cursor API returned HTTP ${res.status}`);
+        // Non-transient (auth, bad request, etc.). Consume the body for
+        // socket cleanup, then throw a marker error so the catch below
+        // skips the retry path -- 4xx won't recover without intervention.
+        const body = await res.text().catch(() => "");
+        throw new NonRetryableHttpError(res.status, body);
       }
       return (await res.json()) as ApiResponse;
     } catch (e) {
       clearTimeout(timer);
       lastError = e;
+      // Non-retryable HTTP errors (4xx) propagate immediately; retrying them
+      // just burns the backoff budget on a response that won't change.
+      if (e instanceof NonRetryableHttpError) throw e;
       // AbortError or network failure -- retry with backoff
       if (attempt < MAX_RETRIES) {
         await sleep(500 * Math.pow(2, attempt));
@@ -448,7 +472,22 @@ export async function extractCursorApiData(since?: string): Promise<SyncDay[]> {
   if (since) {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(since);
     if (!m) return []; // invalid since -- silently skip
-    startUtc = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const year = Number(m[1]);
+    const month = Number(m[2]); // 1..12 expected
+    const day = Number(m[3]);   // 1..31 (calendar-checked) expected
+    startUtc = Date.UTC(year, month - 1, day);
+    // Round-trip the components to reject calendar-impossible dates that
+    // Date.UTC would otherwise silently normalize (e.g. "2026-13-40" -> Feb
+    // 9, 2027; "2026-02-29" -> Mar 1, 2026 in a non-leap year). If the parsed
+    // and reconstructed Y/M/D don't match, the input was invalid.
+    const check = new Date(startUtc);
+    if (
+      check.getUTCFullYear() !== year ||
+      check.getUTCMonth() !== month - 1 ||
+      check.getUTCDate() !== day
+    ) {
+      return [];
+    }
   } else {
     const lookbackStart = todayUtc - DEFAULT_LOOKBACK_DAYS * 86_400_000;
     startUtc = Math.max(CURSOR_API_CLIFF_MS, lookbackStart);
