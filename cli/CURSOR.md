@@ -146,29 +146,45 @@ in [`src/cursor-api.ts`](src/cursor-api.ts).
 ## Where the auth comes from
 
 Cursor's renderer is a Chromium webview, so it caches authenticated HTTP
-responses to a Chromium-style disk cache:
+responses to Chromium's HTTP disk cache. The on-disk **layout** depends on
+which Chromium cache backend Cursor was built against:
 
-| OS      | Cache file                                                              |
+| Layout              | When you'll see it                  | What's inside `Cache_Data/`                                          |
+| ------------------- | ----------------------------------- | -------------------------------------------------------------------- |
+| **Blockfile cache** | Windows builds (Chromium default on Win) | `index`, `data_0`, `data_1`, `data_2`, … — JWT lives inside `data_1`. |
+| **Simple cache**    | macOS, modern Linux builds          | `index` + one file per cached response named `<hash>_0` (e.g. `cbeb86d1e3b0e614_0`). The JWT lives inside whichever per-entry file held the last authenticated response. |
+
+The CLI doesn't try to guess: it resolves the **`Cache_Data/` directory**, then
+at read time stats the path and chooses based on what's actually there.
+
+| OS      | `Cache_Data` path                                                       |
 | ------- | ----------------------------------------------------------------------- |
-| Windows | `%APPDATA%\Cursor\Cache\Cache_Data\data_1`                              |
-| macOS   | `~/Library/Application Support/Cursor/Cache/Cache_Data/data_1`          |
-| Linux   | `~/.config/Cursor/Cache/Cache_Data/data_1`                              |
+| Windows | `%APPDATA%\Cursor\Cache\Cache_Data\`                                    |
+| macOS   | `~/Library/Application Support/Cursor/Cache/Cache_Data/`                |
+| Linux   | `~/.config/Cursor/Cache/Cache_Data/`                                    |
 
-Override via the `CURSOR_CACHE_DATA` env var (full path).
+Override via the `CURSOR_CACHE_DATA` env var. The override may point at a
+**directory** (treated as a simple-cache root and walked) or at a **single
+file** (treated as a blockfile-style blob, useful for tests and for users who
+already know which entry holds the JWT).
 
 When Cursor checks for updates or fetches authenticated resources, the
 `Authorization` / `Cookie` header value gets stored in the cached response
-metadata. We scan the binary cache file for the JWT pattern `eyJ…\.eyJ…\.…`
-and decode every match, then pick the right one:
+metadata. We scan the binary cache bytes for the JWT pattern `eyJ…\.eyJ…\.…`
+(over the whole `data_1` blob in the blockfile case, or over each per-entry
+file in the simple-cache case), decode every match, then pick the right one:
 
 1. Filter to JWTs whose `iss` claim ends with `cursor.sh`
-   (other extensions stash unrelated JWTs in this same file).
+   (other extensions stash unrelated JWTs in the same cache).
 2. Among those, prefer the JWT **without** a `type: "session"` claim — that's
    the long-lived `offline_access` token (typical `exp` is decades out).
 3. If none of those are present, fall back to the still-valid `type: "session"`
    token with the latest `exp` (less ideal but better than nothing).
-4. Read the `sub` claim, which looks like `auth0|<userId>` — strip the prefix
-   to get the bare `userId`.
+4. Read the `sub` claim, which looks like `<provider>|<userId>` — strip the
+   prefix up to (and including) the first `|` to get the bare `userId`.
+   Providers seen in the wild: `auth0` (email/password), `google-oauth2`
+   (Sign in with Google), `github`, `apple`. The cookie format is the same
+   regardless of provider, so we only ever need the suffix.
 
 Nothing user-specific is hardcoded in the source — the JWT and userId are read
 from disk at runtime, only ever held in memory, and used as the
