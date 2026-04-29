@@ -236,6 +236,29 @@ Implemented in [`extractCursorApiData()`](src/cursor-api.ts):
 A 50 ms sleep between calls keeps us comfortably under any sane rate limit.
 For a year-long backfill that's about 18 seconds total.
 
+### Skipping specific dates (env var)
+
+Both extractors emit `source: "cursor"`, so on overlapping days the server's
+upsert key `(user_id, date, source, machine_id)` lets the later write win.
+That's usually fine — but during the **pre-Sep-2025 free-plan period** the
+API reports `totalCents: 0` for many days even though token counts are real,
+while the local-DB extractor pulled true cost from
+`composerData.usageData.costInCents`. Letting the API row overwrite the
+local-DB row on those days replaces *real cost* with *zero cost*.
+
+To prevent that, set the `CURSOR_API_SKIP_DATES` env var to a comma-separated
+list of `YYYY-MM-DD` dates. The API extractor will skip those dates entirely,
+leaving whatever the local-DB extractor wrote in place.
+
+```bash
+# Example: keep API extraction for everything EXCEPT three known free-plan
+# days where the local DB had better cost data.
+CURSOR_API_SKIP_DATES=2025-06-17,2025-06-18,2025-06-20 \
+  node dist/index.js sync
+```
+
+The value is read at runtime — nothing user-specific is encoded in the source.
+
 ## What the model names look like
 
 The API uses `modelIntent` strings — sometimes a real model identifier, but

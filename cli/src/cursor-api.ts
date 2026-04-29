@@ -58,6 +58,27 @@ const REFERER = "https://cursor.com/dashboard";
 /** Default lookback when --since isn't passed (covers ~12 months of usage). */
 const DEFAULT_LOOKBACK_DAYS = 365;
 
+/**
+ * Comma-separated list of YYYY-MM-DD dates to skip entirely. Set via env var
+ * `CURSOR_API_SKIP_DATES`. Useful when the local-DB extractor (cursor.ts) has
+ * higher-quality cost data for specific dates than the dashboard API does --
+ * common during the pre-Sep-2025 free-plan period, where the API reports
+ * `totalCents: 0` for billable events that the local DB recorded with real
+ * cost data via `composerData.usageData.costInCents`. Skipping those days
+ * here prevents the API extractor from overwriting better data on the
+ * server's per-(user,date,source,machine) upsert key.
+ */
+function getApiSkipDates(): Set<string> {
+  const raw = process.env.CURSOR_API_SKIP_DATES;
+  if (!raw) return new Set();
+  const out = new Set<string>();
+  for (const piece of raw.split(",")) {
+    const d = piece.trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) out.add(d);
+  }
+  return out;
+}
+
 /** Polite per-call delay so we don't hammer the API. */
 const PER_DAY_DELAY_MS = 50;
 
@@ -334,11 +355,14 @@ export async function extractCursorApiData(since?: string): Promise<SyncDay[]> {
   }
   if (startUtc > todayUtc) return [];
 
+  const skipDates = getApiSkipDates();
   const byDate: Record<string, DayAccumulator> = {};
 
   for (let dayStartMs = startUtc; dayStartMs <= todayUtc; dayStartMs += 86_400_000) {
     const dayEndMs = dayStartMs + 86_400_000;
     const dateStr = new Date(dayStartMs).toISOString().slice(0, 10);
+
+    if (skipDates.has(dateStr)) continue;
 
     let resp: ApiResponse;
     try {
