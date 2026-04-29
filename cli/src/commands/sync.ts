@@ -35,7 +35,7 @@ export async function runSync(
     s.fail("Could not read usage data.");
     if (err instanceof Error) {
       console.error(
-        chalk.dim("Make sure you have used Claude Code, OpenCode, or Codex on this machine.")
+        chalk.dim("Make sure you have used Claude Code, OpenCode, Codex, or Cursor on this machine.")
       );
       console.error(chalk.dim(`Detail: ${err.message}`));
     }
@@ -102,7 +102,7 @@ export async function runSync(
 }
 
 /**
- * Sync command -- Extract local usage data (Claude Code + OpenCode + Codex), sanitize, and upload.
+ * Sync command -- Extract local usage data (Claude Code + OpenCode + Codex + Cursor), sanitize, and upload.
  *
  * Flow:
  * 1. Load config and check for API token
@@ -112,7 +112,7 @@ export async function runSync(
  * 5. Display summary with token/cost totals
  */
 export const syncCommand = new Command("sync")
-  .description("Sync usage data (Claude Code + OpenCode + Codex)")
+  .description("Sync usage data (Claude Code + OpenCode + Codex + Cursor)")
   .option("--since <date>", "Sync data from this date forward (YYYY-MM-DD)")
   .option("--dry-run", "Extract and display data without uploading")
   .action(async (options: { since?: string; dryRun?: boolean }) => {

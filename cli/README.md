@@ -1,6 +1,6 @@
 # clawdboard
 
-Track and compare your AI coding agent usage across developers. Supports Claude Code, OpenCode, and Codex. See who's spending the most, longest streaks, model breakdowns, and more.
+Track and compare your AI coding agent usage across developers. Supports Claude Code, OpenCode, Codex, and Cursor. See who's spending the most, longest streaks, model breakdowns, and more.
 
 **[clawdboard.ai](https://clawdboard.ai)**
 

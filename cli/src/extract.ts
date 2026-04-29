@@ -1,6 +1,7 @@
 import { SyncPayloadSchema, type SyncPayload, type SyncDay } from "./schemas.js";
 import { extractOpenCodeData, hasOpenCodeData } from "./opencode.js";
 import { extractCodexData, hasCodexData } from "./codex.js";
+import { extractCursorData, hasCursorData } from "./cursor.js";
 
 /**
  * Privacy-preserving data extraction from raw ccusage DailyUsage data.
@@ -23,7 +24,7 @@ import { extractCodexData, hasCodexData } from "./codex.js";
  */
 export function sanitizeDailyData(
   raw: unknown[],
-  source?: "claude-code" | "opencode" | "codex" | null
+  source?: "claude-code" | "opencode" | "codex" | "cursor" | null
 ): SyncPayload {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const days = (raw as any[]).map((day) => ({
@@ -62,6 +63,8 @@ export function sanitizeDailyData(
  * 1. ccusage (Claude Code) — reads local JSONL files from ~/.claude/
  * 2. OpenCode — reads message JSON files from ~/.local/share/opencode/
  * 3. Codex CLI — reads rollout JSONL files from ~/.codex/sessions/
+ * 4. Cursor — reads SQLite state.vscdb from ~/Library/Application Support/Cursor (macOS),
+ *    %APPDATA%/Cursor (Windows), or ~/.config/Cursor (Linux)
  *
  * All sources are optional and run concurrently. Each source's entries
  * are tagged with their source name and kept as separate daily entries
@@ -75,34 +78,43 @@ export async function extractAndSanitize(
   since?: string
 ): Promise<SyncPayload> {
   // Run all extractions concurrently — they read from independent directories
-  const [claudeResult, opencodeResult, codexResult] = await Promise.allSettled([
-    // Source 1: Claude Code via ccusage
-    (async (): Promise<SyncDay[]> => {
-      const { loadDailyUsageData } = await import("ccusage/data-loader");
-      const options: Record<string, unknown> = { mode: "calculate" };
-      if (since) options.since = since;
-      const raw = await loadDailyUsageData(
-        options as Parameters<typeof loadDailyUsageData>[0]
-      );
-      return sanitizeDailyData(raw as unknown[], "claude-code").days;
-    })(),
-    // Source 2: OpenCode
-    extractOpenCodeData(since),
-    // Source 3: Codex CLI
-    extractCodexData(since),
-  ]);
+  const [claudeResult, opencodeResult, codexResult, cursorResult] =
+    await Promise.allSettled([
+      // Source 1: Claude Code via ccusage
+      (async (): Promise<SyncDay[]> => {
+        const { loadDailyUsageData } = await import("ccusage/data-loader");
+        const options: Record<string, unknown> = { mode: "calculate" };
+        if (since) options.since = since;
+        const raw = await loadDailyUsageData(
+          options as Parameters<typeof loadDailyUsageData>[0]
+        );
+        return sanitizeDailyData(raw as unknown[], "claude-code").days;
+      })(),
+      // Source 2: OpenCode
+      extractOpenCodeData(since),
+      // Source 3: Codex CLI
+      extractCodexData(since),
+      // Source 4: Cursor
+      extractCursorData(since),
+    ]);
 
   const claudeDays = claudeResult.status === "fulfilled" ? claudeResult.value : [];
   const opencodeDays = opencodeResult.status === "fulfilled" ? opencodeResult.value : [];
   const codexDays = codexResult.status === "fulfilled" ? codexResult.value : [];
+  const cursorDays = cursorResult.status === "fulfilled" ? cursorResult.value : [];
 
   // Concatenate all sources — each entry already has its source tag,
   // so the server can upsert them as separate (user_id, date, source) rows
-  const allDays = [...claudeDays, ...opencodeDays, ...codexDays];
+  const allDays = [...claudeDays, ...opencodeDays, ...codexDays, ...cursorDays];
 
-  if (allDays.length === 0 && !hasOpenCodeData() && !hasCodexData()) {
+  if (
+    allDays.length === 0 &&
+    !hasOpenCodeData() &&
+    !hasCodexData() &&
+    !hasCursorData()
+  ) {
     throw new Error(
-      "No usage data found. Make sure you have used Claude Code, OpenCode, or Codex on this machine."
+      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, or Cursor on this machine."
     );
   }
 
