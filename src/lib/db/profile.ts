@@ -190,7 +190,7 @@ export async function getUserSummary(
 
 /**
  * Get daily usage rows for a user, ordered by date ascending.
- * Aggregates across sources (claude-code, opencode, codex, legacy null)
+ * Aggregates across sources (claude-code, opencode, codex, cursor, legacy null)
  * so each date has exactly one row, consistent with getUserSummary.
  * When period is provided, filters to the given date range.
  */

@@ -1,6 +1,6 @@
 # clawdboard
 
-Track and compare your AI coding agent usage across developers. Supports Claude Code, OpenCode, and Codex. See who's spending the most, longest streaks, model breakdowns, and more.
+Track and compare your AI coding agent usage across developers. Supports Claude Code, OpenCode, Codex, and Cursor. See who's spending the most, longest streaks, model breakdowns, and more.
 
 **[clawdboard.ai](https://clawdboard.ai)**
 
@@ -15,7 +15,7 @@ That's it. This opens your browser, authenticates via GitHub, syncs your usage d
 ## How It Works
 
 1. **Auth** — Sign in with GitHub (device flow, no secrets in the terminal)
-2. **Extract** — Reads your local Claude Code usage logs (`~/.claude/`)
+2. **Extract** — Reads your local agent usage logs (Claude Code, OpenCode, Codex, Cursor)
 3. **Sync** — Uploads aggregate metrics (tokens, cost, models) to the leaderboard
 4. **Auto-sync** — A Claude Code hook syncs in the background every 2 hours
 

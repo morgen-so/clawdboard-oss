@@ -621,7 +621,15 @@ export async function getSourceModelBreakdown(
 /** All-source daily trends for comparison chart (last N days). */
 export async function getSourceComparisonTrends(
   days = 90
-): Promise<{ date: string; claudeCode: number; opencode: number; codex: number }[]> {
+): Promise<
+  {
+    date: string;
+    claudeCode: number;
+    opencode: number;
+    codex: number;
+    cursor: number;
+  }[]
+> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
@@ -632,7 +640,8 @@ export async function getSourceComparisonTrends(
         date,
         COALESCE(SUM(CASE WHEN source = 'claude-code' OR source IS NULL THEN total_cost::numeric ELSE 0 END), 0)::float AS claude_code,
         COALESCE(SUM(CASE WHEN source = 'opencode' THEN total_cost::numeric ELSE 0 END), 0)::float AS opencode,
-        COALESCE(SUM(CASE WHEN source = 'codex' THEN total_cost::numeric ELSE 0 END), 0)::float AS codex
+        COALESCE(SUM(CASE WHEN source = 'codex' THEN total_cost::numeric ELSE 0 END), 0)::float AS codex,
+        COALESCE(SUM(CASE WHEN source = 'cursor' THEN total_cost::numeric ELSE 0 END), 0)::float AS cursor
       FROM daily_aggregates
       WHERE date >= ${cutoffStr}
       GROUP BY date
@@ -644,6 +653,7 @@ export async function getSourceComparisonTrends(
       claudeCode: Number(row.claude_code ?? 0),
       opencode: Number(row.opencode ?? 0),
       codex: Number(row.codex ?? 0),
+      cursor: Number(row.cursor ?? 0),
     }));
   } catch {
     // source column missing — all data goes to claudeCode
@@ -653,6 +663,7 @@ export async function getSourceComparisonTrends(
       claudeCode: t.cost,
       opencode: 0,
       codex: 0,
+      cursor: 0,
     }));
   }
 }

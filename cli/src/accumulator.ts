@@ -90,7 +90,7 @@ export function accumulate(
  */
 export function accumulatorToSyncDays(
   byDate: Record<string, DayAccumulator>,
-  source?: "claude-code" | "opencode" | "codex" | null
+  source?: "claude-code" | "opencode" | "codex" | "cursor" | null
 ): SyncDay[] {
   return Object.entries(byDate).map(([date, day]) => ({
     date,
