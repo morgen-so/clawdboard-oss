@@ -192,7 +192,7 @@ from disk at runtime, only ever held in memory, and used as the
 
 ## The endpoint
 
-```
+```http
 POST https://cursor.com/api/dashboard/get-aggregated-usage-events
 Origin: https://cursor.com
 Referer: https://cursor.com/dashboard
@@ -241,7 +241,8 @@ Implemented in [`extractCursorApiData()`](src/cursor-api.ts):
 1. **Locate auth.** Read the disk-cache file; abort with `[]` if missing.
 2. **Find the right JWT** by the rules above; abort with `[]` if none.
 3. **Resolve the date range.** Honor `since` if given (YYYY-MM-DD); otherwise
-   default to today minus 365 days.
+   default to today minus 365 days, floored at the Sep 2025 server-side cliff
+   to avoid overlapping with the local-DB extractor on free-plan days.
 4. **Loop one UTC day at a time.** For each day, build a 24-hour window in
    epoch ms, POST to the API. On 429/5xx, retry with exponential backoff (up
    to 2 retries). On persistent failure, skip the day and continue.

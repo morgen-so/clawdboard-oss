@@ -370,18 +370,31 @@ function distributeComposerCosts(
     );
     if (totalTokens <= 0) continue;
 
-    // Distribute proportionally; last bubble gets the remainder so the sum
-    // exactly equals totalCents (avoids cumulative rounding drift).
-    let assignedCents = 0;
-    for (let i = 0; i < list.length - 1; i++) {
-      const r = list[i];
-      const weight = (r.inputTokens + r.outputTokens) / totalTokens;
-      const cents = Math.round(totalCents * weight);
-      r.cost = cents / 100;
-      assignedCents += cents;
+    // Distribute proportionally using largest remainder method to guarantee
+    // the sum exactly equals totalCents with no rounding drift.
+    const entries = list.map((r) => {
+      const exactCents = (totalCents * (r.inputTokens + r.outputTokens)) / totalTokens;
+      return {
+        r,
+        exactCents,
+        floorCents: Math.floor(exactCents),
+        fractional: exactCents - Math.floor(exactCents),
+      };
+    });
+
+    let assignedCents = entries.reduce((sum, e) => sum + e.floorCents, 0);
+    const remainder = totalCents - assignedCents;
+
+    // Allocate remaining cents to entries with highest fractional parts
+    entries.sort((a, b) => b.fractional - a.fractional);
+    for (let i = 0; i < remainder; i++) {
+      entries[i].floorCents += 1;
     }
-    const lastCents = Math.max(0, totalCents - assignedCents);
-    list[list.length - 1].cost = lastCents / 100;
+
+    // Assign back to list items
+    for (const e of entries) {
+      e.r.cost = e.floorCents / 100;
+    }
   }
 }
 

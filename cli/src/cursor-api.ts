@@ -70,6 +70,20 @@ const REFERER = "https://cursor.com/dashboard";
 const DEFAULT_LOOKBACK_DAYS = 365;
 
 /**
+ * Hard floor on the API lookback. Cursor moved conversation storage
+ * server-side around Sep 18, 2025; before that the dashboard API returns
+ * zero-cost rows for free-plan days that would overwrite the local-DB
+ * extractor's real cost data on the server's upsert key. Anchoring the
+ * floor to the cliff (rather than a relative day count) keeps this guard
+ * working as the calendar advances -- a relative cap would cut off
+ * legitimate post-cliff data months from now.
+ *
+ * The CURSOR_API_SKIP_DATES env var remains the surgical tool for any
+ * residual same-day overwrite cases (see CURSOR.md).
+ */
+const CURSOR_API_CLIFF_MS = Date.UTC(2025, 8, 12); // 2025-09-12 (6-day buffer)
+
+/**
  * Comma-separated list of YYYY-MM-DD dates to skip entirely. Set via env var
  * `CURSOR_API_SKIP_DATES`. Useful when the local-DB extractor (cursor.ts) has
  * higher-quality cost data for specific dates than the dashboard API does --
@@ -416,7 +430,8 @@ export function hasCursorApiAuth(): boolean {
  *   - the API call fails persistently (errors are swallowed -- the caller's
  *     other extractors should still produce data)
  *
- * @param since - YYYY-MM-DD inclusive. Default: today minus DEFAULT_LOOKBACK_DAYS.
+ * @param since - YYYY-MM-DD inclusive. Default: today minus DEFAULT_LOOKBACK_DAYS,
+ *   floored at the Sep 2025 server-side cliff.
  */
 export async function extractCursorApiData(since?: string): Promise<SyncDay[]> {
   const auth = findCursorAuth();
@@ -435,7 +450,8 @@ export async function extractCursorApiData(since?: string): Promise<SyncDay[]> {
     if (!m) return []; // invalid since -- silently skip
     startUtc = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   } else {
-    startUtc = todayUtc - DEFAULT_LOOKBACK_DAYS * 86_400_000;
+    const lookbackStart = todayUtc - DEFAULT_LOOKBACK_DAYS * 86_400_000;
+    startUtc = Math.max(CURSOR_API_CLIFF_MS, lookbackStart);
   }
   if (startUtc > todayUtc) return [];
 
