@@ -7,6 +7,7 @@ import { syncCommand } from "./commands/sync.js";
 import { setupCommand } from "./commands/setup.js";
 import { rankCommand } from "./commands/rank.js";
 import { leaderboardCommand } from "./commands/leaderboard.js";
+import { antigravityCommand } from "./commands/antigravity.js";
 import { runHookSync } from "./hook.js";
 import { loadConfig } from "./config.js";
 import { VERSION } from "./version.js";
@@ -21,6 +22,7 @@ program.addCommand(syncCommand);
 program.addCommand(setupCommand);
 program.addCommand(rankCommand);
 program.addCommand(leaderboardCommand);
+program.addCommand(antigravityCommand);
 
 program
   .command("hook-sync", { hidden: true })

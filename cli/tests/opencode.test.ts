@@ -28,6 +28,24 @@ function writeMessage(
   );
 }
 
+/**
+ * Write a message in the FLAT layout used by the native Go opencode binary:
+ * `storage/message/msg_<id>.json` (no per-session subdirectory).
+ */
+function writeFlatMessage(
+  baseDir: string,
+  messageId: string,
+  msg: Record<string, unknown>
+): void {
+  const messageDir = join(baseDir, "storage", "message");
+  mkdirSync(messageDir, { recursive: true });
+  writeFileSync(
+    join(messageDir, `msg_${messageId}.json`),
+    JSON.stringify(msg),
+    "utf-8"
+  );
+}
+
 /** Helper to create a valid OpenCode message. */
 function makeMessage(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -251,6 +269,181 @@ describe("extractOpenCodeData", () => {
         "cost",
       ];
       expect(Object.keys(day.modelBreakdowns[0]).sort()).toEqual(mbKeys.sort());
+    });
+  });
+
+  describe("providerID split", () => {
+    it("tags messages without providerID as plain 'opencode'", async () => {
+      writeMessage(tmpDir, "sess_1", "001", makeMessage());
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].source).toBe("opencode");
+    });
+
+    it("tags messages with providerID 'opencode-go' as a distinct source", async () => {
+      writeMessage(tmpDir, "sess_1", "001", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+      }));
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].source).toBe("opencode-go");
+      expect(result[0].modelsUsed).toEqual(["glm-5.1"]);
+    });
+
+    it("tags messages with providerID 'opencode-zen' as a distinct source", async () => {
+      writeMessage(tmpDir, "sess_1", "001", makeMessage({
+        providerID: "opencode-zen",
+        modelID: "kimi-k2.6",
+      }));
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].source).toBe("opencode-zen");
+    });
+
+    it("buckets non-branded providerIDs (anthropic/openai/openrouter) into plain 'opencode'", async () => {
+      writeMessage(tmpDir, "sess_a", "001", makeMessage({
+        providerID: "anthropic",
+        modelID: "claude-sonnet-4-5",
+      }));
+      writeMessage(tmpDir, "sess_b", "002", makeMessage({
+        providerID: "openai",
+        modelID: "gpt-4o",
+        time: { created: new Date("2026-03-10T13:00:00Z").getTime() },
+      }));
+      writeMessage(tmpDir, "sess_c", "003", makeMessage({
+        providerID: "openrouter",
+        modelID: "claude-opus-4-5",
+        time: { created: new Date("2026-03-10T14:00:00Z").getTime() },
+      }));
+
+      const result = await extractOpenCodeData();
+      // All three messages are on the same day → one SyncDay tagged "opencode"
+      expect(result).toHaveLength(1);
+      expect(result[0].source).toBe("opencode");
+      expect(result[0].modelsUsed.sort()).toEqual([
+        "claude-opus-4-5",
+        "claude-sonnet-4-5",
+        "gpt-4o",
+      ]);
+    });
+
+    it("emits separate SyncDays when same calendar date has mixed providers", async () => {
+      const baseTime = new Date("2026-03-10T12:00:00Z").getTime();
+      writeMessage(tmpDir, "sess_go", "001", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        time: { created: baseTime },
+        tokens: { input: 1000, output: 500, cache: { read: 0, write: 0 } },
+      }));
+      writeMessage(tmpDir, "sess_anthropic", "002", makeMessage({
+        providerID: "anthropic",
+        modelID: "claude-sonnet-4-5",
+        time: { created: baseTime + 60_000 },
+        tokens: { input: 2000, output: 1000, cache: { read: 0, write: 0 } },
+      }));
+      writeMessage(tmpDir, "sess_zen", "003", makeMessage({
+        providerID: "opencode-zen",
+        modelID: "kimi-k2.6",
+        time: { created: baseTime + 120_000 },
+        tokens: { input: 3000, output: 1500, cache: { read: 0, write: 0 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      // 3 distinct sources on the same date → 3 SyncDays
+      expect(result).toHaveLength(3);
+
+      const bySource = Object.fromEntries(
+        result.map((d) => [d.source, d] as const)
+      );
+      expect(bySource["opencode-go"]?.inputTokens).toBe(1000);
+      expect(bySource["opencode-go"]?.outputTokens).toBe(500);
+      expect(bySource["opencode"]?.inputTokens).toBe(2000);
+      expect(bySource["opencode"]?.outputTokens).toBe(1000);
+      expect(bySource["opencode-zen"]?.inputTokens).toBe(3000);
+      expect(bySource["opencode-zen"]?.outputTokens).toBe(1500);
+    });
+
+    it("aggregates same providerID across days correctly", async () => {
+      writeMessage(tmpDir, "sess_1", "001", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        time: { created: new Date("2026-03-10T12:00:00Z").getTime() },
+        tokens: { input: 1000, output: 500, cache: { read: 0, write: 0 } },
+      }));
+      writeMessage(tmpDir, "sess_2", "002", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        time: { created: new Date("2026-03-11T12:00:00Z").getTime() },
+        tokens: { input: 2000, output: 1000, cache: { read: 0, write: 0 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(2);
+      result.forEach((d) => expect(d.source).toBe("opencode-go"));
+      const byDate = Object.fromEntries(result.map((d) => [d.date, d] as const));
+      expect(byDate["2026-03-10"]?.inputTokens).toBe(1000);
+      expect(byDate["2026-03-11"]?.inputTokens).toBe(2000);
+    });
+  });
+
+  describe("flat-file layout (native Go opencode binary)", () => {
+    it("extracts messages from storage/message/msg_*.json (no session subdir)", async () => {
+      writeFlatMessage(tmpDir, "001", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        tokens: { input: 1000, output: 500, cache: { read: 200, write: 0 } },
+      }));
+      writeFlatMessage(tmpDir, "002", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        tokens: { input: 2000, output: 1000, cache: { read: 0, write: 0 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].source).toBe("opencode-go");
+      expect(result[0].inputTokens).toBe(3000);
+      expect(result[0].outputTokens).toBe(1500);
+    });
+
+    it("handles mixed flat + nested layout on the same machine", async () => {
+      // Flat (Go binary) message
+      writeFlatMessage(tmpDir, "001", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        tokens: { input: 1000, output: 500, cache: { read: 0, write: 0 } },
+      }));
+      // Nested (legacy TS opencode) message
+      writeMessage(tmpDir, "sess_legacy", "002", makeMessage({
+        providerID: "anthropic",
+        modelID: "claude-sonnet-4-5",
+        tokens: { input: 2000, output: 1000, cache: { read: 0, write: 0 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      // 2 distinct sources on the same date → 2 SyncDays
+      expect(result).toHaveLength(2);
+      const bySource = Object.fromEntries(
+        result.map((d) => [d.source, d] as const)
+      );
+      expect(bySource["opencode-go"]?.inputTokens).toBe(1000);
+      expect(bySource["opencode"]?.inputTokens).toBe(2000);
+    });
+
+    it("non-message files at the top level are ignored", async () => {
+      const messageDir = join(tmpDir, "storage", "message");
+      mkdirSync(messageDir, { recursive: true });
+      writeFileSync(join(messageDir, "README.txt"), "not a message", "utf-8");
+      writeFileSync(join(messageDir, "session.json"), "{}", "utf-8"); // doesn't start with "msg_"
+      writeFlatMessage(tmpDir, "valid", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+      }));
+
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].source).toBe("opencode-go");
     });
   });
 });

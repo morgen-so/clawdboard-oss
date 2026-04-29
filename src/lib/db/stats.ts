@@ -618,10 +618,23 @@ export async function getSourceModelBreakdown(
   }
 }
 
+/** Per-source daily trends for the comparison chart (last N days). */
+export interface SourceComparisonPoint {
+  date: string;
+  claudeCode: number;
+  opencode: number;
+  opencodeGo: number;
+  opencodeZen: number;
+  codex: number;
+  geminiCli: number;
+  antigravity: number;
+  copilotCli: number;
+}
+
 /** All-source daily trends for comparison chart (last N days). */
 export async function getSourceComparisonTrends(
   days = 90
-): Promise<{ date: string; claudeCode: number; opencode: number; codex: number }[]> {
+): Promise<SourceComparisonPoint[]> {
   const cutoff = new Date();
   cutoff.setDate(cutoff.getDate() - days);
   const cutoffStr = cutoff.toISOString().slice(0, 10);
@@ -632,7 +645,12 @@ export async function getSourceComparisonTrends(
         date,
         COALESCE(SUM(CASE WHEN source = 'claude-code' OR source IS NULL THEN total_cost::numeric ELSE 0 END), 0)::float AS claude_code,
         COALESCE(SUM(CASE WHEN source = 'opencode' THEN total_cost::numeric ELSE 0 END), 0)::float AS opencode,
-        COALESCE(SUM(CASE WHEN source = 'codex' THEN total_cost::numeric ELSE 0 END), 0)::float AS codex
+        COALESCE(SUM(CASE WHEN source = 'opencode-go' THEN total_cost::numeric ELSE 0 END), 0)::float AS opencode_go,
+        COALESCE(SUM(CASE WHEN source = 'opencode-zen' THEN total_cost::numeric ELSE 0 END), 0)::float AS opencode_zen,
+        COALESCE(SUM(CASE WHEN source = 'codex' THEN total_cost::numeric ELSE 0 END), 0)::float AS codex,
+        COALESCE(SUM(CASE WHEN source = 'gemini-cli' THEN total_cost::numeric ELSE 0 END), 0)::float AS gemini_cli,
+        COALESCE(SUM(CASE WHEN source = 'antigravity' THEN total_cost::numeric ELSE 0 END), 0)::float AS antigravity,
+        COALESCE(SUM(CASE WHEN source = 'copilot-cli' THEN total_cost::numeric ELSE 0 END), 0)::float AS copilot_cli
       FROM daily_aggregates
       WHERE date >= ${cutoffStr}
       GROUP BY date
@@ -643,7 +661,12 @@ export async function getSourceComparisonTrends(
       date: String(row.date),
       claudeCode: Number(row.claude_code ?? 0),
       opencode: Number(row.opencode ?? 0),
+      opencodeGo: Number(row.opencode_go ?? 0),
+      opencodeZen: Number(row.opencode_zen ?? 0),
       codex: Number(row.codex ?? 0),
+      geminiCli: Number(row.gemini_cli ?? 0),
+      antigravity: Number(row.antigravity ?? 0),
+      copilotCli: Number(row.copilot_cli ?? 0),
     }));
   } catch {
     // source column missing — all data goes to claudeCode
@@ -652,7 +675,12 @@ export async function getSourceComparisonTrends(
       date: t.date,
       claudeCode: t.cost,
       opencode: 0,
+      opencodeGo: 0,
+      opencodeZen: 0,
       codex: 0,
+      geminiCli: 0,
+      antigravity: 0,
+      copilotCli: 0,
     }));
   }
 }

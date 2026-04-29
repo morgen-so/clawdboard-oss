@@ -24,13 +24,23 @@ interface SourceBreakdownChartProps {
 const SOURCE_COLORS: Record<string, string> = {
   "claude-code": "#F9A615", // marigold (primary accent)
   opencode: "#3b82f6", // blue
+  "opencode-go": "#facc15", // yellow
+  "opencode-zen": "#a78bfa", // lavender
   codex: "#10b981", // emerald
+  "gemini-cli": "#8b5cf6", // purple
+  antigravity: "#06b6d4", // cyan
+  "copilot-cli": "#94a3b8", // slate
 };
 
 const SOURCE_LABELS: Record<string, string> = {
   "claude-code": "Claude Code",
   opencode: "OpenCode",
+  "opencode-go": "OpenCode Go",
+  "opencode-zen": "OpenCode Zen",
   codex: "Codex CLI",
+  "gemini-cli": "Gemini CLI",
+  antigravity: "Antigravity",
+  "copilot-cli": "Copilot CLI",
 };
 
 function formatCurrency(value: number): string {

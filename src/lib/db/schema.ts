@@ -75,7 +75,9 @@ export const dailyAggregates = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     date: text("date").notNull(), // "YYYY-MM-DD"
-    source: text("source"), // "claude-code" | "opencode" | "codex" | null (legacy)
+    // "claude-code" | "opencode" | "opencode-go" | "opencode-zen" | "codex"
+    //   | "gemini-cli" | "antigravity" | "copilot-cli" | null (legacy)
+    source: text("source"),
     machineId: text("machine_id"), // stable per-machine identifier (random UUID)
     inputTokens: bigint("input_tokens", { mode: "number" }).default(0),
     outputTokens: bigint("output_tokens", { mode: "number" }).default(0),
@@ -84,6 +86,8 @@ export const dailyAggregates = pgTable(
     }).default(0),
     cacheReadTokens: bigint("cache_read_tokens", { mode: "number" }).default(0),
     totalCost: decimal("total_cost", { precision: 12, scale: 4 }).default("0"),
+    /** GitHub Copilot CLI premium-request count (NULL/0 for other sources). */
+    premiumRequests: integer("premium_requests").default(0),
     modelsUsed: jsonb("models_used").$type<string[]>().default([]),
     modelBreakdowns: jsonb("model_breakdowns")
       .$type<
@@ -94,6 +98,7 @@ export const dailyAggregates = pgTable(
           cacheCreationTokens: number;
           cacheReadTokens: number;
           cost: number;
+          premiumRequests?: number;
         }[]
       >()
       .default([]),
