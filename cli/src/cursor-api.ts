@@ -14,9 +14,20 @@
  * AUTH DISCOVERY: Cursor caches authenticated HTTP responses in its Chromium
  * disk cache. One of those cached responses contains the long-lived auth JWT
  * (issuer https://authentication.cursor.sh, scope `openid profile email
- * offline_access`, no `type: session` claim). We scan the cache file once,
- * extract the JWT, decode the user_id from its `sub` claim, and use both as
- * a `WorkosCursorSessionToken` cookie when calling the API.
+ * offline_access`, no `type: session` claim). The on-disk layout depends on
+ * which Chromium cache backend Cursor was built against:
+ *
+ *   - Windows builds tend to use the older "blockfile" backend, where the
+ *     JWT lives inside a single `Cache_Data/data_1` blob.
+ *   - macOS / modern Linux builds use the "simple" backend, where the JWT
+ *     lives inside one of the per-entry files in `Cache_Data/<hash>_0`.
+ *
+ * We handle both: the resolver returns the `Cache_Data` directory itself,
+ * and the scanner reads either the single file or every file in the
+ * directory and runs the same JWT regex over the bytes. Once we have a
+ * candidate set we decode each payload, prefer the long-lived offline_access
+ * token, decode the user_id from its `sub` claim, and use both as a
+ * `WorkosCursorSessionToken` cookie when calling the API.
  *
  * The auth and user_id are read from disk at runtime -- nothing user-specific
  * is encoded in this source file.
@@ -41,7 +52,7 @@
  * Requires Node 18+ (uses global `fetch`).
  */
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { accumulate, accumulatorToSyncDays, type DayAccumulator } from "./accumulator.js";
@@ -93,12 +104,28 @@ const MAX_RETRIES = 2;
 // ---------------------------------------------------------------------------
 
 /**
- * OS-aware path to Cursor's HTTP disk-cache file. The auth JWT lives somewhere
- * in this binary file as a side-effect of an authenticated update check.
+ * OS-aware path to Cursor's Chromium HTTP cache. Returns the `Cache_Data`
+ * directory itself; the layout *inside* it depends on which Chromium cache
+ * backend Cursor was built against:
  *
- * Override via CURSOR_CACHE_DATA env var (full path to the data_1 file).
+ *  - **Blockfile cache** (Windows builds we've seen): a single `data_1` blob
+ *    file alongside `index`, `data_0`, etc. The auth JWT ends up inline in
+ *    `data_1` as a side-effect of authenticated requests.
+ *  - **Simple cache** (macOS, modern Linux): one binary file per cached
+ *    response, named like `<hash>_0`, plus an `index` file. The JWT lives
+ *    inside whichever per-entry file held the last authenticated response.
+ *
+ * `findCursorAuth()` handles both layouts: if the resolved path is a regular
+ * file it's read directly (blockfile / explicit-file override); if it's a
+ * directory every entry is scanned (simple cache). The same JWT regex applies
+ * to both because we only care about the bytes, not the cache schema.
+ *
+ * Override via the `CURSOR_CACHE_DATA` env var. The override may point at a
+ * directory (treated as a simple-cache root) OR at a single file (treated as
+ * a blockfile-style blob, useful for tests and for users who know exactly
+ * which entry holds the JWT).
  */
-function getCursorCacheDataPath(): string {
+function getCursorCacheRoot(): string {
   if (process.env.CURSOR_CACHE_DATA) return process.env.CURSOR_CACHE_DATA;
 
   const platform = process.platform;
@@ -109,27 +136,97 @@ function getCursorCacheDataPath(): string {
       "Application Support",
       "Cursor",
       "Cache",
-      "Cache_Data",
-      "data_1"
+      "Cache_Data"
     );
   }
   if (platform === "win32") {
     const appData = process.env.APPDATA ?? join(homedir(), "AppData", "Roaming");
-    return join(appData, "Cursor", "Cache", "Cache_Data", "data_1");
+    return join(appData, "Cursor", "Cache", "Cache_Data");
   }
   // Linux and others
   const xdgConfig = process.env.XDG_CONFIG_HOME ?? join(homedir(), ".config");
-  return join(xdgConfig, "Cursor", "Cache", "Cache_Data", "data_1");
+  return join(xdgConfig, "Cursor", "Cache", "Cache_Data");
+}
+
+/**
+ * JWT shape: three base64url segments separated by dots, with the first two
+ * (header + payload) starting with "eyJ" once base64url-encoded.
+ *
+ * Defined as a module-level constant because multiple call sites use it
+ * (`findCursorAuth`, plus tests via the same module surface).
+ */
+const JWT_REGEX = /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g;
+
+/**
+ * Read every cache entry under `root` and yield candidate JWTs.
+ *
+ * Accepts either a single file (blockfile cache or test fixture) or a
+ * directory of per-entry files (simple cache). Errors on individual file
+ * reads are swallowed so a single locked / mid-write entry doesn't break
+ * extraction. The literal `index` file inside a simple cache is skipped --
+ * it's a metadata index, not a response payload, and contains no JWTs.
+ *
+ * Returns the deduplicated list of token strings; the caller is responsible
+ * for decoding and selecting the right one.
+ */
+function scanCacheForJwts(root: string): string[] {
+  let stat;
+  try {
+    stat = statSync(root);
+  } catch {
+    return [];
+  }
+
+  const tokens = new Set<string>();
+  const collect = (buf: Buffer): void => {
+    // latin1 maps every byte 1:1 to a char so the regex never chokes on
+    // invalid UTF-8 inside the binary cache payload.
+    const text = buf.toString("latin1");
+    let m: RegExpExecArray | null;
+    const re = new RegExp(JWT_REGEX.source, "g");
+    while ((m = re.exec(text)) !== null) tokens.add(m[0]);
+  };
+
+  if (stat.isFile()) {
+    try {
+      collect(readFileSync(root));
+    } catch {
+      /* unreadable -- nothing to do */
+    }
+    return [...tokens];
+  }
+
+  if (stat.isDirectory()) {
+    let entries: string[];
+    try {
+      entries = readdirSync(root);
+    } catch {
+      return [];
+    }
+    for (const entry of entries) {
+      if (entry === "index") continue; // simple-cache metadata; never has JWTs
+      const p = join(root, entry);
+      try {
+        const s = statSync(p);
+        if (!s.isFile()) continue;
+        collect(readFileSync(p));
+      } catch {
+        /* mid-write / permission denied / vanished -- skip */
+      }
+    }
+  }
+
+  return [...tokens];
 }
 
 // ---------------------------------------------------------------------------
-// JWT scanning
+// JWT decoding & auth selection
 // ---------------------------------------------------------------------------
 
 interface AuthCreds {
   /** The JWT to send as the cookie value. */
   token: string;
-  /** The user_id (without the "auth0|" prefix) needed for the cookie. */
+  /** The user_id (the suffix of `sub` after `<provider>|`) needed for the cookie. */
   userId: string;
 }
 
@@ -156,42 +253,25 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 /**
- * Find Cursor's long-lived auth credentials by scanning the disk-cache file
- * for JWTs and picking the one issued by Cursor with the longest expiry that
- * lacks a `type: session` claim.
+ * Find Cursor's long-lived auth credentials by scanning the disk cache for
+ * JWTs (across both Chromium cache backends -- see `getCursorCacheRoot`)
+ * and picking the one issued by Cursor with the longest expiry that lacks a
+ * `type: session` claim.
  *
  * Returns null when the cache is missing, or no valid Cursor JWT is present
  * (e.g., user has never signed in, or the cache was wiped).
  */
 function findCursorAuth(): AuthCreds | null {
-  const cachePath = getCursorCacheDataPath();
-  if (!existsSync(cachePath)) return null;
+  const root = getCursorCacheRoot();
+  if (!existsSync(root)) return null;
 
-  let buf: Buffer;
-  try {
-    buf = readFileSync(cachePath);
-  } catch {
-    return null;
-  }
-
-  // Treat the binary cache as latin1 so every byte maps 1:1 to a char and
-  // the regex doesn't choke on invalid UTF-8 sequences.
-  const text = buf.toString("latin1");
-
-  // JWT shape: three base64url segments separated by dots, with the second
-  // segment (the payload) starting with "eyJ" once base64url-encoded.
-  const re = /eyJ[A-Za-z0-9_-]{10,}\.eyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g;
+  const tokens = scanCacheForJwts(root);
+  if (tokens.length === 0) return null;
 
   type Candidate = { token: string; payload: Record<string, unknown> };
   const candidates: Candidate[] = [];
-  const seen = new Set<string>();
 
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    const tok = m[0];
-    if (seen.has(tok)) continue;
-    seen.add(tok);
-
+  for (const tok of tokens) {
     const payload = decodeJwtPayload(tok);
     if (!payload) continue;
 
@@ -221,12 +301,16 @@ function findCursorAuth(): AuthCreds | null {
   }
   if (!best) return null;
 
-  // sub claim looks like "auth0|user_xxx" -- strip the prefix.
+  // Cursor's `sub` claim is `<provider>|<userId>`. Providers seen in the wild:
+  // auth0 (email/password), google-oauth2 (Sign in with Google), github
+  // (Sign in with GitHub), apple (Sign in with Apple). The cookie format only
+  // needs the suffix, so we strip whatever comes before the first pipe.
   const sub = String(best.payload.sub ?? "");
-  const match = /^auth0\|(.+)$/.exec(sub);
-  if (!match) return null;
+  const pipeIdx = sub.indexOf("|");
+  if (pipeIdx < 0 || pipeIdx === sub.length - 1) return null;
+  const userId = sub.slice(pipeIdx + 1);
 
-  return { token: best.token, userId: match[1] };
+  return { token: best.token, userId };
 }
 
 // ---------------------------------------------------------------------------
