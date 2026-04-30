@@ -254,6 +254,92 @@ describe("extractCopilotCliData", () => {
       expect(result).toEqual([]);
     });
 
+    it("records sessions with cache-only activity (no input/output tokens)", async () => {
+      const startMs = new Date("2026-03-10T12:00:00.000Z").getTime();
+      writeSession(tmpDir, "cache-only", [
+        makeShutdownEvent(
+          startMs,
+          {
+            "claude-sonnet-4-5": {
+              requests: { count: 0, cost: 0 },
+              usage: {
+                inputTokens: 0,
+                outputTokens: 0,
+                reasoningTokens: 0,
+                cacheReadTokens: 5000,
+                cacheWriteTokens: 1000,
+              },
+            },
+          },
+          0
+        ),
+      ]);
+
+      const result = await extractCopilotCliData();
+      expect(result).toHaveLength(1);
+      expect(result[0].cacheReadTokens).toBe(5000);
+      expect(result[0].cacheCreationTokens).toBe(1000);
+      expect(result[0].modelsUsed).toEqual(["claude-sonnet-4-5"]);
+    });
+
+    it("records sessions with premium-only activity (no token usage)", async () => {
+      const startMs = new Date("2026-03-10T12:00:00.000Z").getTime();
+      writeSession(tmpDir, "premium-only", [
+        makeShutdownEvent(
+          startMs,
+          {
+            "claude-sonnet-4-5": {
+              requests: { count: 4, cost: 0 },
+              usage: {
+                inputTokens: 0,
+                outputTokens: 0,
+                reasoningTokens: 0,
+                cacheReadTokens: 0,
+                cacheWriteTokens: 0,
+              },
+            },
+          },
+          4
+        ),
+      ]);
+
+      const result = await extractCopilotCliData();
+      expect(result).toHaveLength(1);
+      expect(result[0].premiumRequests).toBe(4);
+      expect(result[0].modelsUsed).toEqual(["claude-sonnet-4-5"]);
+    });
+
+    it("skips models with no activity at all (zero across every metric)", async () => {
+      const startMs = new Date("2026-03-10T12:00:00.000Z").getTime();
+      writeSession(tmpDir, "noop-model", [
+        makeShutdownEvent(
+          startMs,
+          {
+            "claude-sonnet-4-5": {
+              requests: { count: 1, cost: 1 },
+              usage: { inputTokens: 100, outputTokens: 50 },
+            },
+            "noop-model": {
+              requests: { count: 0, cost: 0 },
+              usage: {
+                inputTokens: 0,
+                outputTokens: 0,
+                reasoningTokens: 0,
+                cacheReadTokens: 0,
+                cacheWriteTokens: 0,
+              },
+            },
+          },
+          1
+        ),
+      ]);
+
+      const result = await extractCopilotCliData();
+      expect(result).toHaveLength(1);
+      // Only the active model is recorded; the all-zero one is skipped.
+      expect(result[0].modelsUsed).toEqual(["claude-sonnet-4-5"]);
+    });
+
     it("does not emit premiumRequests on the SyncDay when total is zero", async () => {
       const startMs = new Date("2026-03-10T12:00:00.000Z").getTime();
       writeSession(tmpDir, "free", [

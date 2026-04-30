@@ -217,8 +217,22 @@ export async function extractCopilotCliData(
       const reasoning = Number(usage.reasoningTokens) || 0;
       const cacheRead = Number(usage.cacheReadTokens) || 0;
       const cacheWrite = Number(usage.cacheWriteTokens) || 0;
+      // Premium-request count contributed by this model in this session.
+      const premiumRequests = Number(metrics?.requests?.count) || 0;
 
-      if (input === 0 && output === 0 && reasoning === 0) continue;
+      // Skip only when this model contributed nothing to the session — any
+      // non-zero metric (including cache-only or premium-only activity) is
+      // worth recording.
+      if (
+        input === 0 &&
+        output === 0 &&
+        reasoning === 0 &&
+        cacheRead === 0 &&
+        cacheWrite === 0 &&
+        premiumRequests === 0
+      ) {
+        continue;
+      }
 
       // Treat reasoning tokens as part of output for cost calculation.
       const outputForCost = output + reasoning;
@@ -229,9 +243,6 @@ export async function extractCopilotCliData(
         cacheCreation: cacheWrite,
         cacheRead,
       });
-
-      // Premium-request count contributed by this model in this session.
-      const premiumRequests = Number(metrics?.requests?.count) || 0;
 
       accumulate(byDate, date, modelId, {
         input,
