@@ -42,6 +42,18 @@ export const SOURCE_VALUES = [
 ] as const;
 
 /**
+ * Subset of {@link SOURCE_VALUES} accepted by `reassignFromOpencode`. Only
+ * the new branded OpenCode tiers belong here — they're the targets that, when
+ * upserted, should clear the legacy `source: "opencode"` row on the same key.
+ * The bare `"opencode"` slug is intentionally excluded: it's the slug being
+ * cleared *from*, not a target.
+ */
+export const OPEN_CODE_SOURCE_VALUES = [
+  "opencode-go",
+  "opencode-zen",
+] as const;
+
+/**
  * Schema for a single day's aggregate usage data.
  * Date is validated as YYYY-MM-DD format.
  * All token counts must be non-negative integers.
@@ -75,7 +87,7 @@ export const SyncPayloadSchema = z.object({
    * legacy `opencode` row on the same key. Used to migrate data from the
    * pre-providerID-split era to the new branded-tier sources.
    */
-  reassignFromOpencode: z.array(z.enum(SOURCE_VALUES)).optional(),
+  reassignFromOpencode: z.array(z.enum(OPEN_CODE_SOURCE_VALUES)).optional(),
 });
 
 /** TypeScript type for a single day's sync data. */

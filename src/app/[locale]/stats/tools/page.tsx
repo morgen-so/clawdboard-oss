@@ -476,7 +476,9 @@ export default async function ToolsPage() {
                         {tool.name}
                       </h3>
                       <p className="font-mono text-xs text-muted mt-0.5">
-                        {tool.description}
+                        {t.has(`toolDescriptions.${tool.slug}`)
+                          ? t(`toolDescriptions.${tool.slug}`)
+                          : t("toolDescriptions.fallback")}
                       </p>
                     </div>
                     <div

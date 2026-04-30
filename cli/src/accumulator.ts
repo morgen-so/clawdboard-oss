@@ -6,7 +6,7 @@
  * and conversion logic.
  */
 
-import type { SyncDay } from "./schemas.js";
+import { SOURCE_VALUES, type SyncDay } from "./schemas.js";
 
 /** Per-model token/cost breakdown within a day. */
 interface ModelStats {
@@ -38,16 +38,8 @@ export interface InstallResult {
   updated: boolean;
 }
 
-/** Source slug union — kept in sync with cli/src/schemas.ts SOURCE_VALUES. */
-export type Source =
-  | "claude-code"
-  | "opencode"
-  | "opencode-go"
-  | "opencode-zen"
-  | "codex"
-  | "gemini-cli"
-  | "antigravity"
-  | "copilot-cli";
+/** Source slug union — derived from {@link SOURCE_VALUES} in `./schemas.ts`. */
+export type Source = (typeof SOURCE_VALUES)[number];
 
 /**
  * Add token/cost data for a single message to the daily accumulator.

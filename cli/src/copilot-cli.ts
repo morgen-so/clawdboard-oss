@@ -231,7 +231,7 @@ export async function extractCopilotCliData(
       });
 
       // Premium-request count contributed by this model in this session.
-      const premiumRequests = Number(metrics?.requests?.cost) || 0;
+      const premiumRequests = Number(metrics?.requests?.count) || 0;
 
       accumulate(byDate, date, modelId, {
         input,

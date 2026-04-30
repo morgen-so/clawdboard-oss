@@ -29,8 +29,8 @@ antigravityCommand
     console.log(chalk.yellow("  2.") + " Make HTTPS calls to cloudcode-pa.googleapis.com");
     console.log(chalk.yellow("  3.") + " Send aggregate token counts (no prompts/code) to clawdboard");
     console.log("");
-    console.log(chalk.dim("Tokens never leave your machine. Same privacy guarantees as the other"));
-    console.log(chalk.dim("extractors. You can disable at any time with `clawdboard antigravity disable`."));
+    console.log(chalk.dim("Only aggregate token counts (no prompts, code, or content) are sent off-machine."));
+    console.log(chalk.dim("Same privacy guarantees as the other extractors. Disable any time with `clawdboard antigravity disable`."));
     console.log("");
 
     await saveConfig({

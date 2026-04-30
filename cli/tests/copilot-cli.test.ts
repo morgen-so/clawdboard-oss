@@ -130,7 +130,8 @@ describe("extractCopilotCliData", () => {
       expect(result[0].outputTokens).toBe(500);
       expect(result[0].cacheReadTokens).toBe(200);
       expect(result[0].cacheCreationTokens).toBe(100);
-      expect(result[0].premiumRequests).toBe(2);
+      // count is the request count; cost is the dollar value (not what we want)
+      expect(result[0].premiumRequests).toBe(3);
       expect(result[0].modelsUsed).toEqual(["claude-sonnet-4-5"]);
     });
 
@@ -187,7 +188,8 @@ describe("extractCopilotCliData", () => {
       expect(result).toHaveLength(1);
       expect(result[0].inputTokens).toBe(3000);
       expect(result[0].outputTokens).toBe(1500);
-      expect(result[0].premiumRequests).toBe(3);
+      // sess-1 count=1 + sess-2 count=1 = 2 (cost values are 1 and 2; not used)
+      expect(result[0].premiumRequests).toBe(2);
     });
 
     it("aggregates multiple models within a session", async () => {
@@ -216,12 +218,13 @@ describe("extractCopilotCliData", () => {
         "gpt-5",
       ]);
       expect(result[0].inputTokens).toBe(3000);
-      expect(result[0].premiumRequests).toBe(2);
+      // sonnet count=2 + gpt-5 count=1 = 3 (cost values are 1+1=2; not used)
+      expect(result[0].premiumRequests).toBe(3);
 
       const sonnet = result[0].modelBreakdowns.find(
         (m) => m.modelName === "claude-sonnet-4-5"
       );
-      expect(sonnet?.premiumRequests).toBe(1);
+      expect(sonnet?.premiumRequests).toBe(2);
     });
 
     it("filters by since date", async () => {
@@ -258,7 +261,8 @@ describe("extractCopilotCliData", () => {
           startMs,
           {
             m: {
-              requests: { count: 1, cost: 0 },
+              // count: 0 — no premium requests for this session
+              requests: { count: 0, cost: 0 },
               usage: { inputTokens: 100, outputTokens: 50 },
             },
           },

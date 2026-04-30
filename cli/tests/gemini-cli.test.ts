@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, writeFileSync, rmSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import {
@@ -193,8 +193,19 @@ describe("extractGeminiCliData", () => {
         makeGeminiMessage("g2", "2026-03-12T12:00:05.000Z"),
       ]);
 
-      // Backdate the file so it doesn't get filtered by mtime
-      // (the file is written "now" so per-message timestamp filter applies).
+      // Pin mtime to a fixed date strictly after `since` so the per-message
+      // filter is exercised deterministically. Otherwise this test silently
+      // depends on the runner's wall clock being after 2026-03-10.
+      const sessionPath = join(
+        tmpDir,
+        "tmp",
+        "myproject",
+        "chats",
+        "session-session1.jsonl"
+      );
+      const pinned = new Date("2026-04-01T00:00:00Z");
+      utimesSync(sessionPath, pinned, pinned);
+
       const result = await extractGeminiCliData("2026-03-10");
       expect(result).toHaveLength(1);
       expect(result[0].date).toBe("2026-03-12");

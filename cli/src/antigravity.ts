@@ -116,12 +116,11 @@ async function readOauthCreds(): Promise<OauthCreds | null> {
  * gemini-cli owns that file. We hold the refreshed token in memory only.
  */
 async function ensureValidAccessToken(creds: OauthCreds): Promise<string | null> {
-  if (!creds.access_token) return null;
-
   const now = Date.now();
   const expiry = typeof creds.expiry_date === "number" ? creds.expiry_date : 0;
-  // 60s safety margin — refresh slightly before expiry
-  if (expiry > now + 60_000) {
+  // 60s safety margin — refresh slightly before expiry. Only reuse the cached
+  // access token when both present and not yet within the safety margin.
+  if (creds.access_token && expiry > now + 60_000) {
     return creds.access_token;
   }
 
@@ -253,7 +252,7 @@ export async function extractAntigravityData(
     const input = Number(metric.inputTokens) || 0;
     const output = Number(metric.outputTokens) || 0;
     const cacheRead = Number(metric.cachedTokens) || 0;
-    if (input === 0 && output === 0) continue;
+    if (input === 0 && output === 0 && cacheRead === 0) continue;
 
     const cost = calculateCost(modelId, {
       input,

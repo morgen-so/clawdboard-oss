@@ -141,7 +141,7 @@ export function getModelSeoMeta(slug: string): ModelSeoMeta {
   if (slug.startsWith("gpt-oss")) {
     return {
       provider: "OpenAI",
-      tier: "open-source",
+      tier: "open-weight",
       description:
         "OpenAI's open-weight model series, used through Antigravity and OpenCode-compatible providers",
       keywords: [

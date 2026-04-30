@@ -393,7 +393,7 @@
     "q8": "Sind meine Daten privat?",
     "a8": "Das CLI erzwingt eine strenge Datenschutz-Positivliste -- nur aggregierte Token-Zahlen und Kosten verlassen deinen Rechner. Kein Code, keine Prompts oder Projektkontexte werden jemals ubertragen. Dein Profil auf clawdboard zeigt nur die Metriken, die du synchronisiert hast.",
     "q9": "Woher kommen die Daten?",
-    "a9": "ccusage liest die lokalen Protokolldateien, die KI-Coding-Tools auf deinem Rechner speichern (z.B. Claude Code in ~/.claude/, OpenCode in ~/.local/share/opencode/, Codex in ~/.codex/, Gemini CLI in ~/.gemini/, GitHub Copilot CLI in ~/.copilot/). Es werden keine API-Aufrufe gemacht -- alles wird aus deinen lokalen Protokollen ausgelesen.",
+    "a9": "ccusage liest die lokalen Protokolldateien, die KI-Coding-Tools auf deinem Rechner speichern (z.B. Claude Code in ~/.claude/, OpenCode in ~/.local/share/opencode/, Codex in ~/.codex/, Gemini CLI in ~/.gemini/, GitHub Copilot CLI in ~/.copilot/). Fur Antigravity verwendet es die lokalen OAuth-Anmeldeinformationen, die gemini-cli bereits unter ~/.gemini/oauth_creds.json speichert (nur opt-in). Es werden keine API-Aufrufe gemacht uber Antigravitys opt-in Nutzungsabfrage hinaus -- alles andere wird aus deinen lokalen Protokollen ausgelesen.",
     "q10": "Was bedeutet die Zahl \"Kosten\"?",
     "a10": "Es sind die geschatzten Kosten deiner Token-Nutzung zu veroffentlichten API-Tarifen (Anthropic, OpenAI usw.). Dies ist eine berechnete Schatzung, keine tatsachliche Rechnung. Betrachte es als Indikator dafur, wie intensiv du KI-Coding-Tools nutzt.",
     "q11": "Wie werden Serien berechnet?",
@@ -462,8 +462,8 @@
     "trendsDescription": "Wie viel geben Entwickler taglich fur KI-Coding aus? Dieses Diagramm zeigt den gleitenden 7-Tage-Durchschnitt der geschatzten taglichen Kosten und der Anzahl aktiver Nutzer uber die letzten {trendDays} Tage. Spitzen korrespondieren oft mit neuen Modell-Releases oder grossen Tool-Updates.",
     "modelsHeading": "KI-Modell-Beliebtheit nach Kostenanteil",
     "modelsDescription": "Welche KI-Modelle nutzen Entwickler tatsachlich zum Coden? Diese Aufschlusselung zeigt geschatzte Kosten und Token-Verbrauch pro Modell uber alle Nutzer — einschliesslich Claude (Opus, Sonnet, Haiku), OpenAI (GPT-4o, o-Serie) und andere. Der Kostenanteil spiegelt wider, wie viel der gesamten Community-Ausgaben auf jedes Modell entfallen — hoherwertige Modelle kosten mehr pro Token und konnen daher die Ausgaben dominieren, auch bei weniger Nutzern. Klicke auf ein beliebiges Modell fur detaillierte Nutzungsstatistiken.",
-    "sourceHeading": "Nutzung nach Tool: Claude Code vs OpenCode vs Codex",
-    "sourceDescription": "Woher kommen die Daten? Diese Aufschlusselung zeigt den geschatzten Kostenanteil uber die drei unterstutzten KI-Coding-Tools. Jedes Tool liest lokale Nutzungsprotokolle und tragt zu den aggregierten Statistiken bei.",
+    "sourceHeading": "Nutzung nach Tool",
+    "sourceDescription": "Woher kommen die Daten? Diese Aufschlusselung zeigt den geschatzten Kostenanteil uber alle unterstutzten KI-Coding-Tools — Claude Code, OpenCode (inkl. Go und Zen), Codex CLI, Gemini CLI, GitHub Copilot CLI und Antigravity. Jedes Tool liest lokale Nutzungsprotokolle und tragt zu den aggregierten Statistiken bei.",
     "viewDetailedToolComparison": "Detaillierten Tool-Vergleich ansehen \u2192",
     "growthHeading": "Community-Wachstum",
     "growthDescription": "Wie schnell wachst die KI-Coding Entwickler-Community? Dieses Diagramm zeigt die kumulativen Registrierungen auf clawdboard pro Woche. Das Wachstum beschleunigt sich um grosse Modell-Releases, neue Tool-Starts und Entwickler-Ankundigungen.",
@@ -567,7 +567,18 @@
     "ctaHeading": "Verfolge deine KI-Coding Nutzung",
     "ctaDescription": "Funktioniert mit {toolList}. Kostenlos, Open-Source, in 30 Sekunden eingerichtet.",
     "ctaPrimaryLabel": "Rangliste ansehen",
-    "ctaSecondaryLabel": "Alle Statistiken"
+    "ctaSecondaryLabel": "Alle Statistiken",
+    "toolDescriptions": {
+      "claude-code": "Anthropics offizielles CLI fur Claude. Ein agentischer Coding-Assistent, der direkt in deinem Terminal mit vollem Zugriff auf deine Codebasis arbeitet.",
+      "opencode": "Ein open-source terminalbasierter KI-Coding-Assistent, der mehrere LLM-Anbieter unterstutzt. Als flexible Alternative mit anbieterunabhangiger Modellunterstutzung konzipiert.",
+      "opencode-go": "OpenCodes Go-Abonnementstufe — ein kuratierter Satz leistungsstarker open-source Modelle (GLM, MiMo, DeepSeek, Kimi, Qwen, MiniMax), zuganglich uber das OpenCode TUI.",
+      "opencode-zen": "OpenCodes pay-as-you-go Anbieterstufe, die kuratierte open-source Modelle ohne Abonnement bietet, nach Nutzung uber das OpenCode TUI abgerechnet.",
+      "codex": "OpenAIs Kommandozeilen-Coding-Agent, der GPT-4o und o-Serien-Modelle verwendet. Bringt OpenAIs Modelle ins Terminal fur Code-Generierung und -Bearbeitung.",
+      "gemini-cli": "Googles offizieller Kommandozeilen-Coding-Agent, betrieben von der Gemini-Modellfamilie. Open Source, mit eingebauten multimodalen und Tool-Nutzungs-Fahigkeiten.",
+      "antigravity": "Googles agent-first IDE — ein VS-Code-Fork mit tief integrierten agentischen Workflows, betrieben von Gemini 3 und anderen Spitzenmodellen.",
+      "copilot-cli": "GitHubs agentischer Kommandozeilen-Coding-Assistent. Multi-Modell-Unterstutzung (Claude, GPT usw.) abgerechnet in Premium-Request-Einheiten neben Token-Level-Metriken.",
+      "fallback": "Ein KI-Coding-Tool, das auf clawdboard verfolgt wird."
+    }
   },
   "statsModel": {
     "subtitle": "{modelName}-Statistiken",

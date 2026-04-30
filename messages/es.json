@@ -393,7 +393,7 @@
     "q8": "Son privados mis datos?",
     "a8": "El CLI aplica una lista blanca de privacidad estricta -- solo los conteos de tokens agregados y los costos salen de tu maquina. Ningun codigo, prompt o contexto de proyecto se transmite jamas. Tu perfil en clawdboard solo muestra las metricas que has sincronizado.",
     "q9": "De donde vienen los datos?",
-    "a9": "ccusage lee los archivos de registro locales que las herramientas de codificacion IA almacenan en tu maquina (por ej. Claude Code en ~/.claude/, OpenCode en ~/.local/share/opencode/, Codex en ~/.codex/, Gemini CLI en ~/.gemini/, GitHub Copilot CLI en ~/.copilot/). No se hacen llamadas API -- todo se analiza a partir de tus registros locales.",
+    "a9": "ccusage lee los archivos de registro locales que las herramientas de codificacion IA almacenan en tu maquina (por ej. Claude Code en ~/.claude/, OpenCode en ~/.local/share/opencode/, Codex en ~/.codex/, Gemini CLI en ~/.gemini/, GitHub Copilot CLI en ~/.copilot/). Para Antigravity, usa las credenciales OAuth locales que gemini-cli ya almacena en ~/.gemini/oauth_creds.json (solo opt-in). No se hacen llamadas API mas alla de la consulta opt-in de Antigravity -- todo lo demas se analiza a partir de tus registros locales.",
     "q10": "Que significa el numero de \"costo\"?",
     "a10": "Es el costo estimado de tu uso de tokens a las tarifas API publicadas (Anthropic, OpenAI, etc.). Es una estimacion calculada, no una factura real. Piensa en ello como un indicador de cuan intensivamente usas herramientas de codificacion IA.",
     "q11": "Como se calculan las rachas?",
@@ -462,8 +462,8 @@
     "trendsDescription": "Cuanto gastan los desarrolladores en codificacion IA cada dia? Este grafico muestra el promedio movil de 7 dias del costo diario estimado y el numero de usuarios activos en los ultimos {trendDays} dias. Los picos suelen corresponder a lanzamientos de nuevos modelos o actualizaciones importantes de herramientas.",
     "modelsHeading": "Popularidad de modelos IA por cuota de costo",
     "modelsDescription": "Que modelos de IA usan realmente los desarrolladores para programar? Este desglose muestra el costo estimado y el consumo de tokens por modelo entre todos los usuarios — incluyendo Claude (Opus, Sonnet, Haiku), OpenAI (GPT-4o, o-series) y otros. La cuota de costo refleja cuanto del gasto total de la comunidad va a cada modelo — los modelos de nivel superior cuestan mas por token, por lo que pueden dominar el gasto incluso con menos usuarios. Haz clic en cualquier modelo para ver estadisticas detalladas de uso.",
-    "sourceHeading": "Uso por herramienta: Claude Code vs OpenCode vs Codex",
-    "sourceDescription": "De donde vienen los datos? Este desglose muestra la cuota de costo estimado entre las tres herramientas de codificacion IA soportadas. Cada herramienta lee registros de uso locales y contribuye a las estadisticas agregadas.",
+    "sourceHeading": "Uso por herramienta",
+    "sourceDescription": "De donde vienen los datos? Este desglose muestra la cuota de costo estimado entre todas las herramientas de codificacion IA soportadas — Claude Code, OpenCode (incl. Go y Zen), Codex CLI, Gemini CLI, GitHub Copilot CLI y Antigravity. Cada herramienta lee registros de uso locales y contribuye a las estadisticas agregadas.",
     "viewDetailedToolComparison": "Ver comparacion detallada de herramientas \u2192",
     "growthHeading": "Crecimiento de la comunidad",
     "growthDescription": "Que tan rapido crece la comunidad de desarrolladores de codificacion IA? Este grafico muestra las inscripciones acumuladas en clawdboard por semana. El crecimiento se acelera alrededor de lanzamientos de modelos importantes, nuevas herramientas y anuncios para desarrolladores.",
@@ -567,7 +567,18 @@
     "ctaHeading": "Rastrea tu uso de codificacion IA",
     "ctaDescription": "Funciona con {toolList}. Gratis, open-source, se configura en 30 segundos.",
     "ctaPrimaryLabel": "Ver clasificacion",
-    "ctaSecondaryLabel": "Todas las estadisticas"
+    "ctaSecondaryLabel": "Todas las estadisticas",
+    "toolDescriptions": {
+      "claude-code": "El CLI oficial de Anthropic para Claude. Un asistente de codificacion agentico que funciona directamente en tu terminal con acceso completo a tu base de codigo.",
+      "opencode": "Un asistente de codificacion IA open-source basado en terminal que soporta multiples proveedores de LLM. Disenado como una alternativa flexible con soporte de modelos agnostico al proveedor.",
+      "opencode-go": "El nivel de suscripcion Go de OpenCode — un conjunto curado de modelos open-source de alto rendimiento (GLM, MiMo, DeepSeek, Kimi, Qwen, MiniMax) accedidos a traves del TUI de OpenCode.",
+      "opencode-zen": "El nivel de proveedor pay-as-you-go de OpenCode que ofrece modelos open-source curados sin suscripcion, facturados por uso a traves del TUI de OpenCode.",
+      "codex": "El agente de codificacion en linea de comandos de OpenAI que usa modelos GPT-4o y o-series. Lleva los modelos de OpenAI a la terminal para generacion y edicion de codigo.",
+      "gemini-cli": "El agente oficial de codificacion en linea de comandos de Google impulsado por la familia de modelos Gemini. Open source, con capacidades multimodales y de uso de herramientas integradas.",
+      "antigravity": "El IDE agent-first de Google — un fork de VS Code con flujos de trabajo agenticos profundamente integrados, impulsados por Gemini 3 y otros modelos de frontera.",
+      "copilot-cli": "El asistente de codificacion en linea de comandos agentico de GitHub. Soporte multi-modelo (Claude, GPT, etc.) facturado en unidades de solicitudes premium junto con metricas a nivel de token.",
+      "fallback": "Una herramienta de codificacion IA rastreada en clawdboard."
+    }
   },
   "statsModel": {
     "subtitle": "estadisticas de {modelName}",

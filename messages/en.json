@@ -463,8 +463,8 @@
     "trendsDescription": "How much are developers spending on AI coding each day? This chart shows the 7-day moving average of estimated daily cost and active user count over the last {trendDays} days. Spikes often correspond to new model releases or major tool updates.",
     "modelsHeading": "AI Model Popularity by Cost Share",
     "modelsDescription": "Which AI models do developers actually use for coding? This breakdown shows estimated cost and token consumption per model across all users — including Claude (Opus, Sonnet, Haiku), OpenAI (GPT-4o, o-series), and others. Cost share reflects how much of total community spend goes to each model — higher-tier models cost more per token, so they can dominate spend even with fewer users. Click any model for detailed usage statistics.",
-    "sourceHeading": "Usage by Tool: Claude Code vs OpenCode vs Codex",
-    "sourceDescription": "Where does the data come from? This breakdown shows estimated cost share across the three supported AI coding tools. Each tool reads local usage logs and contributes to the aggregate statistics.",
+    "sourceHeading": "Usage by Tool",
+    "sourceDescription": "Where does the data come from? This breakdown shows estimated cost share across all supported AI coding tools — Claude Code, OpenCode (incl. Go and Zen tiers), Codex CLI, Gemini CLI, GitHub Copilot CLI, and Antigravity. Each tool reads local usage logs and contributes to the aggregate statistics.",
     "viewDetailedToolComparison": "View detailed tool comparison \u2192",
     "growthHeading": "Community Growth",
     "growthDescription": "How fast is the AI coding developer community growing? This chart tracks cumulative registrations on clawdboard by week. Growth accelerates around major model releases, new tool launches, and developer announcements.",
@@ -492,7 +492,7 @@
     "faqQ2": "What are the most popular AI models for coding?",
     "faqA2": "Model popularity varies over time as providers release new versions. Check the Model Popularity chart above for the latest breakdown by cost share and user count. Among Claude models, Sonnet tends to see the highest volume due to its speed-to-quality ratio, while Opus accounts for a significant share of total spend due to higher per-token pricing. OpenAI models like GPT-4o and o-series are also tracked for Codex CLI and OpenCode users.",
     "faqQ3": "Where does this usage data come from?",
-    "faqA3": "Every data point comes from developers who voluntarily track their AI coding usage through clawdboard. The clawdboard CLI reads local log files from supported tools (Claude Code, OpenCode, Codex CLI) on each developer's machine, extracts aggregate token counts and cost estimates, and syncs them. No code, prompts, project names, or conversation content is ever collected — only token counts and estimated costs.",
+    "faqA3": "Every data point comes from developers who voluntarily track their AI coding usage through clawdboard. The clawdboard CLI reads local log files from supported tools (Claude Code, OpenCode, Codex CLI, Gemini CLI, GitHub Copilot CLI, and Antigravity) on each developer's machine, extracts aggregate token counts and cost estimates, and syncs them. No code, prompts, project names, or conversation content is ever collected — only token counts and estimated costs.",
     "faqQ4": "How accurate are the cost estimates?",
     "faqA4": "Cost estimates are calculated by multiplying token counts (input, output, cache creation, cache read) by published API rates for each model (Anthropic, OpenAI, etc.). They represent the equivalent API cost — not an actual bill. Since most developers use AI coding tools through subscriptions with flat monthly pricing, the actual amount paid is typically lower than the estimated API-equivalent cost shown here.",
     "faqQ5": "How often is this data updated?",
@@ -568,7 +568,18 @@
     "ctaHeading": "Track Your AI Coding Usage",
     "ctaDescription": "Works with {toolList}. Free, open-source, takes 30 seconds.",
     "ctaPrimaryLabel": "View Leaderboard",
-    "ctaSecondaryLabel": "All Statistics"
+    "ctaSecondaryLabel": "All Statistics",
+    "toolDescriptions": {
+      "claude-code": "Anthropic's official CLI for Claude. An agentic coding assistant that works directly in your terminal with full access to your codebase.",
+      "opencode": "An open-source terminal-based AI coding assistant that supports multiple LLM providers. Designed as a flexible alternative with provider-agnostic model support.",
+      "opencode-go": "OpenCode's Go subscription tier — a curated set of high-performance open-source models (GLM, MiMo, DeepSeek, Kimi, Qwen, MiniMax) accessed through the OpenCode TUI.",
+      "opencode-zen": "OpenCode's pay-as-you-go provider tier offering curated open-source models without a subscription, billed by usage through the OpenCode TUI.",
+      "codex": "OpenAI's command-line coding agent that uses GPT-4o and o-series models. Brings OpenAI's models to the terminal for code generation and editing.",
+      "gemini-cli": "Google's official command-line coding agent powered by the Gemini family of models. Open source, with built-in multimodal and tool-use capabilities.",
+      "antigravity": "Google's agent-first IDE — a VS Code fork with deeply-integrated agentic workflows powered by Gemini 3 and other frontier models.",
+      "copilot-cli": "GitHub's agentic command-line coding assistant. Multi-model support (Claude, GPT, etc.) billed in premium-request units alongside token-level metrics.",
+      "fallback": "An AI coding tool tracked on clawdboard."
+    }
   },
   "statsModel": {
     "subtitle": "{modelName} statistics",

@@ -30,6 +30,18 @@ export const SOURCE_VALUES = [
 
 export type SourceValue = (typeof SOURCE_VALUES)[number];
 
+/**
+ * Subset of {@link SOURCE_VALUES} accepted by `reassignFromOpencode`. Only
+ * the new branded OpenCode tiers belong here — they're the targets that, when
+ * upserted, should clear the legacy `source: "opencode"` row on the same key.
+ * The bare `"opencode"` slug is intentionally excluded: it's the slug being
+ * cleared *from*, not a target.
+ */
+export const OPEN_CODE_SOURCE_VALUES = [
+  "opencode-go",
+  "opencode-zen",
+] as const;
+
 export const SyncDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   source: z.enum(SOURCE_VALUES).nullable().optional(),
@@ -59,7 +71,7 @@ export const SyncPayloadSchema = z.object({
    * payload tagged with one of these sources, delete the corresponding
    * `source: "opencode"` row first.
    */
-  reassignFromOpencode: z.array(z.enum(SOURCE_VALUES)).optional(),
+  reassignFromOpencode: z.array(z.enum(OPEN_CODE_SOURCE_VALUES)).optional(),
 });
 
 export type SyncDay = z.infer<typeof SyncDaySchema>;
