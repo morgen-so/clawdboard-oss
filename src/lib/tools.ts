@@ -1,6 +1,10 @@
 /**
  * Tool/source registry for stats pages.
  * Shared between /stats/tools and /stats/tools/[tool].
+ *
+ * User-facing descriptions live in `messages/{locale}.json` under
+ * `statsTools.toolDescriptions.<slug>` and are read via next-intl by the
+ * consumer (`src/app/[locale]/stats/tools/page.tsx`).
  */
 
 export interface ToolMeta {
@@ -8,7 +12,6 @@ export interface ToolMeta {
   name: string;
   color: string;
   provider: string;
-  description: string;
   website: string;
 }
 
@@ -18,8 +21,6 @@ export const TOOL_REGISTRY: Record<string, ToolMeta> = {
     name: "Claude Code",
     color: "#F9A615",
     provider: "Anthropic",
-    description:
-      "Anthropic's official CLI for Claude. An agentic coding assistant that works directly in your terminal with full access to your codebase.",
     website: "https://claude.ai/claude-code",
   },
   opencode: {
@@ -27,18 +28,49 @@ export const TOOL_REGISTRY: Record<string, ToolMeta> = {
     name: "OpenCode",
     color: "#3b82f6",
     provider: "Community",
-    description:
-      "An open-source terminal-based AI coding assistant that supports multiple LLM providers. Designed as a flexible alternative with provider-agnostic model support.",
-    website: "https://github.com/opencode-ai/opencode",
+    website: "https://opencode.ai/",
+  },
+  "opencode-go": {
+    slug: "opencode-go",
+    name: "OpenCode Go",
+    color: "#facc15",
+    provider: "OpenCode",
+    website: "https://opencode.ai/go",
+  },
+  "opencode-zen": {
+    slug: "opencode-zen",
+    name: "OpenCode Zen",
+    color: "#a78bfa",
+    provider: "OpenCode",
+    website: "https://opencode.ai/zen",
   },
   codex: {
     slug: "codex",
     name: "Codex CLI",
     color: "#10b981",
     provider: "OpenAI",
-    description:
-      "OpenAI's command-line coding agent that uses GPT-4o and o-series models. Brings OpenAI's models to the terminal for code generation and editing.",
     website: "https://github.com/openai/codex",
+  },
+  "gemini-cli": {
+    slug: "gemini-cli",
+    name: "Gemini CLI",
+    color: "#8b5cf6",
+    provider: "Google",
+    website: "https://github.com/google-gemini/gemini-cli",
+  },
+  antigravity: {
+    slug: "antigravity",
+    name: "Antigravity",
+    color: "#06b6d4",
+    provider: "Google",
+    website: "https://antigravity.google/",
+  },
+  "copilot-cli": {
+    slug: "copilot-cli",
+    name: "GitHub Copilot CLI",
+    color: "#94a3b8",
+    provider: "GitHub",
+    website: "https://github.com/github/copilot-cli",
   },
 };
 
@@ -51,7 +83,6 @@ export function getToolMeta(slug: string): ToolMeta {
       name: slug,
       color: FALLBACK_COLOR,
       provider: "Unknown",
-      description: `An AI coding tool tracked on clawdboard.`,
       website: "",
     }
   );

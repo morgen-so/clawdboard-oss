@@ -137,6 +137,74 @@ export function getModelSeoMeta(slug: string): ModelSeoMeta {
     };
   }
 
+  // OpenAI gpt-oss (open-weight; used via Antigravity and OpenRouter)
+  if (slug.startsWith("gpt-oss")) {
+    return {
+      provider: "OpenAI",
+      tier: "open-weight",
+      description:
+        "OpenAI's open-weight model series, used through Antigravity and OpenCode-compatible providers",
+      keywords: [
+        `${slug} cost`,
+        `${slug} usage`,
+        `${slug} coding`,
+        "open weight model",
+        ...OPENAI_BASE_KEYWORDS,
+      ],
+    };
+  }
+
+  // Google Gemini family
+  if (slug.startsWith("gemini")) {
+    const isPro = /pro/.test(slug);
+    const isFlash = /flash/.test(slug);
+    return {
+      provider: "Google",
+      tier: isPro ? "flagship" : isFlash ? "fast" : "balanced",
+      description: isPro
+        ? "Google's flagship Gemini model, used through Gemini CLI and Antigravity for complex coding tasks"
+        : isFlash
+          ? "Google's fast and cost-efficient Gemini model, used for high-volume coding operations"
+          : "Google's Gemini family of multimodal models for AI-assisted development",
+      keywords: [
+        `${slug} cost`,
+        `${slug} usage`,
+        `${slug} coding`,
+        "gemini cli usage",
+        "google gemini cost",
+        "ai coding statistics",
+      ],
+    };
+  }
+
+  // OpenCode Zen-tier curated open-source models
+  // (GLM, MiMo, DeepSeek, Kimi, Qwen, MiniMax) — used via opencode-go / opencode-zen
+  const ZEN_MATCH: Record<string, { provider: string; family: string }> = {
+    glm: { provider: "Zhipu AI", family: "GLM" },
+    mimo: { provider: "Xiaomi MiMo", family: "MiMo" },
+    deepseek: { provider: "DeepSeek", family: "DeepSeek" },
+    kimi: { provider: "Moonshot AI", family: "Kimi" },
+    qwen: { provider: "Alibaba", family: "Qwen" },
+    minimax: { provider: "MiniMax", family: "MiniMax" },
+  };
+  for (const [prefix, meta] of Object.entries(ZEN_MATCH)) {
+    if (slug.startsWith(prefix)) {
+      return {
+        provider: meta.provider,
+        tier: "open-source",
+        description: `${meta.family}, an open-source model used through OpenCode Zen and OpenCode Go for AI-assisted coding`,
+        keywords: [
+          `${slug} cost`,
+          `${slug} usage`,
+          `${slug} coding`,
+          `${meta.family.toLowerCase()} model statistics`,
+          "open source ai coding",
+          "opencode zen usage",
+        ],
+      };
+    }
+  }
+
   // Fallback
   return {
     provider: "Unknown",

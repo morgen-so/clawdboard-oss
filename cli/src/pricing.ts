@@ -70,9 +70,30 @@ const PRICING_TABLE: Record<string, ModelPricing> = {
   "o4-mini": { input: 1.1, output: 4.4, cacheWrite: 0, cacheRead: 0.55 },
 
   // ── Google Gemini ────────────────────────────────────────────────────
-  "gemini-2.5-pro": { input: 1.25, output: 10, cacheWrite: 0, cacheRead: 0 },
-  "gemini-2.5-flash": { input: 0.3, output: 2.5, cacheWrite: 0, cacheRead: 0 },
+  "gemini-2.5-pro": { input: 1.25, output: 10, cacheWrite: 0, cacheRead: 0.125 },
+  "gemini-2.5-flash": { input: 0.3, output: 2.5, cacheWrite: 0, cacheRead: 0.03 },
+  "gemini-2.5-flash-lite": { input: 0.1, output: 0.4, cacheWrite: 0, cacheRead: 0 },
   "gemini-2.0-flash": { input: 0.1, output: 0.4, cacheWrite: 0, cacheRead: 0 },
+  "gemini-2.0-flash-lite": { input: 0.075, output: 0.3, cacheWrite: 0, cacheRead: 0 },
+
+  // ── Google Gemini 3.x — VERIFY (rates not public; mirror 2.5 family) ─
+  "gemini-3-pro": { input: 1.25, output: 10, cacheWrite: 0, cacheRead: 0 },
+  "gemini-3-flash": { input: 0.3, output: 2.5, cacheWrite: 0, cacheRead: 0 },
+
+  // ── OpenAI gpt-oss (open-weight; used via Antigravity) ───────────────
+  "gpt-oss-120b": { input: 0.5, output: 1.5, cacheWrite: 0, cacheRead: 0 },
+  "gpt-oss-20b": { input: 0.1, output: 0.4, cacheWrite: 0, cacheRead: 0 },
+
+  // ── OpenCode Zen-tier curated open-source models — VERIFY ────────────
+  // Used via providerID "opencode-go" / "opencode-zen". Rates are estimates
+  // based on each provider's public API pricing as of 2026-04; OpenCode Zen
+  // pricing may differ. Update when published rates are available.
+  "glm-5.1": { input: 0.5, output: 2.0, cacheWrite: 0, cacheRead: 0 },
+  "mimo-v2.5-pro": { input: 0.3, output: 1.2, cacheWrite: 0, cacheRead: 0 },
+  "deepseek-v4-pro": { input: 0.27, output: 1.1, cacheWrite: 0, cacheRead: 0 },
+  "kimi-k2": { input: 0.6, output: 2.5, cacheWrite: 0, cacheRead: 0 },
+  "qwen3": { input: 0.4, output: 1.2, cacheWrite: 0, cacheRead: 0 },
+  "minimax": { input: 0.2, output: 1.1, cacheWrite: 0, cacheRead: 0 },
 };
 
 /** Fallback pricing for unrecognized models — conservative mid-range estimate. */
