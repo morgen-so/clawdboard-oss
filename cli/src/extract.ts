@@ -1,6 +1,7 @@
 import { SyncPayloadSchema, type SyncPayload, type SyncDay } from "./schemas.js";
 import { extractOpenCodeData, hasOpenCodeData } from "./opencode.js";
 import { extractCodexData, hasCodexData } from "./codex.js";
+import { extractDesktopData, hasDesktopData } from "./desktop.js";
 
 /**
  * Privacy-preserving data extraction from raw ccusage DailyUsage data.
@@ -75,34 +76,43 @@ export async function extractAndSanitize(
   since?: string
 ): Promise<SyncPayload> {
   // Run all extractions concurrently — they read from independent directories
-  const [claudeResult, opencodeResult, codexResult] = await Promise.allSettled([
-    // Source 1: Claude Code via ccusage
-    (async (): Promise<SyncDay[]> => {
-      const { loadDailyUsageData } = await import("ccusage/data-loader");
-      const options: Record<string, unknown> = { mode: "calculate" };
-      if (since) options.since = since;
-      const raw = await loadDailyUsageData(
-        options as Parameters<typeof loadDailyUsageData>[0]
-      );
-      return sanitizeDailyData(raw as unknown[], "claude-code").days;
-    })(),
-    // Source 2: OpenCode
-    extractOpenCodeData(since),
-    // Source 3: Codex CLI
-    extractCodexData(since),
-  ]);
+  const [claudeResult, opencodeResult, codexResult, desktopResult] =
+    await Promise.allSettled([
+      // Source 1: Claude Code via ccusage
+      (async (): Promise<SyncDay[]> => {
+        const { loadDailyUsageData } = await import("ccusage/data-loader");
+        const options: Record<string, unknown> = { mode: "calculate" };
+        if (since) options.since = since;
+        const raw = await loadDailyUsageData(
+          options as Parameters<typeof loadDailyUsageData>[0]
+        );
+        return sanitizeDailyData(raw as unknown[], "claude-code").days;
+      })(),
+      // Source 2: OpenCode
+      extractOpenCodeData(since),
+      // Source 3: Codex CLI
+      extractCodexData(since),
+      // Source 4: Claude desktop app (Cowork / Dispatch)
+      extractDesktopData(since),
+    ]);
 
   const claudeDays = claudeResult.status === "fulfilled" ? claudeResult.value : [];
   const opencodeDays = opencodeResult.status === "fulfilled" ? opencodeResult.value : [];
   const codexDays = codexResult.status === "fulfilled" ? codexResult.value : [];
+  const desktopDays = desktopResult.status === "fulfilled" ? desktopResult.value : [];
 
   // Concatenate all sources — each entry already has its source tag,
   // so the server can upsert them as separate (user_id, date, source) rows
-  const allDays = [...claudeDays, ...opencodeDays, ...codexDays];
+  const allDays = [...claudeDays, ...opencodeDays, ...codexDays, ...desktopDays];
 
-  if (allDays.length === 0 && !hasOpenCodeData() && !hasCodexData()) {
+  if (
+    allDays.length === 0 &&
+    !hasOpenCodeData() &&
+    !hasCodexData() &&
+    !hasDesktopData()
+  ) {
     throw new Error(
-      "No usage data found. Make sure you have used Claude Code, OpenCode, or Codex on this machine."
+      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, or the Claude desktop app on this machine."
     );
   }
 

@@ -76,6 +76,30 @@ export async function runSync(
 
   // Step 4: Dry run -- display summary and exit
   if (options.dryRun) {
+    const bySource = payload.days.reduce<Record<string, { days: number; tokens: number; cost: number }>>(
+      (acc, day) => {
+        const key = day.source ?? "unknown";
+        const tokens =
+          day.inputTokens +
+          day.outputTokens +
+          day.cacheCreationTokens +
+          day.cacheReadTokens;
+        if (!acc[key]) acc[key] = { days: 0, tokens: 0, cost: 0 };
+        acc[key].days += 1;
+        acc[key].tokens += tokens;
+        acc[key].cost += day.totalCost;
+        return acc;
+      },
+      {}
+    );
+    console.log(chalk.dim("\nPer-source breakdown:"));
+    for (const [src, agg] of Object.entries(bySource)) {
+      console.log(
+        chalk.dim(
+          `  ${src}: ${agg.days} day(s), ${formatTokens(agg.tokens)} tokens, $${agg.cost.toFixed(2)}`
+        )
+      );
+    }
     console.log(chalk.dim("\nDry run -- data was not uploaded."));
     return;
   }
