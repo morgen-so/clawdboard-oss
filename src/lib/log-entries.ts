@@ -12,6 +12,56 @@ export interface LogEntry {
 
 export const logEntries: LogEntry[] = [
   {
+    date: "2026-04-19",
+    items: [
+      {
+        title: "More reliable leaderboard around the top of the hour",
+        type: "fix",
+        description:
+          "The hourly job that refreshes the leaderboard was briefly taking the data offline while it rebuilt, causing occasional 500 errors on page loads and CLI sync requests near each refresh. It now refreshes in place without blocking reads or writes — the site stays available through every tick.",
+      },
+      {
+        title: "Safer Codex config cleanup on upgrade",
+        type: "improvement",
+        description:
+          "The Codex legacy-block cleanup now matches only the exact 3-line block we originally wrote, so any [[hooks.*]] sections or top-level `hooks = ...` assignments you added yourself are left untouched.",
+      },
+    ],
+  },
+  {
+    date: "2026-04-17",
+    items: [
+      {
+        title: "Fix Codex CLI hook installation",
+        type: "fix",
+        description:
+          "The Codex auto-sync hook was writing to config.toml with unescaped quotes, which broke Codex's TOML parser and prevented the CLI from starting. It was also using the wrong file — Codex reads hooks from hooks.json, not config.toml. The CLI now writes a valid ~/.codex/hooks.json and sets features.codex_hooks = true in config.toml, and auto-heals any legacy broken block on upgrade. Affected users: run `npx clawdboard@latest setup` (or manually delete the `# clawdboard auto-sync` block from ~/.codex/config.toml first if Codex won't start).",
+      },
+    ],
+  },
+  {
+    date: "2026-04-01",
+    items: [
+      {
+        title: "Auto-migrate from PostToolUse to Stop hook",
+        type: "fix",
+        description:
+          "The auto-sync hook was firing on every tool call instead of once per session, causing unnecessary CPU usage — especially with multiple concurrent sessions. This update auto-migrates your hook to the Stop event (fires once when a session ends) with a shell-level debounce. The migration happens automatically on your next sync. If you want to fix it immediately, run: clawdboard setup",
+      },
+    ],
+  },
+  {
+    date: "2026-03-31",
+    items: [
+      {
+        title: "Faster hook-sync startup",
+        type: "improvement",
+        description:
+          "The auto-sync hook now detects if clawdboard is globally installed and calls it directly, skipping npm package resolution overhead. Falls back to npx for users without a global install.",
+      },
+    ],
+  },
+  {
     date: "2026-03-14",
     items: [
       {

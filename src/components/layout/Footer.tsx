@@ -17,7 +17,7 @@ export async function Footer() {
             </span>
           </div>
 
-          <nav className="flex items-center gap-4 font-mono text-xs">
+          <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 font-mono text-xs">
             <Link
               href="/stats"
               className="text-muted transition-colors hover:text-accent"

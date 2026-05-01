@@ -1,8 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { createHash, timingSafeEqual } from "crypto";
+import { env } from "@/lib/env";
+import { rateLimit } from "@/lib/rate-limit";
+import {
+  ADMIN_COOKIE_NAME,
+  ADMIN_SESSION_TTL_MS,
+  signAdminToken,
+} from "@/lib/admin-session";
 
 export async function POST(req: NextRequest) {
-  const adminPassword = process.env.ADMIN_PASSWORD;
+  const limited = rateLimit(req, { key: "admin-login", limit: 5 });
+  if (limited) return limited;
+
+  const adminPassword = env.ADMIN_PASSWORD;
   if (!adminPassword) {
     return NextResponse.json(
       { error: "Admin access not configured" },
@@ -13,29 +24,29 @@ export async function POST(req: NextRequest) {
   let password: string;
   try {
     const body = await req.json();
-    password = body.password;
+    password = typeof body?.password === "string" ? body.password : "";
   } catch {
     return NextResponse.json({ error: "Invalid request" }, { status: 400 });
   }
 
-  if (password !== adminPassword) {
+  // Hash both sides to fixed-length digests so the comparison has no
+  // length-dependent branch that could leak the expected password length.
+  const provided = createHash("sha256").update(password, "utf-8").digest();
+  const expected = createHash("sha256").update(adminPassword, "utf-8").digest();
+
+  if (!timingSafeEqual(provided, expected)) {
     return NextResponse.json({ error: "Wrong password" }, { status: 401 });
   }
 
-  // Create a simple signed token: hash the password so cookie can be verified
-  const encoder = new TextEncoder();
-  const data = encoder.encode(adminPassword);
-  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const token = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  const token = signAdminToken();
 
   const cookieStore = await cookies();
-  cookieStore.set("admin_session", token, {
+  cookieStore.set(ADMIN_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
-    maxAge: 60 * 60 * 24, // 24 hours
-    path: "/admin",
+    maxAge: Math.floor(ADMIN_SESSION_TTL_MS / 1000),
+    path: "/",
   });
 
   return NextResponse.json({ ok: true });

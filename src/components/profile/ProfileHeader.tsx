@@ -88,7 +88,7 @@ export async function ProfileHeader({
             )}
           </StreakAura>
           <div>
-            <h1 className="font-display text-2xl font-bold text-foreground">
+            <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground break-words">
               {user.githubUsername ?? user.name ?? "Anonymous"}
             </h1>
             <p className="text-sm text-muted">

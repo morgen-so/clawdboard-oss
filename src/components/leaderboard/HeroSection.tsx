@@ -34,7 +34,7 @@ export async function HeroSection({
   return (
     <div className="mb-6 rounded-lg border border-accent/20 bg-accent/[0.03] p-6 sm:p-8">
       {/* Headline — data-driven, surfaces extremes */}
-      <h1 className="font-display text-xl font-bold text-foreground sm:text-2xl mb-2">
+      <h1 className="font-display text-xl font-bold text-foreground text-balance tracking-tight sm:text-2xl md:text-3xl lg:text-4xl mb-2">
         {t("heroHeadline", { topCost: formatCurrency(topWeeklyCost) })}
       </h1>
       <p className="font-mono text-sm text-muted mb-5 max-w-2xl">

@@ -29,8 +29,8 @@
   --surface-hover: #1a1a1f;
   --border-color: #23232a;
   --border-bright: #2e2e38;
-  --muted: #7a7a8e;
-  --dim: #55556a;
+  --muted: #8e8ea3;
+  --dim: #6a6a7e;
   --accent: #F9A615;
   --accent-bright: #FBC15B;
   --accent-glow: rgba(249, 166, 21, 0.12);
@@ -71,6 +71,14 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-fira-code), ui-monospace, monospace;
+}
+
+/* ── Focus ring (keyboard accessibility) ──────────── */
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
 }
 
 /* ── Selection ───────────────────────────────────── */

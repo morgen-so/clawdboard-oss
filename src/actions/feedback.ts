@@ -3,7 +3,10 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { feedback } from "@/lib/db/schema";
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { ADMIN_COOKIE_NAME, verifyAdminToken } from "@/lib/admin-session";
 import type { ActionResult } from "@/lib/action-result";
 
 const rateLimitMap = new Map<string, number>();
@@ -64,4 +67,20 @@ export async function submitFeedback(
     console.error("Feedback insert error:", err);
     return { error: "Failed to submit feedback. Please try again." };
   }
+}
+
+export async function toggleFeedbackResolved(formData: FormData): Promise<void> {
+  const cookieStore = await cookies();
+  if (!verifyAdminToken(cookieStore.get(ADMIN_COOKIE_NAME)?.value)) return;
+
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) return;
+  const resolve = formData.get("resolve") === "1";
+
+  await db
+    .update(feedback)
+    .set({ resolvedAt: resolve ? new Date() : null })
+    .where(eq(feedback.id, id));
+
+  revalidatePath("/admin", "layout");
 }

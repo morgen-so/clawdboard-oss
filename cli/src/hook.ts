@@ -125,42 +125,12 @@ export async function runHookSync(): Promise<void> {
       return;
     }
 
-    // Step 2: Check debounce
-    if (!(await shouldSync())) {
-      return;
-    }
-
-    // Step 3: Optimistic timestamp write (prevents race condition per research Pitfall 4)
-    await markSynced();
-
-    // Step 4: Load config, check auth
-    const config = await loadConfig();
-    if (!config.apiToken) {
-      // No auth token = exit silently (per research Pitfall 6)
-      return;
-    }
-
-    // Step 5: Extract and sanitize usage data
-    let payload;
-    try {
-      payload = await extractAndSanitize();
-    } catch {
-      // Extraction failure = exit silently
-      return;
-    }
-
-    if (payload.days.length === 0) {
-      return;
-    }
-
-    // Step 6: Upload to server
-    const machineId = await getMachineId();
-    const serverUrl = getServerUrl(config);
-    const client = new ApiClient(serverUrl, config.apiToken);
-    await client.sync({ ...payload, syncIntervalMs: DEBOUNCE_MS, machineId });
-
-    // Step 7: Auto-upgrade hooks if running old versions.
-    // This is the last thing we do — if it fails, the sync already succeeded.
+    // Step 2: Auto-upgrade hooks BEFORE debounce check.
+    // This is critical: users with the old PostToolUse hook fire hook-sync on
+    // every tool call. By migrating to the Stop hook here (before the debounce
+    // exit), the very first invocation that acquires the lock will remove the
+    // PostToolUse hook and install the debounced Stop hook — fixing the problem
+    // permanently without waiting for a successful sync cycle.
     try {
       const settings = await readSettings();
       const { settings: upgraded, alreadyInstalled } = installHook(settings);
@@ -168,7 +138,7 @@ export async function runHookSync(): Promise<void> {
         await writeSettings(upgraded);
       }
     } catch {
-      // Claude Code hook upgrade failure is non-fatal
+      // Hook upgrade failure is non-fatal
     }
 
     try {
@@ -182,6 +152,40 @@ export async function runHookSync(): Promise<void> {
     } catch {
       // Codex hook upgrade failure is non-fatal
     }
+
+    // Step 3: Check debounce
+    if (!(await shouldSync())) {
+      return;
+    }
+
+    // Step 4: Optimistic timestamp write (prevents race condition per research Pitfall 4)
+    await markSynced();
+
+    // Step 5: Load config, check auth
+    const config = await loadConfig();
+    if (!config.apiToken) {
+      // No auth token = exit silently (per research Pitfall 6)
+      return;
+    }
+
+    // Step 6: Extract and sanitize usage data
+    let payload;
+    try {
+      payload = await extractAndSanitize();
+    } catch {
+      // Extraction failure = exit silently
+      return;
+    }
+
+    if (payload.days.length === 0) {
+      return;
+    }
+
+    // Step 7: Upload to server
+    const machineId = await getMachineId();
+    const serverUrl = getServerUrl(config);
+    const client = new ApiClient(serverUrl, config.apiToken);
+    await client.sync({ ...payload, syncIntervalMs: DEBOUNCE_MS, machineId });
   } catch {
     // Swallow all errors -- async hook must exit cleanly
   } finally {

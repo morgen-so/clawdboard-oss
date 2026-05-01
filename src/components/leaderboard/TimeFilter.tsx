@@ -191,7 +191,7 @@ function TimeFilterInner({ current, from, to }: TimeFilterProps) {
                       openPopover();
                     }
                   }}
-                  className={`px-2.5 py-1.5 sm:px-3 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
+                  className={`min-h-[40px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 sm:px-3 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
                     isActive
                       ? "bg-accent text-background"
                       : "text-foreground/60 hover:text-foreground hover:bg-surface-hover"
@@ -209,7 +209,7 @@ function TimeFilterInner({ current, from, to }: TimeFilterProps) {
                   navigate(p.value);
                   setPopoverOpen(false);
                 }}
-                className={`px-2.5 py-1.5 sm:px-3 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
+                className={`min-h-[40px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 sm:px-3 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
                   isActive
                     ? "bg-accent text-background"
                     : "text-foreground/60 hover:text-foreground hover:bg-surface-hover"
@@ -242,7 +242,7 @@ function TimeFilterFallback({ current, from, to }: TimeFilterProps) {
           return (
             <span
               key={p.value}
-              className={`px-2.5 py-1.5 sm:px-3 font-mono text-xs font-medium whitespace-nowrap ${
+              className={`min-h-[40px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 sm:px-3 font-mono text-xs font-medium whitespace-nowrap ${
                 isActive
                   ? "bg-accent text-background"
                   : "text-foreground/60"

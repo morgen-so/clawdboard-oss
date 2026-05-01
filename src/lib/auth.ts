@@ -59,7 +59,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
   }),
   pages: { signIn: "/signin" },
   providers: getProviders(),
-  session: { strategy: "jwt", maxAge: 2 * 365 * 24 * 60 * 60 },
+  session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   callbacks: {
     async jwt({ token, user, profile }) {
       if (isDevAuth && user?.id) {

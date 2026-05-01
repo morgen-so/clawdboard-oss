@@ -63,3 +63,7 @@ docker-compose.override.yml
 # local MCP servers
 .plausible-mcp/
 .gstack/
+.obsidian/
+
+# npm credentials — never commit
+.npmrc

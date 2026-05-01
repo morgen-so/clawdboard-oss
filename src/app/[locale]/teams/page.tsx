@@ -206,6 +206,39 @@ export default async function TeamLeaderboardPage({
             </tbody>
           </table>
         </div>
+
+        {/* Sparse-state CTA — surface a "Room at the top" prompt whenever
+            there are more slots than teams. Keeps the page from feeling
+            like a desert when only a handful of teams are public. */}
+        {rows.length > 0 && rows.length < 8 && !session?.user && (
+          <div className="mt-6 rounded-lg border border-border bg-surface px-5 py-6 sm:px-6">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="font-display text-base font-bold text-foreground">
+                  <span className="text-accent mr-2">$</span>
+                  {t("roomAtTheTop")}
+                </p>
+                <p className="mt-1 font-mono text-sm text-muted max-w-xl">
+                  {t("beTheNextTeam")}
+                </p>
+              </div>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <Link
+                  href="/signin"
+                  className="rounded-lg bg-accent px-4 py-2 text-center font-mono text-xs font-medium text-background transition-colors hover:bg-accent/90"
+                >
+                  {t("signUpWithGitHub")}
+                </Link>
+                <Link
+                  href="/faq#teams"
+                  className="font-mono text-xs text-muted hover:text-foreground transition-colors sm:ml-2"
+                >
+                  {t("howTeamsWork")}
+                </Link>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

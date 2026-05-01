@@ -1,6 +1,6 @@
 {
   "name": "clawdboard",
-  "version": "0.2.2",
+  "version": "0.2.6",
   "description": "AI coding agent leaderboard — track and compare usage, costs, tokens, streaks, and model breakdowns across Claude Code, OpenCode, and Codex.",
   "type": "module",
   "bin": {

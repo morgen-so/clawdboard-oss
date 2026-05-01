@@ -118,5 +118,5 @@ export function accumulatorToSyncDays(
  * and Codex hook (codex-setup.ts).
  */
 export function buildDebounceCommand(debounceMinutes: number): string {
-  return `bash -c 'f=$HOME/.clawdboard/last-sync; [ -f "$f" ] && [ -n "$(find "$f" -mmin -${debounceMinutes} 2>/dev/null)" ] && exit 0; npx clawdboard hook-sync'`;
+  return `bash -c 'f=$HOME/.clawdboard/last-sync; [ -f "$f" ] && [ -n "$(find "$f" -mmin -${debounceMinutes} 2>/dev/null)" ] && exit 0; if command -v clawdboard >/dev/null 2>&1; then clawdboard hook-sync; else npx -y clawdboard hook-sync; fi'`;
 }

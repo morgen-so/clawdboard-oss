@@ -260,8 +260,17 @@ export function RecapStrip({ recaps }: RecapStripProps) {
         </h3>
 
         {isCompact ? (
-          // Scrollable strip for 3+ recaps
-          <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin">
+          // Scrollable strip for 3+ recaps — right-edge mask hints at
+          // overflow so users know they can scroll.
+          <div
+            className="flex gap-3 overflow-x-auto pb-2 scrollbar-thin"
+            style={{
+              maskImage:
+                "linear-gradient(to right, black 0, black calc(100% - 48px), transparent 100%)",
+              WebkitMaskImage:
+                "linear-gradient(to right, black 0, black calc(100% - 48px), transparent 100%)",
+            }}
+          >
             {recaps.map((recap) => (
               <RecapCard
                 key={recap.id}

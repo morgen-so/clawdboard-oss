@@ -248,7 +248,7 @@ export function LeaderboardRowItem({
       </td>
 
       {/* Days */}
-      <td className="hidden sm:table-cell px-4 py-3 text-right text-foreground/70 transition-colors group-hover:text-foreground">
+      <td className="hidden sm:table-cell px-4 py-3 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
         {row.activeDays}
       </td>
 

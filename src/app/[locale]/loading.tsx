@@ -31,18 +31,18 @@ export default function Loading() {
         </div>
 
         {/* Table skeleton */}
-        <div className="rounded-lg border border-border bg-surface">
+        <div className="overflow-hidden rounded-lg border border-border bg-surface">
           {/* Table header */}
           <div className="flex items-center border-b border-border px-4 py-3 gap-4">
             <div className="h-3 w-6 animate-pulse rounded bg-border" />
-            <div className="h-3 w-6 animate-pulse rounded bg-border" />
+            <div className="hidden sm:block h-3 w-6 animate-pulse rounded bg-border" />
             <div className="h-3 w-16 animate-pulse rounded bg-border" />
-            <div className="ml-auto flex gap-8">
+            <div className="ml-auto hidden sm:flex gap-8">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="h-3 w-14 animate-pulse rounded bg-border" />
               ))}
             </div>
-            <div className="h-3 w-16 animate-pulse rounded bg-border" />
+            <div className="ml-auto sm:ml-0 h-3 w-16 animate-pulse rounded bg-border" />
           </div>
           {/* Table rows */}
           {Array.from({ length: 8 }).map((_, i) => (
@@ -51,17 +51,17 @@ export default function Loading() {
               className="flex items-center border-b border-border/50 px-4 py-3 gap-4"
             >
               <div className="h-4 w-6 animate-pulse rounded bg-border" />
-              <div className="h-4 w-6 animate-pulse rounded bg-border" />
+              <div className="hidden sm:block h-4 w-6 animate-pulse rounded bg-border" />
               <div className="flex items-center gap-3">
                 <div className="h-7 w-7 animate-pulse rounded-full bg-border" />
                 <div className="h-4 w-24 animate-pulse rounded bg-border" />
               </div>
-              <div className="ml-auto flex gap-8">
+              <div className="ml-auto hidden sm:flex gap-8">
                 {Array.from({ length: 4 }).map((_, j) => (
                   <div key={j} className="h-4 w-12 animate-pulse rounded bg-border" />
                 ))}
               </div>
-              <div className="h-4 w-20 animate-pulse rounded bg-border" />
+              <div className="ml-auto sm:ml-0 h-4 w-20 animate-pulse rounded bg-border" />
             </div>
           ))}
         </div>
