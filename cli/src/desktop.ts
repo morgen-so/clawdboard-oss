@@ -120,7 +120,15 @@ export async function extractDesktopData(since?: string): Promise<SyncDay[]> {
   const root = getDesktopSessionsRoot();
   if (!root || !existsSync(root)) return [];
 
-  const sinceMs = since ? new Date(since).getTime() : 0;
+  let sinceMs = 0;
+  if (since) {
+    sinceMs = Date.parse(since);
+    if (Number.isNaN(sinceMs)) {
+      throw new Error(
+        `Invalid --since value: ${JSON.stringify(since)}. Expected a parseable date (e.g. YYYY-MM-DD).`
+      );
+    }
+  }
   const files = await findAuditFiles(root);
   const byDate: Record<string, DayAccumulator> = {};
 
