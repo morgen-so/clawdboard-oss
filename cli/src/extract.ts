@@ -2,6 +2,10 @@ import { SyncPayloadSchema, type SyncPayload, type SyncDay } from "./schemas.js"
 import { extractOpenCodeData, hasOpenCodeData } from "./opencode.js";
 import { extractCodexData, hasCodexData } from "./codex.js";
 import { extractDesktopData, hasDesktopData } from "./desktop.js";
+import { extractGeminiCliData, hasGeminiCliData } from "./gemini-cli.js";
+import { extractCopilotCliData, hasCopilotCliData } from "./copilot-cli.js";
+import { extractAntigravityData, hasAntigravityData } from "./antigravity.js";
+import type { Source } from "./accumulator.js";
 
 /**
  * Privacy-preserving data extraction from raw ccusage DailyUsage data.
@@ -24,7 +28,7 @@ import { extractDesktopData, hasDesktopData } from "./desktop.js";
  */
 export function sanitizeDailyData(
   raw: unknown[],
-  source?: "claude-code" | "opencode" | "codex" | null
+  source?: Source | null
 ): SyncPayload {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const days = (raw as any[]).map((day) => ({
@@ -60,13 +64,21 @@ export function sanitizeDailyData(
  * Extract usage data from all available sources, sanitize, and combine.
  *
  * Sources:
- * 1. ccusage (Claude Code) — reads local JSONL files from ~/.claude/
- * 2. OpenCode — reads message JSON files from ~/.local/share/opencode/
- * 3. Codex CLI — reads rollout JSONL files from ~/.codex/sessions/
+ *   1. ccusage (Claude Code) — reads JSONL files from ~/.claude/
+ *   2. OpenCode (incl. opencode-go and opencode-zen branded tiers) —
+ *      reads message JSON files from ~/.local/share/opencode/
+ *   3. Codex CLI — reads rollout JSONL files from ~/.codex/sessions/
+ *   4. Gemini CLI — reads session JSONL files from ~/.gemini/tmp/
+ *   5. GitHub Copilot CLI — reads events.jsonl files from ~/.copilot/session-state/
+ *   6. Antigravity (opt-in) — calls Google Cloud Code API using the local
+ *      ~/.gemini/oauth_creds.json. Disabled by default; enable with
+ *      `clawdboard antigravity enable`.
  *
- * All sources are optional and run concurrently. Each source's entries
- * are tagged with their source name and kept as separate daily entries
- * (not merged) so the server can store them as individual rows per source.
+ * All sources are optional and run concurrently via Promise.allSettled —
+ * one source failing or being absent never blocks the others. Each
+ * source's entries are tagged with their source slug and emitted as
+ * separate daily entries (not merged across sources) so the server can
+ * upsert them as individual rows per source.
  *
  * @param since - Optional YYYY-MM-DD date to filter data from (inclusive)
  * @returns A clean SyncPayload with only allowlisted fields
@@ -76,46 +88,86 @@ export async function extractAndSanitize(
   since?: string
 ): Promise<SyncPayload> {
   // Run all extractions concurrently — they read from independent directories
-  const [claudeResult, opencodeResult, codexResult, desktopResult] =
-    await Promise.allSettled([
-      // Source 1: Claude Code via ccusage
-      (async (): Promise<SyncDay[]> => {
-        const { loadDailyUsageData } = await import("ccusage/data-loader");
-        const options: Record<string, unknown> = { mode: "calculate" };
-        if (since) options.since = since;
-        const raw = await loadDailyUsageData(
-          options as Parameters<typeof loadDailyUsageData>[0]
-        );
-        return sanitizeDailyData(raw as unknown[], "claude-code").days;
-      })(),
-      // Source 2: OpenCode
-      extractOpenCodeData(since),
-      // Source 3: Codex CLI
-      extractCodexData(since),
-      // Source 4: Claude desktop app (Cowork / Dispatch)
-      extractDesktopData(since),
-    ]);
+  const [
+    claudeResult,
+    opencodeResult,
+    codexResult,
+    geminiResult,
+    copilotResult,
+    antigravityResult,
+    desktopResult,
+  ] = await Promise.allSettled([
+    // Source 1: Claude Code via ccusage
+    (async (): Promise<SyncDay[]> => {
+      const { loadDailyUsageData } = await import("ccusage/data-loader");
+      const options: Record<string, unknown> = { mode: "calculate" };
+      if (since) options.since = since;
+      const raw = await loadDailyUsageData(
+        options as Parameters<typeof loadDailyUsageData>[0]
+      );
+      return sanitizeDailyData(raw as unknown[], "claude-code").days;
+    })(),
+    // Source 2: OpenCode (returns possibly multiple sources: opencode/opencode-go/opencode-zen)
+    extractOpenCodeData(since),
+    // Source 3: Codex CLI
+    extractCodexData(since),
+    // Source 4: Gemini CLI
+    extractGeminiCliData(since),
+    // Source 5: GitHub Copilot CLI
+    extractCopilotCliData(since),
+    // Source 6: Antigravity (opt-in, gated internally on config)
+    extractAntigravityData(since),
+    // Source 7: Claude desktop app (Cowork / Dispatch)
+    extractDesktopData(since),
+  ]);
 
   const claudeDays = claudeResult.status === "fulfilled" ? claudeResult.value : [];
   const opencodeDays = opencodeResult.status === "fulfilled" ? opencodeResult.value : [];
   const codexDays = codexResult.status === "fulfilled" ? codexResult.value : [];
+  const geminiDays = geminiResult.status === "fulfilled" ? geminiResult.value : [];
+  const copilotDays = copilotResult.status === "fulfilled" ? copilotResult.value : [];
+  const antigravityDays = antigravityResult.status === "fulfilled" ? antigravityResult.value : [];
   const desktopDays = desktopResult.status === "fulfilled" ? desktopResult.value : [];
 
   // Concatenate all sources — each entry already has its source tag,
   // so the server can upsert them as separate (user_id, date, source) rows
-  const allDays = [...claudeDays, ...opencodeDays, ...codexDays, ...desktopDays];
+  const allDays = [
+    ...claudeDays,
+    ...opencodeDays,
+    ...codexDays,
+    ...geminiDays,
+    ...copilotDays,
+    ...antigravityDays,
+    ...desktopDays,
+  ];
 
   if (
     allDays.length === 0 &&
     !hasOpenCodeData() &&
     !hasCodexData() &&
+    !hasGeminiCliData() &&
+    !hasCopilotCliData() &&
+    !hasAntigravityData() &&
     !hasDesktopData()
   ) {
     throw new Error(
-      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, or the Claude desktop app on this machine."
+      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, Gemini CLI, GitHub Copilot CLI, Antigravity, or the Claude desktop app on this machine."
     );
   }
 
+  // Build the payload, including reassignFromOpencode hint when relevant
+  const branded = new Set<string>();
+  for (const d of opencodeDays) {
+    if (d.source === "opencode-go" || d.source === "opencode-zen") {
+      branded.add(d.source);
+    }
+  }
+
+  const payload: Record<string, unknown> = { days: allDays };
+  if (branded.size > 0) {
+    payload.reassignFromOpencode = Array.from(branded).sort();
+  }
+
   // Final Zod validation on the combined payload
-  return SyncPayloadSchema.parse({ days: allDays });
+  return SyncPayloadSchema.parse(payload);
 }

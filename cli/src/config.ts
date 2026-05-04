@@ -10,16 +10,33 @@ import { join } from "node:path";
 export interface Config {
   apiToken?: string;
   serverUrl?: string;
+  /**
+   * Antigravity sync settings. Off by default.
+   * `enable` is set via `clawdboard antigravity enable` after the user
+   * acknowledges that the CLI will read ~/.gemini/oauth_creds.json and
+   * make outbound HTTPS calls to cloudcode-pa.googleapis.com.
+   */
+  antigravity?: {
+    enabled?: boolean;
+  };
 }
 
-const CONFIG_DIR = join(homedir(), ".clawdboard");
-const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 const CONFIG_DIR_MODE = 0o700;
 const CONFIG_FILE_MODE = 0o600;
 
-// Legacy path for migration from ccboard → clawdboard
-const OLD_CONFIG_DIR = join(homedir(), ".ccboard");
-const OLD_CONFIG_PATH = join(OLD_CONFIG_DIR, "config.json");
+// Resolve config paths lazily so tests (and shells) can override HOME/CLAWDBOARD_HOME
+// without needing to re-import this module.
+function getConfigDir(): string {
+  if (process.env.CLAWDBOARD_HOME) return process.env.CLAWDBOARD_HOME;
+  return join(homedir(), ".clawdboard");
+}
+function getConfigPath(): string {
+  return join(getConfigDir(), "config.json");
+}
+function getOldConfigPath(): string {
+  // Legacy path for migration from ccboard → clawdboard
+  return join(homedir(), ".ccboard", "config.json");
+}
 
 const DEFAULT_SERVER_URL = "https://clawdboard.ai";
 
@@ -31,8 +48,8 @@ const DEFAULT_SERVER_URL = "https://clawdboard.ai";
 async function tightenPerms(): Promise<void> {
   if (process.platform === "win32") return;
   await Promise.all([
-    chmod(CONFIG_DIR, CONFIG_DIR_MODE).catch(() => {}),
-    chmod(CONFIG_PATH, CONFIG_FILE_MODE).catch(() => {}),
+    chmod(getConfigDir(), CONFIG_DIR_MODE).catch(() => {}),
+    chmod(getConfigPath(), CONFIG_FILE_MODE).catch(() => {}),
   ]);
 }
 
@@ -41,14 +58,18 @@ async function tightenPerms(): Promise<void> {
  * Returns defaults if the file does not exist.
  */
 export async function loadConfig(): Promise<Config> {
+  const configDir = getConfigDir();
+  const configPath = getConfigPath();
+  const oldConfigPath = getOldConfigPath();
+
   // Migrate from ~/.ccboard/ if new config doesn't exist yet
-  if (!existsSync(CONFIG_PATH) && existsSync(OLD_CONFIG_PATH)) {
-    await mkdir(CONFIG_DIR, { recursive: true, mode: CONFIG_DIR_MODE });
-    await copyFile(OLD_CONFIG_PATH, CONFIG_PATH);
+  if (!existsSync(configPath) && existsSync(oldConfigPath)) {
+    await mkdir(configDir, { recursive: true, mode: CONFIG_DIR_MODE });
+    await copyFile(oldConfigPath, configPath);
   }
 
   try {
-    const raw = await readFile(CONFIG_PATH, "utf-8");
+    const raw = await readFile(configPath, "utf-8");
     const parsed = JSON.parse(raw) as Config;
     await tightenPerms();
     return parsed;
@@ -63,8 +84,10 @@ export async function loadConfig(): Promise<Config> {
  * Creates the ~/.clawdboard/ directory if it doesn't exist.
  */
 export async function saveConfig(config: Config): Promise<void> {
-  await mkdir(CONFIG_DIR, { recursive: true, mode: CONFIG_DIR_MODE });
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", {
+  const configDir = getConfigDir();
+  const configPath = getConfigPath();
+  await mkdir(configDir, { recursive: true, mode: CONFIG_DIR_MODE });
+  await writeFile(configPath, JSON.stringify(config, null, 2) + "\n", {
     encoding: "utf-8",
     mode: CONFIG_FILE_MODE,
   });

@@ -301,9 +301,14 @@ export default async function StatsPage() {
                 .map((s) => {
                   const labels: Record<string, string> = {
                     "claude-code": "Claude Code",
-                    opencode: "OpenCode",
-                    codex: "Codex CLI",
                     "claude-code-desktop": "Claude Code Desktop",
+                    opencode: "OpenCode",
+                    "opencode-go": "OpenCode Go",
+                    "opencode-zen": "OpenCode Zen",
+                    codex: "Codex CLI",
+                    "gemini-cli": "Gemini CLI",
+                    antigravity: "Antigravity",
+                    "copilot-cli": "Copilot CLI",
                   };
                   return labels[s.source] ?? s.source;
                 })

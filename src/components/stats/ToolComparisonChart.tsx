@@ -15,9 +15,14 @@ import { TOOLTIP_STYLES, AXIS_COMMON } from "@/lib/chart-utils";
 interface ToolComparisonPoint {
   date: string;
   claudeCode: number;
-  opencode: number;
-  codex: number;
   claudeCodeDesktop: number;
+  opencode: number;
+  opencodeGo: number;
+  opencodeZen: number;
+  codex: number;
+  geminiCli: number;
+  antigravity: number;
+  copilotCli: number;
 }
 
 interface ToolComparisonChartProps {
@@ -26,9 +31,14 @@ interface ToolComparisonChartProps {
 
 const TOOL_CONFIG = [
   { key: "claudeCode", label: "Claude Code", color: "#F9A615" },
-  { key: "opencode", label: "OpenCode", color: "#3b82f6" },
-  { key: "codex", label: "Codex CLI", color: "#10b981" },
   { key: "claudeCodeDesktop", label: "Claude Code Desktop", color: "#f59e0b" },
+  { key: "opencode", label: "OpenCode", color: "#3b82f6" },
+  { key: "opencodeGo", label: "OpenCode Go", color: "#facc15" },
+  { key: "opencodeZen", label: "OpenCode Zen", color: "#a78bfa" },
+  { key: "codex", label: "Codex CLI", color: "#10b981" },
+  { key: "geminiCli", label: "Gemini CLI", color: "#8b5cf6" },
+  { key: "antigravity", label: "Antigravity", color: "#06b6d4" },
+  { key: "copilotCli", label: "Copilot CLI", color: "#94a3b8" },
 ] as const;
 
 function formatDate(dateStr: string): string {
@@ -47,10 +57,15 @@ function movingAverage(
     return {
       date: point.date,
       claudeCode: slice.reduce((s, p) => s + p.claudeCode, 0) / n,
-      opencode: slice.reduce((s, p) => s + p.opencode, 0) / n,
-      codex: slice.reduce((s, p) => s + p.codex, 0) / n,
       claudeCodeDesktop:
         slice.reduce((s, p) => s + p.claudeCodeDesktop, 0) / n,
+      opencode: slice.reduce((s, p) => s + p.opencode, 0) / n,
+      opencodeGo: slice.reduce((s, p) => s + p.opencodeGo, 0) / n,
+      opencodeZen: slice.reduce((s, p) => s + p.opencodeZen, 0) / n,
+      codex: slice.reduce((s, p) => s + p.codex, 0) / n,
+      geminiCli: slice.reduce((s, p) => s + p.geminiCli, 0) / n,
+      antigravity: slice.reduce((s, p) => s + p.antigravity, 0) / n,
+      copilotCli: slice.reduce((s, p) => s + p.copilotCli, 0) / n,
     };
   });
 }

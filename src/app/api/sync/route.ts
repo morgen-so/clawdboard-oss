@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Upsert each day (Pitfall 6: avoid Vercel timeout)
-    const { days, syncIntervalMs, machineId } = result.data;
+    const { days, syncIntervalMs, machineId, reassignFromOpencode } = result.data;
 
     // 4a. Clean up legacy null-source rows that would cause double-counting.
     // When a CLI upgrade starts sending source="claude-code" (or other), the
@@ -91,6 +91,57 @@ export async function POST(req: NextRequest) {
               eq(dailyAggregates.userId, user.id),
               isNull(dailyAggregates.source),
               inArray(dailyAggregates.date, allSourcedDates)
+            )
+          );
+      }
+    }
+
+    // 4a-bis. Reassign legacy `source: "opencode"` rows to branded tiers.
+    // Before the providerID split landed, every OpenCode message regardless of
+    // provider was tagged source="opencode". When the CLI now emits opencode-go
+    // (or opencode-zen) rows for those same dates, we'd double-count unless we
+    // clear the matching legacy "opencode" rows.
+    //
+    // The CLI signals reassignment intent by setting `reassignFromOpencode` to
+    // the list of branded tiers it's emitting in this payload. We only clear
+    // legacy "opencode" rows for dates that have a corresponding branded-tier
+    // row in this same payload — preserving any genuine direct-key OpenCode
+    // usage (e.g. provider=anthropic via the user's own key, which still emits
+    // source="opencode") on days where the user mixed sources.
+    if (reassignFromOpencode && reassignFromOpencode.length > 0) {
+      const brandedSet = new Set<string>(reassignFromOpencode);
+      const datesWithBranded = [
+        ...new Set(
+          days
+            .filter((d) => d.source && brandedSet.has(d.source))
+            .map((d) => d.date)
+        ),
+      ];
+      // Only clear "opencode" legacy rows for dates where the same machine
+      // does NOT also have a fresh "opencode" row in this payload — that
+      // protects mixed-provider days.
+      const datesWithFreshOpencodeForThisMachine = new Set(
+        days
+          .filter((d) => d.source === "opencode")
+          .map((d) => d.date)
+      );
+      const datesToClear = datesWithBranded.filter(
+        (d) => !datesWithFreshOpencodeForThisMachine.has(d)
+      );
+      if (datesToClear.length > 0) {
+        await db
+          .delete(dailyAggregates)
+          .where(
+            and(
+              eq(dailyAggregates.userId, user.id),
+              eq(dailyAggregates.source, "opencode"),
+              inArray(dailyAggregates.date, datesToClear),
+              // Only this machine's legacy rows. Other machines may still
+              // have legitimate "opencode" data; let them clean themselves
+              // up on their own next sync.
+              machineId
+                ? eq(dailyAggregates.machineId, machineId)
+                : isNull(dailyAggregates.machineId)
             )
           );
       }
@@ -149,11 +200,12 @@ export async function POST(req: NextRequest) {
           INSERT INTO daily_aggregates (
             id, user_id, date, source, machine_id,
             input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens,
-            total_cost, models_used, model_breakdowns, synced_at
+            total_cost, premium_requests, models_used, model_breakdowns, synced_at
           ) VALUES (
             gen_random_uuid(), ${user.id}, ${day.date}, ${day.source ?? null}, ${machineId ?? null},
             ${day.inputTokens}, ${day.outputTokens}, ${day.cacheCreationTokens}, ${day.cacheReadTokens},
-            ${day.totalCost.toString()}, ${JSON.stringify(day.modelsUsed)}::jsonb, ${JSON.stringify(day.modelBreakdowns)}::jsonb, NOW()
+            ${day.totalCost.toString()}, ${day.premiumRequests ?? 0},
+            ${JSON.stringify(day.modelsUsed)}::jsonb, ${JSON.stringify(day.modelBreakdowns)}::jsonb, NOW()
           )
           ON CONFLICT (user_id, date, source, machine_id)
           DO UPDATE SET
@@ -162,6 +214,7 @@ export async function POST(req: NextRequest) {
             cache_creation_tokens = EXCLUDED.cache_creation_tokens,
             cache_read_tokens = EXCLUDED.cache_read_tokens,
             total_cost = EXCLUDED.total_cost,
+            premium_requests = EXCLUDED.premium_requests,
             models_used = EXCLUDED.models_used,
             model_breakdowns = EXCLUDED.model_breakdowns,
             synced_at = NOW()
