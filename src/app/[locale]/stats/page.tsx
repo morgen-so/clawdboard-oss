@@ -303,6 +303,7 @@ export default async function StatsPage() {
                     "claude-code": "Claude Code",
                     opencode: "OpenCode",
                     codex: "Codex CLI",
+                    "claude-code-desktop": "Claude Code Desktop",
                   };
                   return labels[s.source] ?? s.source;
                 })

@@ -17,6 +17,7 @@ interface ToolComparisonPoint {
   claudeCode: number;
   opencode: number;
   codex: number;
+  claudeCodeDesktop: number;
 }
 
 interface ToolComparisonChartProps {
@@ -27,6 +28,7 @@ const TOOL_CONFIG = [
   { key: "claudeCode", label: "Claude Code", color: "#F9A615" },
   { key: "opencode", label: "OpenCode", color: "#3b82f6" },
   { key: "codex", label: "Codex CLI", color: "#10b981" },
+  { key: "claudeCodeDesktop", label: "Claude Code Desktop", color: "#f59e0b" },
 ] as const;
 
 function formatDate(dateStr: string): string {
@@ -47,6 +49,8 @@ function movingAverage(
       claudeCode: slice.reduce((s, p) => s + p.claudeCode, 0) / n,
       opencode: slice.reduce((s, p) => s + p.opencode, 0) / n,
       codex: slice.reduce((s, p) => s + p.codex, 0) / n,
+      claudeCodeDesktop:
+        slice.reduce((s, p) => s + p.claudeCodeDesktop, 0) / n,
     };
   });
 }

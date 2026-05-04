@@ -25,12 +25,14 @@ const SOURCE_COLORS: Record<string, string> = {
   "claude-code": "#F9A615", // marigold (primary accent)
   opencode: "#3b82f6", // blue
   codex: "#10b981", // emerald
+  "claude-code-desktop": "#f59e0b", // amber
 };
 
 const SOURCE_LABELS: Record<string, string> = {
   "claude-code": "Claude Code",
   opencode: "OpenCode",
   codex: "Codex CLI",
+  "claude-code-desktop": "Claude Code Desktop",
 };
 
 function formatCurrency(value: number): string {

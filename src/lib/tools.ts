@@ -40,6 +40,15 @@ export const TOOL_REGISTRY: Record<string, ToolMeta> = {
       "OpenAI's command-line coding agent that uses GPT-4o and o-series models. Brings OpenAI's models to the terminal for code generation and editing.",
     website: "https://github.com/openai/codex",
   },
+  "claude-code-desktop": {
+    slug: "claude-code-desktop",
+    name: "Claude Code Desktop",
+    color: "#f59e0b",
+    provider: "Anthropic",
+    description:
+      "The Claude desktop app's in-app coding agent (Cowork / Dispatch). Captures usage from local-agent-mode sessions running inside the desktop app, separate from the Claude Code CLI.",
+    website: "https://claude.ai/download",
+  },
 };
 
 const FALLBACK_COLOR = "#6366f1";
