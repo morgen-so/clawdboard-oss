@@ -1,6 +1,6 @@
 # clawdboard
 
-Track and compare your AI coding agent usage across developers. Supports Claude Code, OpenCode, and Codex. See who's spending the most, longest streaks, model breakdowns, and more.
+Track and compare your AI coding agent usage across developers. Supports Claude Code, the Claude desktop app (Cowork / Dispatch), OpenCode (incl. Go and Zen tiers), Codex CLI, Gemini CLI, GitHub Copilot CLI, and Antigravity (opt-in). See who's spending the most, longest streaks, model breakdowns, and more.
 
 **[clawdboard.ai](https://clawdboard.ai)**
 
@@ -15,9 +15,15 @@ That's it. This opens your browser, authenticates via GitHub, syncs your usage d
 ## How It Works
 
 1. **Auth** — Sign in with GitHub (device flow, no secrets in the terminal)
-2. **Extract** — Reads your local Claude Code usage logs (`~/.claude/`)
+2. **Extract** — Reads your local usage logs from each supported tool (`~/.claude/`, `~/.local/share/opencode/`, `~/.codex/`, `~/.gemini/`, `~/.copilot/`, and the Claude desktop app's session directory on macOS)
 3. **Sync** — Uploads aggregate metrics (tokens, cost, models) to the leaderboard
 4. **Auto-sync** — A Claude Code hook syncs in the background every 2 hours
+
+## Updating
+
+If you onboarded the recommended way (`npx clawdboard`), you don't need to do anything — you're already on the latest version. The auto-sync hook installed during `auth` runs `npx -y clawdboard hook-sync` on every Claude Code session-end, which pulls the latest published version from npm (subject to npx's metadata cache, typically ~10 minutes). New releases roll out to all active hook users automatically within an hour or so.
+
+If you installed globally (`npm install -g clawdboard`), the hook uses your pinned binary instead and won't auto-update. Run `npm update -g clawdboard` to upgrade.
 
 ## Commands
 
