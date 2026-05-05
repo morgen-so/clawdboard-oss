@@ -29,7 +29,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { calculateCost } from "./pricing.js";
 import {
   accumulate,
@@ -66,6 +66,10 @@ function getOpenCodeDataDir(): string {
 
 function getMessageStorageDir(): string {
   return join(getOpenCodeDataDir(), "storage", "message");
+}
+
+function getOpenCodeDbPath(): string {
+  return join(getOpenCodeDataDir(), "opencode.db");
 }
 
 // ---------------------------------------------------------------------------
@@ -120,9 +124,15 @@ function sourceForProviderID(providerID?: string): OpenCodeSource {
 
 /**
  * Check whether OpenCode data exists on this machine.
+ *
+ * Detects both layouts so DB-only installations (Go binary ≥1.14, which only
+ * writes `opencode.db` and no longer populates `storage/message/`) are not
+ * missed by callers gating on this helper:
+ *   - SQLite database: `opencode.db`
+ *   - Legacy/intermediate JSON: `storage/message/`
  */
 export function hasOpenCodeData(): boolean {
-  return existsSync(getMessageStorageDir());
+  return existsSync(getOpenCodeDbPath()) || existsSync(getMessageStorageDir());
 }
 
 /**
@@ -227,13 +237,17 @@ function extractFromDb(
   sinceMs: number,
   byProviderByDate: Record<OpenCodeSource, Record<string, DayAccumulator>>
 ): void {
-  const dbPath = join(getOpenCodeDataDir(), "opencode.db");
+  const dbPath = getOpenCodeDbPath();
   if (!existsSync(dbPath)) return;
 
   let output: string;
   try {
-    output = execSync(
-      `sqlite3 "${dbPath}" "SELECT data FROM message WHERE json_extract(data, '$.time.created') IS NOT NULL"`,
+    output = execFileSync(
+      "sqlite3",
+      [
+        dbPath,
+        "SELECT data FROM message WHERE json_extract(data, '$.time.created') IS NOT NULL",
+      ],
       { encoding: "utf-8", maxBuffer: 100 * 1024 * 1024, timeout: 10_000 }
     );
   } catch {
