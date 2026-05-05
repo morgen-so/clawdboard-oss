@@ -91,7 +91,7 @@ const PRICING_TABLE: Record<string, ModelPricing> = {
   "glm-5.1": { input: 0.5, output: 2.0, cacheWrite: 0, cacheRead: 0 },
   "mimo-v2.5-pro": { input: 0.3, output: 1.2, cacheWrite: 0, cacheRead: 0 },
   "deepseek-v4-pro": { input: 0.27, output: 1.1, cacheWrite: 0, cacheRead: 0 },
-  "kimi-k2": { input: 0.6, output: 2.5, cacheWrite: 0, cacheRead: 0 },
+  "kimi-k2.6": { input: 0.6, output: 2.5, cacheWrite: 0, cacheRead: 0 },
   "qwen3": { input: 0.4, output: 1.2, cacheWrite: 0, cacheRead: 0 },
   "minimax": { input: 0.2, output: 1.1, cacheWrite: 0, cacheRead: 0 },
 };
@@ -127,8 +127,10 @@ export function getModelPricing(modelId: string): ModelPricing {
   }
 
   // Try progressively shorter prefixes (e.g., "claude-3-5-sonnet-v2" → "claude-3-5-sonnet")
+  // Start from the full split length so that 2-part names like "kimi-k2.6" are also
+  // checked against their first part ("kimi") when no exact match exists.
   const parts = normalized.split("-");
-  for (let i = parts.length - 1; i >= 2; i--) {
+  for (let i = parts.length - 1; i >= 1; i--) {
     const prefix = parts.slice(0, i).join("-");
     if (PRICING_TABLE[prefix]) {
       return PRICING_TABLE[prefix];

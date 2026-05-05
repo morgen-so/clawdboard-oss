@@ -446,4 +446,128 @@ describe("extractOpenCodeData", () => {
       expect(result[0].source).toBe("opencode-go");
     });
   });
+
+  describe("zero-activity skip", () => {
+    it("does not skip messages that have cache tokens but zero input/output", async () => {
+      writeMessage(tmpDir, "sess_1", "001", makeMessage({
+        tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 5000, write: 2000 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].cacheReadTokens).toBe(5000);
+      expect(result[0].cacheCreationTokens).toBe(2000);
+    });
+
+    it("does not skip messages that have reasoning tokens but zero input/output", async () => {
+      writeMessage(tmpDir, "sess_1", "001", makeMessage({
+        tokens: { input: 0, output: 0, reasoning: 300, cache: { read: 0, write: 0 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].outputTokens).toBe(300);
+    });
+
+    it("skips messages with absolutely zero activity", async () => {
+      writeMessage(tmpDir, "sess_1", "001", makeMessage({
+        tokens: { input: 0, output: 0, reasoning: 0, cache: { read: 0, write: 0 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe("SQLite DB fallback (Go binary ≥1.14)", () => {
+    async function seedDb(
+      dbPath: string,
+      rows: Record<string, unknown>[]
+    ): Promise<void> {
+      const { execSync } = await import("node:child_process");
+      const { writeFileSync, unlinkSync } = await import("node:fs");
+      const { join } = await import("node:path");
+      const { tmpdir } = await import("node:os");
+
+      const sqlLines = [
+        "DROP TABLE IF EXISTS message;",
+        "CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, time_created INTEGER NOT NULL, time_updated INTEGER NOT NULL, data TEXT NOT NULL);",
+      ];
+      for (const msg of rows) {
+        const ts = Number((msg.time as Record<string, unknown>)?.created ?? Date.now());
+        const data = JSON.stringify(msg).replace(/'/g, "''");
+        sqlLines.push(
+          `INSERT INTO message (id, session_id, time_created, time_updated, data) VALUES ('${msg.id}', '${msg.sessionID}', ${ts}, ${ts}, '${data}');`
+        );
+      }
+      const sqlPath = join(tmpdir(), `opencode-test-sql-${Date.now()}.sql`);
+      writeFileSync(sqlPath, sqlLines.join("\n"), "utf-8");
+      try {
+        execSync(`sqlite3 "${dbPath}" < "${sqlPath}"`, { encoding: "utf-8" });
+      } finally {
+        unlinkSync(sqlPath);
+      }
+    }
+
+    it("reads messages from opencode.db when present", async () => {
+      const dbPath = join(tmpDir, "opencode.db");
+      await seedDb(dbPath, [
+        makeMessage({
+          providerID: "opencode-go",
+          modelID: "kimi-k2.6",
+          tokens: { input: 1000, output: 500, cache: { read: 0, write: 0 } },
+        }),
+      ]);
+
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].source).toBe("opencode-go");
+      expect(result[0].modelsUsed).toContain("kimi-k2.6");
+      expect(result[0].inputTokens).toBe(1000);
+    });
+
+    it("prefers DB over JSON files to avoid double-counting", async () => {
+      // Write a JSON file
+      writeFlatMessage(tmpDir, "001", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        tokens: { input: 1000, output: 500, cache: { read: 0, write: 0 } },
+      }));
+
+      // Write a DB with a *different* model (same day)
+      const dbPath = join(tmpDir, "opencode.db");
+      await seedDb(dbPath, [
+        makeMessage({
+          providerID: "opencode-go",
+          modelID: "kimi-k2.6",
+          tokens: { input: 2000, output: 1000, cache: { read: 0, write: 0 } },
+        }),
+      ]);
+
+      const result = await extractOpenCodeData();
+      // DB is authoritative — only the DB message should appear
+      expect(result).toHaveLength(1);
+      expect(result[0].modelsUsed).toContain("kimi-k2.6");
+      expect(result[0].inputTokens).toBe(2000);
+    });
+
+    it("falls back to JSON files when DB is empty", async () => {
+      const dbPath = join(tmpDir, "opencode.db");
+      const { execSync } = await import("node:child_process");
+      execSync(
+        `sqlite3 "${dbPath}" "CREATE TABLE message (id TEXT PRIMARY KEY, session_id TEXT NOT NULL, time_created INTEGER NOT NULL, time_updated INTEGER NOT NULL, data TEXT NOT NULL);"`,
+        { encoding: "utf-8" }
+      );
+
+      writeFlatMessage(tmpDir, "001", makeMessage({
+        providerID: "opencode-go",
+        modelID: "glm-5.1",
+        tokens: { input: 1000, output: 500, cache: { read: 0, write: 0 } },
+      }));
+
+      const result = await extractOpenCodeData();
+      expect(result).toHaveLength(1);
+      expect(result[0].modelsUsed).toContain("glm-5.1");
+    });
+  });
 });

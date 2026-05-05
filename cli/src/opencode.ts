@@ -29,6 +29,7 @@ import { readFile, readdir, stat } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { execSync } from "node:child_process";
 import { calculateCost } from "./pricing.js";
 import {
   accumulate,
@@ -125,10 +126,73 @@ export function hasOpenCodeData(): boolean {
 }
 
 /**
- * Process a single message file: parse, validate, route to the right
+ * Process a single parsed message: validate, route to the right
  * per-source accumulator. Errors and missing fields are silently skipped.
  *
  * Mutates `byProviderByDate` in place.
+ */
+function processMessageData(
+  msg: OpenCodeMessage,
+  sinceMs: number,
+  byProviderByDate: Record<OpenCodeSource, Record<string, DayAccumulator>>
+): void {
+  const created = msg.time?.created;
+  if (!created || typeof created !== "number") return;
+  if (sinceMs && created < sinceMs) return;
+
+  const date = new Date(created).toISOString().slice(0, 10);
+  const modelId = msg.modelID ?? "unknown";
+
+  // NOTE: AI SDK v6 (Mar 2026) normalized inputTokens to include cache for
+  // all providers, but OpenCode's message JSON still stores raw, non-
+  // overlapping components. Verified empirically: input + output + reasoning
+  // + cache.read + cache.write == total for 100% of messages with a total.
+  const input = Number(msg.tokens?.input) || 0;
+  const output = Number(msg.tokens?.output) || 0;
+  const reasoning = Number(msg.tokens?.reasoning) || 0;
+  const cacheWrite = Number(msg.tokens?.cache?.write) || 0;
+  const cacheRead = Number(msg.tokens?.cache?.read) || 0;
+
+  // Skip only when every activity metric is zero — cache-only or
+  // reasoning-only messages still represent billable work.
+  if (
+    input === 0 &&
+    output === 0 &&
+    reasoning === 0 &&
+    cacheWrite === 0 &&
+    cacheRead === 0
+  ) {
+    return;
+  }
+
+  // Treat reasoning tokens as part of output for cost calculation
+  // (most providers bill reasoning at the output rate).
+  const outputForCost = output + reasoning;
+
+  const cost =
+    (Number(msg.cost) || 0) > 0
+      ? Number(msg.cost)
+      : calculateCost(modelId, {
+          input,
+          output: outputForCost,
+          cacheCreation: cacheWrite,
+          cacheRead,
+        });
+
+  const source = sourceForProviderID(msg.providerID);
+
+  accumulate(byProviderByDate[source], date, modelId, {
+    input,
+    output: outputForCost,
+    cacheCreation: cacheWrite,
+    cacheRead,
+    cost,
+  });
+}
+
+/**
+ * Process a single message file: read from disk, parse, then delegate to
+ * processMessageData.
  */
 async function processMessageFile(
   filePath: string,
@@ -142,40 +206,50 @@ async function processMessageFile(
   } catch {
     return;
   }
+  processMessageData(msg, sinceMs, byProviderByDate);
+}
 
-  const created = msg.time?.created;
-  if (!created || typeof created !== "number") return;
-  if (sinceMs && created < sinceMs) return;
+/**
+ * Read messages from the OpenCode SQLite database.
+ *
+ * Newer Go-based opencode binaries (≥1.14) persist messages to
+ * `~/.local/share/opencode/opencode.db` instead of JSON files.
+ * This function queries the `message` table and processes each row's
+ * JSON `data` column through the same pipeline as on-disk JSON files.
+ *
+ * Uses the system's `sqlite3` CLI (already present on macOS and most
+ * Linux distros). If the CLI is missing, this function is a no-op.
+ *
+ * @param sinceMs - Epoch ms; rows with `time.created` before this are skipped.
+ * @param byProviderByDate - Mutable accumulator map.
+ */
+function extractFromDb(
+  sinceMs: number,
+  byProviderByDate: Record<OpenCodeSource, Record<string, DayAccumulator>>
+): void {
+  const dbPath = join(getOpenCodeDataDir(), "opencode.db");
+  if (!existsSync(dbPath)) return;
 
-  const date = new Date(created).toISOString().slice(0, 10);
-  const modelId = msg.modelID ?? "unknown";
+  let output: string;
+  try {
+    output = execSync(
+      `sqlite3 "${dbPath}" "SELECT data FROM message WHERE json_extract(data, '$.time.created') IS NOT NULL"`,
+      { encoding: "utf-8", maxBuffer: 100 * 1024 * 1024, timeout: 10_000 }
+    );
+  } catch {
+    return;
+  }
 
-  const input = Number(msg.tokens?.input) || 0;
-  const output = Number(msg.tokens?.output) || 0;
-  const cacheWrite = Number(msg.tokens?.cache?.write) || 0;
-  const cacheRead = Number(msg.tokens?.cache?.read) || 0;
-
-  if (input === 0 && output === 0) return;
-
-  const cost =
-    (Number(msg.cost) || 0) > 0
-      ? Number(msg.cost)
-      : calculateCost(modelId, {
-          input,
-          output,
-          cacheCreation: cacheWrite,
-          cacheRead,
-        });
-
-  const source = sourceForProviderID(msg.providerID);
-
-  accumulate(byProviderByDate[source], date, modelId, {
-    input,
-    output,
-    cacheCreation: cacheWrite,
-    cacheRead,
-    cost,
-  });
+  for (const line of output.split("\n")) {
+    if (!line.trim()) continue;
+    let msg: OpenCodeMessage;
+    try {
+      msg = JSON.parse(line) as OpenCodeMessage;
+    } catch {
+      continue;
+    }
+    processMessageData(msg, sinceMs, byProviderByDate);
+  }
 }
 
 /**
@@ -185,10 +259,14 @@ async function processMessageFile(
  * PRIVACY: Only date, token counts, cost, and model names are extracted.
  * Session IDs, project paths, prompts, and tool outputs are never read.
  *
- * Two on-disk layouts are supported:
+ * Three on-disk layouts are supported:
+ *   - **SQLite database (Go binary ≥1.14):** `opencode.db` — preferred source
  *   - **Legacy TypeScript opencode:** `storage/message/<sessionID>/msg_*.json`
- *   - **Native Go opencode binary:** `storage/message/msg_*.json` (flat)
- * Both can coexist on the same machine; this function walks both paths.
+ *   - **Native Go opencode binary (intermediate):** `storage/message/msg_*.json` (flat)
+ *
+ * When the SQLite DB exists and `sqlite3` is available, it is used as the
+ * sole source of truth (it contains a superset of the JSON-file data).
+ * Otherwise we fall back to walking the JSON directories.
  *
  * @param since - Optional YYYY-MM-DD date; messages before this are skipped.
  * @returns Array of SyncDay objects ready for Zod validation, with each day
@@ -197,16 +275,7 @@ async function processMessageFile(
  *   a branded tier and direct keys on the same day.
  */
 export async function extractOpenCodeData(since?: string): Promise<SyncDay[]> {
-  const messageDir = getMessageStorageDir();
-
   const sinceMs = since ? new Date(since).getTime() : 0;
-
-  let entries: string[];
-  try {
-    entries = await readdir(messageDir);
-  } catch {
-    return [];
-  }
 
   // Per-source accumulators. The first key is the source slug; the second
   // key is the date string.
@@ -215,6 +284,37 @@ export async function extractOpenCodeData(since?: string): Promise<SyncDay[]> {
     "opencode-go": {},
     "opencode-zen": {},
   };
+
+  // -------------------------------------------------------------------------
+  // Primary source: SQLite DB (Go binary ≥1.14)
+  // -------------------------------------------------------------------------
+  extractFromDb(sinceMs, byProviderByDate);
+
+  const dbYieldedData = Object.values(byProviderByDate).some(
+    (acc) => Object.keys(acc).length > 0
+  );
+
+  if (dbYieldedData) {
+    // DB is the authoritative source; skip JSON files to avoid double-counting.
+    const allDays: SyncDay[] = [];
+    for (const source of Object.keys(byProviderByDate) as OpenCodeSource[]) {
+      const days = accumulatorToSyncDays(byProviderByDate[source], source);
+      allDays.push(...days);
+    }
+    return allDays;
+  }
+
+  // -------------------------------------------------------------------------
+  // Fallback: JSON files (legacy TypeScript or intermediate Go layouts)
+  // -------------------------------------------------------------------------
+  const messageDir = getMessageStorageDir();
+
+  let entries: string[];
+  try {
+    entries = await readdir(messageDir);
+  } catch {
+    return [];
+  }
 
   for (const entry of entries) {
     const entryPath = join(messageDir, entry);
