@@ -89,6 +89,14 @@ export const SyncPayloadSchema = z.object({
    * pre-providerID-split era to the new branded-tier sources.
    */
   reassignFromOpencode: z.array(z.enum(OPEN_CODE_SOURCE_VALUES)).optional(),
+  /**
+   * When true, the server overwrites stored daily totals even if smaller than
+   * what's already there. Default behavior keeps the higher value per
+   * (date, source, machine) so deleting local session files can't shrink
+   * history. Set this only via `clawdboard sync --reset` when the user wants
+   * to correct an inflated day.
+   */
+  force: z.boolean().optional(),
 });
 
 /** TypeScript type for a single day's sync data. */

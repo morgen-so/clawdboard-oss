@@ -12,6 +12,17 @@ export interface LogEntry {
 
 export const logEntries: LogEntry[] = [
   {
+    date: "2026-05-05",
+    items: [
+      {
+        title: "Deleting local sessions no longer shrinks your YTD",
+        type: "fix",
+        description:
+          "Previously, if you cleared old Claude Code session files to reclaim disk space, your next sync would overwrite the server's per-day totals with the smaller numbers — silently erasing past usage from your dashboard. The sync endpoint now keeps the higher value per (date, source, machine), so deleting local files is non-destructive. To genuinely correct an inflated day (e.g. after a CLI bug double-counted), run `clawdboard sync --reset` to overwrite the server totals with your current local numbers.",
+      },
+    ],
+  },
+  {
     date: "2026-05-04",
     items: [
       {

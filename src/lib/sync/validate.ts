@@ -73,6 +73,14 @@ export const SyncPayloadSchema = z.object({
    * `source: "opencode"` row first.
    */
   reassignFromOpencode: z.array(z.enum(OPEN_CODE_SOURCE_VALUES)).optional(),
+  /**
+   * When true, the server overwrites stored daily totals with whatever the CLI
+   * sends, even if the new values are smaller. Default behavior keeps the
+   * higher value per (date, source, machine) so deleting local session files
+   * can't shrink history. Set this only for an explicit user-initiated reset
+   * (e.g. correcting an inflated day after a CLI bug).
+   */
+  force: z.boolean().optional(),
 });
 
 export type SyncDay = z.infer<typeof SyncDaySchema>;

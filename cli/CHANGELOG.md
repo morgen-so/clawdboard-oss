@@ -4,6 +4,16 @@ All notable changes to the `clawdboard` CLI are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses semver loosely while pre-1.0.
 
+## [0.3.2] - 2026-05-05
+
+### Added
+
+- **`clawdboard sync --reset`.** Forces the server to overwrite stored daily
+  totals with the current local numbers, even if smaller. Use this to correct
+  an inflated day (e.g. after a CLI bug double-counted). Default sync now
+  keeps the higher value per (date, source, machine) server-side, so deleting
+  local session files no longer shrinks your dashboard history.
+
 ## [0.3.0] - 2026-05-04
 
 ### Added

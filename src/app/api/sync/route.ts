@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Upsert each day (Pitfall 6: avoid Vercel timeout)
-    const { days, syncIntervalMs, machineId, reassignFromOpencode } = result.data;
+    const { days, syncIntervalMs, machineId, reassignFromOpencode, force } = result.data;
 
     // 4a. Clean up legacy null-source rows that would cause double-counting.
     // When a CLI upgrade starts sending source="claude-code" (or other), the
@@ -194,6 +194,42 @@ export async function POST(req: NextRequest) {
 
     // 4c. Upsert the actual data — uses (user_id, date, source, machine_id)
     // so each machine's data is stored independently.
+    //
+    // Default conflict strategy keeps the higher value per column so that
+    // deleting local session files cannot shrink stored history. When the CLI
+    // sends `force: true` (explicit user reset), we overwrite unconditionally.
+    const updateClause = force
+      ? sql`
+          input_tokens = EXCLUDED.input_tokens,
+          output_tokens = EXCLUDED.output_tokens,
+          cache_creation_tokens = EXCLUDED.cache_creation_tokens,
+          cache_read_tokens = EXCLUDED.cache_read_tokens,
+          total_cost = EXCLUDED.total_cost,
+          premium_requests = EXCLUDED.premium_requests,
+          models_used = EXCLUDED.models_used,
+          model_breakdowns = EXCLUDED.model_breakdowns,
+          synced_at = NOW()
+        `
+      : sql`
+          input_tokens = GREATEST(daily_aggregates.input_tokens, EXCLUDED.input_tokens),
+          output_tokens = GREATEST(daily_aggregates.output_tokens, EXCLUDED.output_tokens),
+          cache_creation_tokens = GREATEST(daily_aggregates.cache_creation_tokens, EXCLUDED.cache_creation_tokens),
+          cache_read_tokens = GREATEST(daily_aggregates.cache_read_tokens, EXCLUDED.cache_read_tokens),
+          total_cost = GREATEST(daily_aggregates.total_cost, EXCLUDED.total_cost),
+          premium_requests = GREATEST(daily_aggregates.premium_requests, EXCLUDED.premium_requests),
+          models_used = CASE
+            WHEN EXCLUDED.total_cost >= daily_aggregates.total_cost
+            THEN EXCLUDED.models_used
+            ELSE daily_aggregates.models_used
+          END,
+          model_breakdowns = CASE
+            WHEN EXCLUDED.total_cost >= daily_aggregates.total_cost
+            THEN EXCLUDED.model_breakdowns
+            ELSE daily_aggregates.model_breakdowns
+          END,
+          synced_at = NOW()
+        `;
+
     await Promise.all(
       days.map((day) =>
         db.execute(sql`
@@ -208,16 +244,7 @@ export async function POST(req: NextRequest) {
             ${JSON.stringify(day.modelsUsed)}::jsonb, ${JSON.stringify(day.modelBreakdowns)}::jsonb, NOW()
           )
           ON CONFLICT (user_id, date, source, machine_id)
-          DO UPDATE SET
-            input_tokens = EXCLUDED.input_tokens,
-            output_tokens = EXCLUDED.output_tokens,
-            cache_creation_tokens = EXCLUDED.cache_creation_tokens,
-            cache_read_tokens = EXCLUDED.cache_read_tokens,
-            total_cost = EXCLUDED.total_cost,
-            premium_requests = EXCLUDED.premium_requests,
-            models_used = EXCLUDED.models_used,
-            model_breakdowns = EXCLUDED.model_breakdowns,
-            synced_at = NOW()
+          DO UPDATE SET ${updateClause}
         `)
       )
     );

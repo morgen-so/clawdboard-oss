@@ -19,7 +19,7 @@ import { getMachineId } from "../machine-id.js";
  */
 export async function runSync(
   config: Config,
-  options: { since?: string; dryRun?: boolean } = {},
+  options: { since?: string; dryRun?: boolean; reset?: boolean } = {},
   spinner?: Ora
 ): Promise<void> {
   const s = spinner ?? ora();
@@ -116,7 +116,12 @@ export async function runSync(
 
   const machineId = await getMachineId();
   const client = new ApiClient(serverUrl, config.apiToken);
-  const result = await client.sync({ ...payload, syncIntervalMs: DEBOUNCE_MS, machineId });
+  const result = await client.sync({
+    ...payload,
+    syncIntervalMs: DEBOUNCE_MS,
+    machineId,
+    ...(options.reset ? { force: true } : {}),
+  });
 
   s.stop();
 
@@ -152,7 +157,11 @@ export const syncCommand = new Command("sync")
   )
   .option("--since <date>", "Sync data from this date forward (YYYY-MM-DD)")
   .option("--dry-run", "Extract and display data without uploading")
-  .action(async (options: { since?: string; dryRun?: boolean }) => {
+  .option(
+    "--reset",
+    "Overwrite server totals with current local data, even if smaller (use to correct an inflated day)"
+  )
+  .action(async (options: { since?: string; dryRun?: boolean; reset?: boolean }) => {
     try {
       // Load config and check for API token
       const config = await loadConfig();
