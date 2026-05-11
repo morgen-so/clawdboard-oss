@@ -306,6 +306,7 @@ export default async function StatsPage() {
                     "opencode-go": "OpenCode Go",
                     "opencode-zen": "OpenCode Zen",
                     codex: "Codex CLI",
+                    cursor: "Cursor",
                     "gemini-cli": "Gemini CLI",
                     antigravity: "Antigravity",
                     "copilot-cli": "Copilot CLI",

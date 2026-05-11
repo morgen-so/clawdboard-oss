@@ -436,7 +436,7 @@
   },
   "statsPage": {
     "subtitle": "usage statistics",
-    "backToLeaderboard": "\u2190 leaderboard",
+    "backToLeaderboard": "← leaderboard",
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "stats",
     "heroTitle": "AI Coding Usage Statistics",
@@ -465,7 +465,7 @@
     "modelsDescription": "Which AI models do developers actually use for coding? This breakdown shows estimated cost and token consumption per model across all users — including Claude (Opus, Sonnet, Haiku), OpenAI (GPT-4o, o-series), and others. Cost share reflects how much of total community spend goes to each model — higher-tier models cost more per token, so they can dominate spend even with fewer users. Click any model for detailed usage statistics.",
     "sourceHeading": "Usage by Tool",
     "sourceDescription": "Where does the data come from? This breakdown shows estimated cost share across all supported AI coding tools — Claude Code, OpenCode (incl. Go and Zen tiers), Codex CLI, Gemini CLI, and GitHub Copilot CLI contribute via local usage logs; Antigravity contributes via Google OAuth on an opt-in basis (no on-disk parsing).",
-    "viewDetailedToolComparison": "View detailed tool comparison \u2192",
+    "viewDetailedToolComparison": "View detailed tool comparison →",
     "growthHeading": "Community Growth",
     "growthDescription": "How fast is the AI coding developer community growing? This chart tracks cumulative registrations on clawdboard by week. Growth accelerates around major model releases, new tool launches, and developer announcements.",
     "costAnalysisHeading": "How Much Does AI Coding Actually Cost?",
@@ -510,7 +510,7 @@
   },
   "statsTools": {
     "subtitle": "tool comparison",
-    "backToAllStats": "\u2190 all stats",
+    "backToAllStats": "← all stats",
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "stats",
     "breadcrumbTools": "tools",
@@ -576,6 +576,7 @@
       "opencode-go": "OpenCode's Go subscription tier — a curated set of high-performance open-source models (GLM, MiMo, DeepSeek, Kimi, Qwen, MiniMax) accessed through the OpenCode TUI.",
       "opencode-zen": "OpenCode's pay-as-you-go provider tier offering curated open-source models without a subscription, billed by usage through the OpenCode TUI.",
       "codex": "OpenAI's command-line coding agent that uses GPT-4o and o-series models. Brings OpenAI's models to the terminal for code generation and editing.",
+      "cursor": "AI-first code editor built as a VS Code fork. Ships an in-editor chat panel and agent mode that work across your codebase, with usage tracked from the local SQLite store.",
       "gemini-cli": "Google's official command-line coding agent powered by the Gemini family of models. Open source, with built-in multimodal and tool-use capabilities.",
       "antigravity": "Google's agent-first IDE — a VS Code fork with deeply-integrated agentic workflows powered by Gemini 3 and other frontier models.",
       "copilot-cli": "GitHub's agentic command-line coding assistant. Multi-model support (Claude, GPT, etc.) billed in premium-request units alongside token-level metrics.",
@@ -584,7 +585,7 @@
   },
   "statsModel": {
     "subtitle": "{modelName} statistics",
-    "backToAllModels": "\u2190 all models",
+    "backToAllModels": "← all models",
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "stats",
     "heroTitle": "{modelName} Usage Statistics",

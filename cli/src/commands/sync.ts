@@ -36,7 +36,7 @@ export async function runSync(
     if (err instanceof Error) {
       console.error(
         chalk.dim(
-          "Make sure you have used Claude Code, OpenCode (incl. Go/Zen tiers), Codex,"
+          "Make sure you have used Claude Code, OpenCode (incl. Go/Zen tiers), Codex, Cursor,"
         )
       );
       console.error(
@@ -142,7 +142,7 @@ export async function runSync(
  * sanitize, and upload.
  *
  * Tools: Claude Code, OpenCode (incl. Go and Zen tiers), Codex CLI,
- * Gemini CLI, GitHub Copilot CLI, and Antigravity (opt-in).
+ * Cursor, Gemini CLI, GitHub Copilot CLI, and Antigravity (opt-in).
  *
  * Flow:
  * 1. Load config and check for API token
@@ -153,7 +153,7 @@ export async function runSync(
  */
 export const syncCommand = new Command("sync")
   .description(
-    "Sync usage data (Claude Code, OpenCode, Codex, Gemini CLI, Copilot CLI, Antigravity)"
+    "Sync usage data (Claude Code, OpenCode, Codex, Cursor, Gemini CLI, Copilot CLI, Antigravity)"
   )
   .option("--since <date>", "Sync data from this date forward (YYYY-MM-DD)")
   .option("--dry-run", "Extract and display data without uploading")

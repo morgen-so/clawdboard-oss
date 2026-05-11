@@ -1,6 +1,7 @@
 import { SyncPayloadSchema, type SyncPayload, type SyncDay } from "./schemas.js";
 import { extractOpenCodeData, hasOpenCodeData } from "./opencode.js";
 import { extractCodexData, hasCodexData } from "./codex.js";
+import { extractCursorData, hasCursorData } from "./cursor.js";
 import { extractDesktopData, hasDesktopData } from "./desktop.js";
 import { extractGeminiCliData, hasGeminiCliData } from "./gemini-cli.js";
 import { extractCopilotCliData, hasCopilotCliData } from "./copilot-cli.js";
@@ -68,11 +69,15 @@ export function sanitizeDailyData(
  *   2. OpenCode (incl. opencode-go and opencode-zen branded tiers) —
  *      reads message JSON files from ~/.local/share/opencode/
  *   3. Codex CLI — reads rollout JSONL files from ~/.codex/sessions/
- *   4. Gemini CLI — reads session JSONL files from ~/.gemini/tmp/
- *   5. GitHub Copilot CLI — reads events.jsonl files from ~/.copilot/session-state/
- *   6. Antigravity (opt-in) — calls Google Cloud Code API using the local
+ *   4. Cursor (local) — reads SQLite state.vscdb from Cursor's globalStorage
+ *      directory. Covers pre-Sep-2025 data; post-Sep-2025 data lives behind
+ *      Cursor's own services and is out of scope.
+ *   5. Gemini CLI — reads session JSONL files from ~/.gemini/tmp/
+ *   6. GitHub Copilot CLI — reads events.jsonl files from ~/.copilot/session-state/
+ *   7. Antigravity (opt-in) — calls Google Cloud Code API using the local
  *      ~/.gemini/oauth_creds.json. Disabled by default; enable with
  *      `clawdboard antigravity enable`.
+ *   8. Claude desktop app (Cowork / Dispatch).
  *
  * All sources are optional and run concurrently via Promise.allSettled —
  * one source failing or being absent never blocks the others. Each
@@ -92,6 +97,7 @@ export async function extractAndSanitize(
     claudeResult,
     opencodeResult,
     codexResult,
+    cursorResult,
     geminiResult,
     copilotResult,
     antigravityResult,
@@ -111,19 +117,22 @@ export async function extractAndSanitize(
     extractOpenCodeData(since),
     // Source 3: Codex CLI
     extractCodexData(since),
-    // Source 4: Gemini CLI
+    // Source 4: Cursor (local SQLite — pre-Sep-2025 historical data)
+    extractCursorData(since),
+    // Source 5: Gemini CLI
     extractGeminiCliData(since),
-    // Source 5: GitHub Copilot CLI
+    // Source 6: GitHub Copilot CLI
     extractCopilotCliData(since),
-    // Source 6: Antigravity (opt-in, gated internally on config)
+    // Source 7: Antigravity (opt-in, gated internally on config)
     extractAntigravityData(since),
-    // Source 7: Claude desktop app (Cowork / Dispatch)
+    // Source 8: Claude desktop app (Cowork / Dispatch)
     extractDesktopData(since),
   ]);
 
   const claudeDays = claudeResult.status === "fulfilled" ? claudeResult.value : [];
   const opencodeDays = opencodeResult.status === "fulfilled" ? opencodeResult.value : [];
   const codexDays = codexResult.status === "fulfilled" ? codexResult.value : [];
+  const cursorDays = cursorResult.status === "fulfilled" ? cursorResult.value : [];
   const geminiDays = geminiResult.status === "fulfilled" ? geminiResult.value : [];
   const copilotDays = copilotResult.status === "fulfilled" ? copilotResult.value : [];
   const antigravityDays = antigravityResult.status === "fulfilled" ? antigravityResult.value : [];
@@ -135,6 +144,7 @@ export async function extractAndSanitize(
     ...claudeDays,
     ...opencodeDays,
     ...codexDays,
+    ...cursorDays,
     ...geminiDays,
     ...copilotDays,
     ...antigravityDays,
@@ -145,13 +155,14 @@ export async function extractAndSanitize(
     allDays.length === 0 &&
     !hasOpenCodeData() &&
     !hasCodexData() &&
+    !hasCursorData() &&
     !hasGeminiCliData() &&
     !hasCopilotCliData() &&
     !hasAntigravityData() &&
     !hasDesktopData()
   ) {
     throw new Error(
-      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, Gemini CLI, GitHub Copilot CLI, Antigravity, or the Claude desktop app on this machine."
+      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, Cursor, Gemini CLI, GitHub Copilot CLI, Antigravity, or the Claude desktop app on this machine."
     );
   }
 

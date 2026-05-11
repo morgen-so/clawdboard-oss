@@ -37,6 +37,7 @@ export const SOURCE_VALUES = [
   "opencode-go",
   "opencode-zen",
   "codex",
+  "cursor",
   "gemini-cli",
   "antigravity",
   "copilot-cli",

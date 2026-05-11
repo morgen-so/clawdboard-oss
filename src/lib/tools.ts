@@ -51,6 +51,13 @@ export const TOOL_REGISTRY: Record<string, ToolMeta> = {
     provider: "OpenAI",
     website: "https://github.com/openai/codex",
   },
+  cursor: {
+    slug: "cursor",
+    name: "Cursor",
+    color: "#a855f7",
+    provider: "Cursor",
+    website: "https://cursor.com",
+  },
   "claude-code-desktop": {
     slug: "claude-code-desktop",
     name: "Claude Code Desktop",
