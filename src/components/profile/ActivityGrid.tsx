@@ -41,6 +41,9 @@ function computeThresholds(data: ActivityDataPoint[]): number[] {
   return [0, q1, q2, q3];
 }
 
+/**
+ * Map a daily cost to its intensity bucket (0-4) using precomputed thresholds.
+ */
 function getLevel(cost: number, thresholds: number[]): number {
   if (cost <= 0) return 0;
   if (cost <= thresholds[1]) return 1;
@@ -49,6 +52,7 @@ function getLevel(cost: number, thresholds: number[]): number {
   return 4;
 }
 
+/** Format a cost as a USD string with two decimal places. */
 function formatCost(cost: number): string {
   return `$${cost.toFixed(2)}`;
 }
@@ -60,6 +64,11 @@ const DAY_LABELS: Record<number, string> = {
   5: "Fri",
 };
 
+/**
+ * GitHub-style yearly heatmap of daily AI coding cost. Each cell is positioned
+ * by its day-of-week (row) and week index (column) so partial weeks render in
+ * the correct row instead of shifting the whole grid up.
+ */
 export function ActivityGrid({ data }: ActivityGridProps) {
   const t = useTranslations("profile");
   const gridData = useMemo(() => {
@@ -218,13 +227,16 @@ export function ActivityGrid({ data }: ActivityGridProps) {
               style={{
                 gridTemplateRows: "repeat(7, 12px)",
                 gridTemplateColumns: `repeat(${gridData.totalWeeks}, 12px)`,
-                gridAutoFlow: "column",
               }}
             >
               {gridData.cells.map((cell) => (
                 <div
                   key={cell.date}
                   className={`w-3 h-3 rounded-sm ${LEVEL_CLASSES[cell.level]} transition-colors hover:ring-1 hover:ring-foreground/30`}
+                  style={{
+                    gridRow: cell.dayOfWeek + 1,
+                    gridColumn: cell.weekIndex + 1,
+                  }}
                   title={`${cell.displayDate}: ${formatCost(cell.cost)}`}
                 />
               ))}
