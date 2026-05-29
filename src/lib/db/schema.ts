@@ -36,6 +36,10 @@ export const users = pgTable("users", {
   pinnedBadges: jsonb("pinned_badges").$type<string[]>().default([]),
   earnedBadges: jsonb("earned_badges").$type<string[]>().default([]),
   badgePromptDismissedAt: timestamp("badge_prompt_dismissed_at"),
+  // When set, the user is banned: excluded from all leaderboards, their
+  // profile 404s, and their syncs are rejected with 403. Nullable = not banned.
+  bannedAt: timestamp("banned_at"),
+  banReason: text("ban_reason"),
 });
 
 export const accounts = pgTable(
@@ -330,6 +334,7 @@ export const leaderboardView = pgMaterializedView("leaderboard_mv", {
       COUNT(DISTINCT da.date) AS active_days
     FROM users u
     LEFT JOIN daily_aggregates da ON da.user_id = u.id
+    WHERE u.banned_at IS NULL
     GROUP BY u.id, u.github_username, u.image
   ),
   streak_days AS (

@@ -36,6 +36,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 });
     }
 
+    if (user.bannedAt) {
+      return NextResponse.json({ error: "Account suspended" }, { status: 403 });
+    }
+
     // 2. Size check
     const contentLength = parseInt(
       req.headers.get("content-length") ?? "0",

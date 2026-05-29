@@ -129,11 +129,14 @@ export async function getUserByUsername(
       lastSyncAt: users.lastSyncAt,
       pinnedBadges: users.pinnedBadges,
       earnedBadges: users.earnedBadges,
+      bannedAt: users.bannedAt,
     })
     .from(users)
     .where(sql`LOWER(${users.githubUsername}) = LOWER(${username})`)
     .limit(1);
-  return user ?? null;
+  // Banned users are treated as nonexistent so their profile 404s.
+  if (!user || user.bannedAt) return null;
+  return user;
 }
 
 /**

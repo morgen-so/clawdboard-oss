@@ -116,6 +116,7 @@ function buildLeaderboardCTEs(dateFilter: ReturnType<typeof sql>) {
         COUNT(DISTINCT da.date)::int AS active_days
       FROM users u
       LEFT JOIN daily_aggregates da ON da.user_id = u.id AND ${dateFilter}
+      WHERE u.banned_at IS NULL
       GROUP BY u.id, u.github_username, u.image, u.cooking_url, u.cooking_label, u.created_at
     ),
     streak_days AS (
