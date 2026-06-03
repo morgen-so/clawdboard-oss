@@ -14,12 +14,15 @@ export function buildProfileHref(
   username: string,
   period?: string,
   rangeFrom?: string,
-  rangeTo?: string
+  rangeTo?: string,
+  timeZone?: string
 ): string {
   const base = `/user/${username}`;
-  if (!period || period === "7d") return base;
   if (period === "custom" && rangeFrom && rangeTo) {
     return `${base}?period=custom&from=${rangeFrom}&to=${rangeTo}`;
   }
-  return `${base}?period=${period}`;
+  if (!period || (period === "7d" && !timeZone)) return base;
+  const params = new URLSearchParams({ period });
+  if (timeZone) params.set("tz", timeZone);
+  return `${base}?${params.toString()}`;
 }

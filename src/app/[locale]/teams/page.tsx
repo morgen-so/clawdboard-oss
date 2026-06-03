@@ -18,6 +18,7 @@ import { Header } from "@/components/layout/Header";
 import { rankColors, rankIcons, rankBorderClass } from "@/lib/rank";
 import { cookies } from "next/headers";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
+import { getServerPeriodRange } from "@/lib/viewer-period";
 import { getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = {
@@ -28,22 +29,28 @@ export const metadata: Metadata = {
 };
 
 interface PageProps {
-  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string; tz?: string }>;
 }
 
 export default async function TeamLeaderboardPage({
   searchParams,
 }: PageProps) {
   const params = await searchParams;
-  const saved = parsePeriodCookie((await cookies()).get(PERIOD_COOKIE)?.value);
+  const cookieStore = await cookies();
+  const saved = parsePeriodCookie(cookieStore.get(PERIOD_COOKIE)?.value);
+  const viewerTimeZone = params.tz;
 
-  const period: Period = VALID_PERIODS.includes(params.period as Period)
+  const hasExplicitPeriod = VALID_PERIODS.includes(params.period as Period);
+  const period: Period = hasExplicitPeriod
     ? (params.period as Period)
     : saved?.period ?? "this-month";
 
-  const range = period === "custom"
-    ? parseDateRange(params.from ?? saved?.from, params.to ?? saved?.to)
-    : undefined;
+  const range =
+    parseDateRange(params.from, params.to, { allowFutureDays: 1 }) ??
+    (period === "custom" && saved?.period === "custom"
+      ? parseDateRange(saved.from, saved.to, { allowFutureDays: 1 })
+      : undefined) ??
+    getServerPeriodRange(period, viewerTimeZone);
 
   const [rows, session, t] = await Promise.all([
     getPublicTeamLeaderboard(period, range),

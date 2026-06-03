@@ -11,6 +11,13 @@ export type { Period, DateRange };
 
 function statsDateFilter(period?: Period, range?: DateRange) {
   if (!period) return { filter: sql`TRUE`, label: "all time" };
+  if (range) {
+    return {
+      filter: sql`date::date >= ${range.from}::date AND date::date <= ${range.to}::date`,
+      label: `${range.from} to ${range.to}`,
+    };
+  }
+
   switch (period) {
     case "today":
       return { filter: sql`date::date = CURRENT_DATE`, label: "today" };
@@ -23,12 +30,6 @@ function statsDateFilter(period?: Period, range?: DateRange) {
     case "ytd":
       return { filter: sql`date::date >= date_trunc('year', CURRENT_DATE)::date`, label: "year to date" };
     case "custom":
-      if (range) {
-        return {
-          filter: sql`date::date >= ${range.from}::date AND date::date <= ${range.to}::date`,
-          label: `${range.from} to ${range.to}`,
-        };
-      }
       return { filter: sql`date::date >= CURRENT_DATE - 29`, label: "last 30 days" };
   }
 }

@@ -40,16 +40,24 @@ export interface LeaderboardResult {
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
+function addUtcDays(dateStr: string, days: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 export function parseDateRange(
   from: string | undefined | null,
-  to: string | undefined | null
+  to: string | undefined | null,
+  options: { allowFutureDays?: number } = {}
 ): DateRange | undefined {
   if (!from || !to) return undefined;
   if (!ISO_DATE_RE.test(from) || !ISO_DATE_RE.test(to)) return undefined;
 
   const today = new Date().toISOString().slice(0, 10);
+  const maxDate = addUtcDays(today, options.allowFutureDays ?? 0);
   if (from < MIN_DATE || to < MIN_DATE) return undefined;
-  if (from > today || to > today) return undefined;
+  if (from > maxDate || to > maxDate) return undefined;
   if (from > to) return undefined;
 
   return { from, to };
@@ -75,6 +83,10 @@ export function getDateFilter(
   period: Period,
   range?: DateRange
 ): ReturnType<typeof sql> {
+  if (range) {
+    return sql`da.date::date >= ${range.from}::date AND da.date::date <= ${range.to}::date`;
+  }
+
   switch (period) {
     case "today":
       return sql`da.date::date = CURRENT_DATE`;
@@ -87,9 +99,6 @@ export function getDateFilter(
     case "ytd":
       return sql`da.date::date >= date_trunc('year', CURRENT_DATE)::date`;
     case "custom":
-      if (range) {
-        return sql`da.date::date >= ${range.from}::date AND da.date::date <= ${range.to}::date`;
-      }
       // Fallback to 30d if no valid range
       return sql`da.date::date >= CURRENT_DATE - 29`;
   }

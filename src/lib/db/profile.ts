@@ -63,6 +63,10 @@ function getProfileDateFilter(
   period: Period,
   range?: DateRange
 ): SQL {
+  if (range) {
+    return sql`${dailyAggregates.date}::date >= ${range.from}::date AND ${dailyAggregates.date}::date <= ${range.to}::date`;
+  }
+
   switch (period) {
     case "today":
       return sql`${dailyAggregates.date}::date = CURRENT_DATE`;
@@ -75,9 +79,6 @@ function getProfileDateFilter(
     case "ytd":
       return sql`${dailyAggregates.date}::date >= date_trunc('year', CURRENT_DATE)::date`;
     case "custom":
-      if (range) {
-        return sql`${dailyAggregates.date}::date >= ${range.from}::date AND ${dailyAggregates.date}::date <= ${range.to}::date`;
-      }
       return sql`${dailyAggregates.date}::date >= CURRENT_DATE - 29`;
   }
 }
@@ -89,6 +90,10 @@ function getProfileDateFilterRaw(
   period: Period,
   range?: DateRange
 ): SQL {
+  if (range) {
+    return sql`AND da.date::date >= ${range.from}::date AND da.date::date <= ${range.to}::date`;
+  }
+
   switch (period) {
     case "today":
       return sql`AND da.date::date = CURRENT_DATE`;
@@ -101,9 +106,6 @@ function getProfileDateFilterRaw(
     case "ytd":
       return sql`AND da.date::date >= date_trunc('year', CURRENT_DATE)::date`;
     case "custom":
-      if (range) {
-        return sql`AND da.date::date >= ${range.from}::date AND da.date::date <= ${range.to}::date`;
-      }
       return sql`AND da.date::date >= CURRENT_DATE - 29`;
   }
 }

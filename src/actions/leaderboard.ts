@@ -35,9 +35,7 @@ export async function loadMoreRows(
   const safeOffset = Math.max(0, Math.floor(offset));
   const safeLimit = Math.min(200, Math.max(1, Math.floor(limit)));
 
-  const range = validPeriod === "custom"
-    ? parseDateRange(rangeFrom, rangeTo)
-    : undefined;
+  const range = parseDateRange(rangeFrom, rangeTo, { allowFutureDays: 1 });
 
   return getLeaderboardData(validPeriod, validSort, validOrder, range, safeLimit, safeOffset);
 }
