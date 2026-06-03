@@ -38,6 +38,7 @@ import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { seoAlternates } from "@/lib/seo";
 import { getTranslations } from "next-intl/server";
+import { getServerPeriodRange } from "@/lib/viewer-period";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -50,6 +51,7 @@ interface PageProps {
     order?: string;
     from?: string;
     to?: string;
+    tz?: string;
   }>;
 }
 
@@ -129,11 +131,14 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
 
   // Parse time filter/sort from URL params with cookie fallback
   // Members default to cookie preference or "this-month"; non-members default to "ytd"
+  const cookieStore = await cookies();
   const saved = isMember
-    ? parsePeriodCookie((await cookies()).get(PERIOD_COOKIE)?.value)
+    ? parsePeriodCookie(cookieStore.get(PERIOD_COOKIE)?.value)
     : null;
+  const viewerTimeZone = sp.tz;
 
-  const period: Period = VALID_PERIODS.includes(sp.period as Period)
+  const hasExplicitPeriod = VALID_PERIODS.includes(sp.period as Period);
+  const period: Period = hasExplicitPeriod
     ? (sp.period as Period)
     : saved?.period ?? (isMember ? "this-month" : "ytd");
   const sort: SortCol = VALID_SORTS.includes(sp.sort as SortCol)
@@ -143,9 +148,12 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
     ? (sp.order as SortOrder)
     : "desc";
 
-  const range = period === "custom"
-    ? parseDateRange(sp.from ?? saved?.from, sp.to ?? saved?.to)
-    : undefined;
+  const range =
+    parseDateRange(sp.from, sp.to, { allowFutureDays: 1 }) ??
+    (period === "custom" && saved?.period === "custom"
+      ? parseDateRange(saved.from, saved.to, { allowFutureDays: 1 })
+      : undefined) ??
+    getServerPeriodRange(period, viewerTimeZone);
 
   const t = await getTranslations("team");
 
@@ -375,6 +383,7 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
           period={period}
           rangeFrom={range?.from}
           rangeTo={range?.to}
+          timeZone={viewerTimeZone}
         />
 
         {/* Former contributors */}

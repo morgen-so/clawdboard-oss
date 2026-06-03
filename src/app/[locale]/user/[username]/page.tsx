@@ -43,6 +43,7 @@ import { RecapStrip } from "@/components/recaps/RecapStrip";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
+import { getServerPeriodRange } from "@/lib/viewer-period";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -96,7 +97,7 @@ const ModelBreakdown = nextDynamic(
 
 interface PageProps {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ period?: string; from?: string; to?: string; tz?: string }>;
 }
 
 function fmtCost(cost: string): string {
@@ -151,11 +152,19 @@ export default async function UserProfilePage({
   const username = decodeURIComponent(rawUsername);
 
   // Validate period (fall back to cookie, then "7d")
-  const saved = parsePeriodCookie((await cookies()).get(PERIOD_COOKIE)?.value);
-  const period: Period = VALID_PERIODS.includes(sp.period as Period)
+  const cookieStore = await cookies();
+  const saved = parsePeriodCookie(cookieStore.get(PERIOD_COOKIE)?.value);
+  const viewerTimeZone = sp.tz;
+  const hasExplicitPeriod = VALID_PERIODS.includes(sp.period as Period);
+  const period: Period = hasExplicitPeriod
     ? (sp.period as Period)
     : saved?.period ?? "7d";
-  const range = parseDateRange(sp.from ?? saved?.from, sp.to ?? saved?.to);
+  const range =
+    parseDateRange(sp.from, sp.to, { allowFutureDays: 1 }) ??
+    (period === "custom" && saved?.period === "custom"
+      ? parseDateRange(saved.from, saved.to, { allowFutureDays: 1 })
+      : undefined) ??
+    getServerPeriodRange(period, viewerTimeZone);
 
   // Look up user by GitHub username (case-insensitive)
   const user = await getUserByUsername(username);

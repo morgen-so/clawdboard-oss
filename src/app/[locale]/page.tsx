@@ -38,6 +38,7 @@ import { Header } from "@/components/layout/Header";
 import { ShareLeaderboard } from "@/components/leaderboard/ShareLeaderboard";
 import { cookies } from "next/headers";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
+import { getServerPeriodRange } from "@/lib/viewer-period";
 
 export const metadata: Metadata = {
   title: "clawdboard — AI Coding Usage Leaderboard",
@@ -78,17 +79,20 @@ function buildItemListLd(rows: { githubUsername: string | null; totalCost: strin
 }
 
 interface PageProps {
-  searchParams: Promise<{ period?: string; sort?: string; order?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ period?: string; sort?: string; order?: string; from?: string; to?: string; tz?: string }>;
 }
 
 
 export default async function LeaderboardPage({ searchParams }: PageProps) {
   const t = await getTranslations("leaderboard");
   const params = await searchParams;
-  const saved = parsePeriodCookie((await cookies()).get(PERIOD_COOKIE)?.value);
+  const cookieStore = await cookies();
+  const saved = parsePeriodCookie(cookieStore.get(PERIOD_COOKIE)?.value);
+  const viewerTimeZone = params.tz;
 
   // Validate searchParams with defaults (fall back to cookie, then "7d")
-  const period: Period = VALID_PERIODS.includes(params.period as Period)
+  const hasExplicitPeriod = VALID_PERIODS.includes(params.period as Period);
+  const period: Period = hasExplicitPeriod
     ? (params.period as Period)
     : saved?.period ?? "7d";
   const sort: SortCol = VALID_SORTS.includes(params.sort as SortCol)
@@ -98,9 +102,12 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     ? (params.order as SortOrder)
     : "desc";
 
-  const range = period === "custom"
-    ? parseDateRange(params.from ?? saved?.from, params.to ?? saved?.to)
-    : undefined;
+  const range =
+    parseDateRange(params.from, params.to, { allowFutureDays: 1 }) ??
+    (period === "custom" && saved?.period === "custom"
+      ? parseDateRange(saved.from, saved.to, { allowFutureDays: 1 })
+      : undefined) ??
+    getServerPeriodRange(period, viewerTimeZone);
 
   const [{ rows, totalCount }, session, vibeCoderCount, communityStats, weeklyTop] = await Promise.all([
     getLeaderboardData(period, sort, order, range),
@@ -256,6 +263,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           period={period}
           rangeFrom={range?.from}
           rangeTo={range?.to}
+          timeZone={viewerTimeZone}
         />
 
         {/* Leaderboard table */}
@@ -269,6 +277,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
           period={period}
           rangeFrom={range?.from}
           rangeTo={range?.to}
+          timeZone={viewerTimeZone}
         />
       </main>
 

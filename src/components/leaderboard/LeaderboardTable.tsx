@@ -23,6 +23,7 @@ interface LeaderboardTableProps {
   period?: string;
   rangeFrom?: string;
   rangeTo?: string;
+  timeZone?: string;
 }
 
 export function LeaderboardTable({
@@ -34,6 +35,7 @@ export function LeaderboardTable({
   period,
   rangeFrom,
   rangeTo,
+  timeZone,
 }: LeaderboardTableProps) {
   const t = useTranslations("leaderboard");
   const [rows, setRows] = useState(initialRows);
@@ -123,6 +125,7 @@ export function LeaderboardTable({
                   period={period}
                   rangeFrom={rangeFrom}
                   rangeTo={rangeTo}
+                  timeZone={timeZone}
                 />
               ))
             )}
@@ -156,6 +159,7 @@ export function LeaderboardRowItem({
   period,
   rangeFrom,
   rangeTo,
+  timeZone,
 }: {
   row: LeaderboardRow;
   index: number;
@@ -163,6 +167,7 @@ export function LeaderboardRowItem({
   period?: string;
   rangeFrom?: string;
   rangeTo?: string;
+  timeZone?: string;
 }) {
   const t = useTranslations("leaderboard");
   const initials = row.githubUsername
@@ -196,7 +201,7 @@ export function LeaderboardRowItem({
       {/* User */}
       <td className="px-3 py-3 sm:px-4">
         {row.githubUsername ? (
-          <Link href={buildProfileHref(row.githubUsername, period, rangeFrom, rangeTo)} className="block">
+          <Link href={buildProfileHref(row.githubUsername, period, rangeFrom, rangeTo, timeZone)} className="block">
             <div className="flex items-center gap-3">
               <StreakAura streak={row.currentStreak} size="sm">
                 {row.image ? (

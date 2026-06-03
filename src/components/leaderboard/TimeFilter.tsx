@@ -4,9 +4,10 @@ import { Suspense, useRef, useState, useEffect, useCallback, useMemo } from "rea
 import { createPortal } from "react-dom";
 import { useSearchParams } from "next/navigation";
 import { useRouter } from "@/i18n/navigation";
-import { MIN_DATE } from "@/lib/constants";
+import { MIN_DATE, type Period } from "@/lib/constants";
 import { DatePicker } from "@/components/ui/DatePicker";
 import { PERIOD_COOKIE, serializePeriodCookie } from "@/lib/period-cookie";
+import { formatLocalDate, getClientTimeZone } from "@/lib/viewer-period";
 import { useTranslations } from "next-intl";
 
 interface TimeFilterProps {
@@ -42,7 +43,7 @@ function TimeFilterInner({ current, from, to }: TimeFilterProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
   const [popoverPos, setPopoverPos] = useState({ top: 0, right: 0, fullWidth: false });
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = formatLocalDate(new Date());
   const [pickFrom, setPickFrom] = useState(from ?? today);
   const [pickTo, setPickTo] = useState(to ?? today);
 
@@ -60,11 +61,21 @@ function TimeFilterInner({ current, from, to }: TimeFilterProps) {
     pickFrom && pickTo && pickFrom <= pickTo && pickFrom >= MIN_DATE && pickTo <= today;
 
   const navigate = useCallback(
-    (period: string, rangeFrom?: string, rangeTo?: string) => {
+    (
+      period: string,
+      rangeFrom?: string,
+      rangeTo?: string,
+      options: { includeRangeInUrl?: boolean; timeZone?: string } = {}
+    ) => {
       document.cookie = `${PERIOD_COOKIE}=${serializePeriodCookie(period, rangeFrom, rangeTo)};path=/;max-age=31536000;SameSite=Lax`;
       const params = new URLSearchParams(searchParams.toString());
       params.set("period", period);
-      if (rangeFrom && rangeTo) {
+      if (options.timeZone) {
+        params.set("tz", options.timeZone);
+      } else {
+        params.delete("tz");
+      }
+      if (options.includeRangeInUrl !== false && rangeFrom && rangeTo) {
         params.set("from", rangeFrom);
         params.set("to", rangeTo);
       } else {
@@ -74,6 +85,17 @@ function TimeFilterInner({ current, from, to }: TimeFilterProps) {
       router.push(`?${params.toString()}`, { scroll: false });
     },
     [router, searchParams]
+  );
+
+  const navigateShortcut = useCallback(
+    (period: Exclude<Period, "custom">) => {
+      navigate(period, undefined, undefined, {
+        includeRangeInUrl: false,
+        timeZone: getClientTimeZone(),
+      });
+      setPopoverOpen(false);
+    },
+    [navigate]
   );
 
   // Click-outside handler
@@ -206,8 +228,7 @@ function TimeFilterInner({ current, from, to }: TimeFilterProps) {
               <button
                 key={p.value}
                 onClick={() => {
-                  navigate(p.value);
-                  setPopoverOpen(false);
+                  navigateShortcut(p.value);
                 }}
                 className={`min-h-[40px] sm:min-h-0 px-2.5 py-2 sm:py-1.5 sm:px-3 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
                   isActive
