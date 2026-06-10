@@ -19,6 +19,12 @@ import { StatsFaq } from "@/components/stats/StatsFaq";
 import { StatsCta } from "@/components/stats/StatsCta";
 import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/chart-utils";
+import {
+  formatDateLong,
+  formatNumber,
+  formatTokens,
+  formatUsdCompact,
+} from "@/lib/format";
 import { getTranslations } from "next-intl/server";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -57,38 +63,6 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 100_000) return `$${(n / 1_000).toFixed(0)}k`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 export default async function StatsPage() {
   const t = await getTranslations("statsPage");
   const { getSourceBreakdown } = await import("@/lib/db/stats");
@@ -110,8 +84,8 @@ export default async function StatsPage() {
       q: t("faqQ1"),
       a: t("faqA1", {
         totalUsers: stats.totalUsers.toLocaleString(),
-        avgCost: formatCurrency(avgCost),
-        medianCost: formatCurrency(medianCost),
+        avgCost: formatUsdCompact(avgCost),
+        medianCost: formatUsdCompact(medianCost),
       }),
     },
     {
@@ -285,10 +259,10 @@ export default async function StatsPage() {
           <span className="sr-only">
             As of {lastUpdated.split(",").slice(0, 2).join(",")},{" "}
             {stats.totalUsers.toLocaleString()} developers have tracked{" "}
-            {formatCurrency(totalCost)} in estimated AI coding spend and{" "}
+            {formatUsdCompact(totalCost)} in estimated AI coding spend and{" "}
             {formatNumber(stats.totalTokens)} tokens on clawdboard.
             The average developer has spent an estimated{" "}
-            {formatCurrency(avgCost)} (median: {formatCurrency(medianCost)}).
+            {formatUsdCompact(avgCost)} (median: {formatUsdCompact(medianCost)}).
             {topModel && (
               <> The most-used model by cost share is{" "}
               {topModelName} at {topModel.costShare}% of total spend.{" "}
@@ -346,7 +320,7 @@ export default async function StatsPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3">
             <StatCard
               label={t("totalCommunitySpend")}
-              value={formatCurrency(totalCost)}
+              value={formatUsdCompact(totalCost)}
               sub={t("acrossDevelopers", { totalUsers: stats.totalUsers.toLocaleString() })}
               accent
             />
@@ -357,15 +331,15 @@ export default async function StatsPage() {
             />
             <StatCard
               label={t("avgCostPerDeveloper")}
-              value={formatCurrency(avgCost)}
-              sub={t("medianSub", { medianCost: formatCurrency(medianCost) })}
+              value={formatUsdCompact(avgCost)}
+              sub={t("medianSub", { medianCost: formatUsdCompact(medianCost) })}
             />
             <StatCard
               label={t("busiestCommunityDay")}
-              value={formatCurrency(biggestDay)}
+              value={formatUsdCompact(biggestDay)}
               sub={
                 stats.biggestSingleDayDate
-                  ? formatDate(stats.biggestSingleDayDate)
+                  ? formatDateLong(stats.biggestSingleDayDate)
                   : "—"
               }
             />
@@ -473,8 +447,8 @@ export default async function StatsPage() {
             <p>
               {t.rich("costAnalysisP1", {
                 totalUsers: stats.totalUsers.toLocaleString(),
-                avgCost: formatCurrency(avgCost),
-                medianCost: formatCurrency(medianCost),
+                avgCost: formatUsdCompact(avgCost),
+                medianCost: formatUsdCompact(medianCost),
                 strong: (chunks) => (
                   <strong className="text-foreground">{chunks}</strong>
                 ),
@@ -487,12 +461,12 @@ export default async function StatsPage() {
               {t.rich("costAnalysisP3", {
                 totalActiveDays: stats.totalActiveDays.toLocaleString(),
                 longestStreak: stats.longestStreak,
-                biggestDay: formatCurrency(biggestDay),
+                biggestDay: formatUsdCompact(biggestDay),
                 strong: (chunks) => (
                   <strong className="text-foreground">{chunks}</strong>
                 ),
               })}
-              {stats.biggestSingleDayDate && t("costAnalysisP3Date", { date: formatDate(stats.biggestSingleDayDate) })}
+              {stats.biggestSingleDayDate && t("costAnalysisP3Date", { date: formatDateLong(stats.biggestSingleDayDate) })}
               .
             </p>
             <p>

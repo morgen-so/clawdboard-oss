@@ -2,24 +2,9 @@ import { ImageResponse } from "next/og";
 import { getRecapById } from "@/lib/db/recaps";
 import { loadGoogleFont } from "@/lib/og-fonts";
 import type { RecapData } from "@/lib/db/schema";
+import { formatTokensCompact, formatUsdWhole } from "@/lib/format";
 
 export const revalidate = 3600;
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 function getMedalEmoji(rank: number): string {
   if (rank === 1) return "\uD83E\uDD47";
@@ -169,7 +154,7 @@ export async function GET(
                   color: "#ffffff",
                 }}
               >
-                {formatCurrency(data.totalCost)}
+                {formatUsdWhole(data.totalCost)}
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>
@@ -192,7 +177,7 @@ export async function GET(
                   color: "#ffffff",
                 }}
               >
-                {formatTokens(data.totalTokens)}
+                {formatTokensCompact(data.totalTokens)}
               </div>
             </div>
             <div style={{ display: "flex", flexDirection: "column" }}>

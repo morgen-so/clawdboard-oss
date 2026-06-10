@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { eachDayOfInterval, format, subDays, getDay, parseISO } from "date-fns";
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { formatUsdPlain } from "@/lib/format";
 
 interface ActivityDataPoint {
   date: string;
@@ -50,11 +51,6 @@ function getLevel(cost: number, thresholds: number[]): number {
   if (cost <= thresholds[2]) return 2;
   if (cost <= thresholds[3]) return 3;
   return 4;
-}
-
-/** Format a cost as a USD string with two decimal places. */
-function formatCost(cost: number): string {
-  return `$${cost.toFixed(2)}`;
 }
 
 /** Day of week labels (Sun=0, Mon=1, ..., Sat=6) */
@@ -237,7 +233,7 @@ export function ActivityGrid({ data }: ActivityGridProps) {
                     gridRow: cell.dayOfWeek + 1,
                     gridColumn: cell.weekIndex + 1,
                   }}
-                  title={`${cell.displayDate}: ${formatCost(cell.cost)}`}
+                  title={`${cell.displayDate}: ${formatUsdPlain(cell.cost)}`}
                 />
               ))}
             </div>

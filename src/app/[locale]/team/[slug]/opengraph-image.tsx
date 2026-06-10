@@ -4,6 +4,7 @@ import { ImageResponse } from "next/og";
 import { getTeamBySlug } from "@/lib/db/teams";
 import { getTeamStats } from "@/lib/db/cached";
 import { loadGoogleFont } from "@/lib/og-fonts";
+import { formatTokensCompact, formatUsd } from "@/lib/format";
 
 // ─── Next.js OG Image file convention exports ──────────────────────────────
 
@@ -11,22 +12,6 @@ export const alt = "clawdboard team stats";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const revalidate = 3600; // 1 hour cache
-
-// ─── Formatting helpers ─────────────────────────────────────────────────────
-
-function formatCost(cost: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(parseFloat(cost));
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 // ─── Fallback card for missing teams ────────────────────────────────────────
 
@@ -243,8 +228,8 @@ export default async function Image({
             flex: 1,
           }}
         >
-          <StatCard label="Total Cost" value={formatCost(stats.totalCost)} highlight />
-          <StatCard label="Total Tokens" value={formatTokens(stats.totalTokens)} />
+          <StatCard label="Total Cost" value={formatUsd(stats.totalCost)} highlight />
+          <StatCard label="Total Tokens" value={formatTokensCompact(stats.totalTokens)} />
           <StatCard label="Active Days" value={String(stats.activeDays)} />
         </div>
 

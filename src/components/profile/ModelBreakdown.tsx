@@ -11,6 +11,7 @@ import {
 } from "recharts";
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { formatTokensCompact, formatUsdPlain } from "@/lib/format";
 
 interface ModelDataPoint {
   modelName: string;
@@ -60,16 +61,6 @@ function friendlyModelName(raw: string): string {
   return raw;
 }
 
-function formatCurrency(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 export function ModelBreakdown({ data }: ModelBreakdownProps) {
   const t = useTranslations("profile");
@@ -107,7 +98,7 @@ export function ModelBreakdown({ data }: ModelBreakdownProps) {
         >
           <XAxis
             type="number"
-            tickFormatter={formatCurrency}
+            tickFormatter={formatUsdPlain}
             stroke="var(--muted)"
             fontSize={11}
             tickLine={false}
@@ -139,9 +130,9 @@ export function ModelBreakdown({ data }: ModelBreakdownProps) {
             ) => {
               const item = props?.payload;
               const v = value ?? 0;
-              if (!item) return [formatCurrency(v), ""];
+              if (!item) return [formatUsdPlain(v), ""];
               return [
-                `${formatCurrency(v)} (${formatTokens(item.inputTokens)} in / ${formatTokens(item.outputTokens)} out)`,
+                `${formatUsdPlain(v)} (${formatTokensCompact(item.inputTokens)} in / ${formatTokensCompact(item.outputTokens)} out)`,
                 item.displayName ?? item.modelName,
               ];
             }}

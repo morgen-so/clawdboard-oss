@@ -8,19 +8,11 @@ import {
 } from "@/lib/db/cached";
 import { computeCurrentStreak } from "@/lib/streak";
 import { loadGoogleFont } from "@/lib/og-fonts";
+import { formatUsd } from "@/lib/format";
 
 // ─── Cache ──────────────────────────────────────────────────────────────────
 
 export const revalidate = 3600; // 1 hour
-
-// ─── Formatting helpers ─────────────────────────────────────────────────────
-
-function formatCost(cost: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(parseFloat(cost));
-}
 
 function getInitials(name: string | null, username: string | null): string {
   return (username ?? name ?? "?").slice(0, 2).toUpperCase();
@@ -223,7 +215,7 @@ export async function GET(
                 color: "#F9A615",
               }}
             >
-              {formatCost(summary.totalCost)}
+              {formatUsd(summary.totalCost)}
             </div>
           </div>
 

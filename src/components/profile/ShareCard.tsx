@@ -1,5 +1,6 @@
 import { forwardRef } from "react";
 import { getStreakTier } from "@/lib/streak-tiers";
+import { formatTokensCompact, formatUsd } from "@/lib/format";
 
 interface ShareCardProps {
   username: string;
@@ -12,19 +13,6 @@ interface ShareCardProps {
   streak: number;
 }
 
-function formatCost(cost: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(parseFloat(cost));
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 /**
  * Pure presentational card matching the OG image layout.
@@ -196,7 +184,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
                 color: "#F9A615",
               }}
             >
-              {formatCost(totalCost)}
+              {formatUsd(totalCost)}
             </div>
           </div>
 
@@ -325,7 +313,7 @@ export const ShareCard = forwardRef<HTMLDivElement, ShareCardProps>(
                 color: "#fafafa",
               }}
             >
-              {formatTokens(totalTokens)}
+              {formatTokensCompact(totalTokens)}
             </div>
           </div>
         </div>

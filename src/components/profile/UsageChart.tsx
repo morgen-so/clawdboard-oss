@@ -23,6 +23,11 @@ import {
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import type { Period, DateRange } from "@/lib/db/leaderboard";
+import {
+  formatChartDate,
+  formatTokensCompact,
+  formatUsdPlain,
+} from "@/lib/format";
 
 interface UsageDataPoint {
   date: string;
@@ -115,25 +120,6 @@ function getPeriodTitle(period: Period, range: DateRange | undefined, t: (key: s
   }
 }
 
-function formatXAxisDate(dateStr: string): string {
-  try {
-    return format(parseISO(dateStr), "MMM d");
-  } catch {
-    return dateStr;
-  }
-}
-
-function formatCurrency(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
-
-function formatTokensCompact(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
 const COST_COLOR = "#F9A615";
 const TOKENS_COLOR = "#06b6d4";
 
@@ -158,13 +144,13 @@ const AXIS_COMMON = {
 
 function tooltipFormatter(value: number | undefined, name: string | undefined) {
   const v = value ?? 0;
-  if (name === "cost") return [formatCurrency(v), "Cost"];
+  if (name === "cost") return [formatUsdPlain(v), "Cost"];
   if (name === "tokens") return [formatTokensCompact(v), "Tokens"];
   return [String(v), name ?? ""];
 }
 
 function tooltipLabelFormatter(label: unknown) {
-  return formatXAxisDate(String(label ?? ""));
+  return formatChartDate(String(label ?? ""));
 }
 
 export function UsageChart({ data, period, range }: UsageChartProps) {
@@ -224,9 +210,9 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
             barCategoryGap="60%"
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-            <XAxis dataKey="date" tickFormatter={formatXAxisDate} {...AXIS_COMMON} />
+            <XAxis dataKey="date" tickFormatter={formatChartDate} {...AXIS_COMMON} />
             {showCost && (
-              <YAxis yAxisId="left" tickFormatter={formatCurrency} {...AXIS_COMMON} width={60} />
+              <YAxis yAxisId="left" tickFormatter={formatUsdPlain} {...AXIS_COMMON} width={60} />
             )}
             {showTokens && (
               <YAxis
@@ -271,13 +257,13 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
             <XAxis
               dataKey="date"
-              tickFormatter={formatXAxisDate}
+              tickFormatter={formatChartDate}
               {...AXIS_COMMON}
               interval="preserveStartEnd"
               minTickGap={40}
             />
             {showCost && (
-              <YAxis yAxisId="left" tickFormatter={formatCurrency} {...AXIS_COMMON} width={60} />
+              <YAxis yAxisId="left" tickFormatter={formatUsdPlain} {...AXIS_COMMON} width={60} />
             )}
             {showTokens && (
               <YAxis

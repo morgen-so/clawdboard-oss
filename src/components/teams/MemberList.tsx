@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { type LeaderboardRow } from "@/lib/db/leaderboard";
 import { StreakBadge } from "@/components/leaderboard/StreakBadge";
+import { formatMonthYear } from "@/lib/format";
 
 interface MemberData {
   userId: string;
@@ -18,14 +19,6 @@ interface MemberData {
 interface MemberListProps {
   members: MemberData[];
   memberStats: LeaderboardRow[];
-}
-
-function formatJoinDate(date: Date | null): string {
-  if (!date) return "Unknown";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-  }).format(date);
 }
 
 export function MemberList({ members, memberStats }: MemberListProps) {
@@ -90,7 +83,7 @@ export function MemberList({ members, memberStats }: MemberListProps) {
                       )}
                     </div>
                     <p className="font-mono text-xs text-muted">
-                      {t("memberSince", { date: formatJoinDate(member.joinedAt) })}
+                      {t("memberSince", { date: formatMonthYear(member.joinedAt) })}
                     </p>
                   </div>
                 </div>

@@ -3,6 +3,7 @@
 import type { RecapData } from "@/lib/db/schema";
 import { DonutChart } from "../visuals/DonutChart";
 import { AmbientParticles } from "../visuals/AmbientParticles";
+import { formatTokensCompact, formatUsd } from "@/lib/format";
 
 interface SlideUsageProps {
   data: RecapData;
@@ -10,22 +11,6 @@ interface SlideUsageProps {
 }
 
 const DONUT_COLORS = ["#F9A615", "#3b82f6", "#10b981", "#8b5cf6", "#ec4899"];
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 function DeltaBadge({
   value,
@@ -41,8 +26,8 @@ function DeltaBadge({
   const isPositive = value > 0;
   const formatted =
     type === "currency"
-      ? formatCurrency(Math.abs(value))
-      : formatTokens(Math.abs(value));
+      ? formatUsd(Math.abs(value))
+      : formatTokensCompact(Math.abs(value));
 
   return (
     <span
@@ -88,7 +73,7 @@ export function SlideUsage({ data }: SlideUsageProps) {
             className="font-display text-3xl font-bold text-white animate-fade-in"
             style={{ animationDelay: "200ms" }}
           >
-            {formatCurrency(data.totalCost)}
+            {formatUsd(data.totalCost)}
           </p>
           <DeltaBadge value={data.costDelta} type="currency" delay="500ms" />
         </div>
@@ -111,7 +96,7 @@ export function SlideUsage({ data }: SlideUsageProps) {
             className="font-display text-3xl font-bold text-white animate-fade-in"
             style={{ animationDelay: "600ms" }}
           >
-            {formatTokens(data.totalTokens)}
+            {formatTokensCompact(data.totalTokens)}
           </p>
           <DeltaBadge value={data.tokensDelta} type="tokens" delay="800ms" />
         </div>
