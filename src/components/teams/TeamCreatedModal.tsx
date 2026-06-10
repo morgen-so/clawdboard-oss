@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { CheckIcon, CloseIcon, CopyIcon } from "@/components/icons/CommonIcons";
+import { useModalDismiss } from "@/components/ui/useModalDismiss";
 
 /* ── Icons ───────────────────────────────────────────── */
 
@@ -135,19 +136,7 @@ export function TeamCreatedModal({
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
-  // Escape key + body scroll lock
-  useEffect(() => {
-    if (!visible) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") handleClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = "";
-    };
-  }, [visible, handleClose]);
+  useModalDismiss(visible, handleClose);
 
   // Cleanup timers
   useEffect(() => {
