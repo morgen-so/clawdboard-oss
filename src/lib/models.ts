@@ -1,23 +1,10 @@
 /**
- * Model slug utilities for programmatic SEO pages.
+ * Model display names and per-family SEO metadata.
  *
- * Raw model IDs (e.g., "claude-opus-4-5-20251101") are stored in JSONB.
- * URL slugs strip the date suffix: "claude-opus-4-5".
- * Pages match all raw IDs that produce the same slug.
+ * Raw model IDs (e.g., "claude-opus-4-5-20251101") are stored in JSONB;
+ * URL slugs strip the date suffix ("claude-opus-4-5", done in SQL via
+ * regexp_replace when slugs are generated).
  */
-
-// Strip trailing date suffix (6–8 digits) from model IDs
-const DATE_SUFFIX_RE = /-\d{6,8}$/;
-
-/** Convert a raw model ID to a URL-safe slug. */
-export function modelSlug(rawModelName: string): string {
-  return rawModelName.replace(DATE_SUFFIX_RE, "");
-}
-
-/** Check if a raw model name matches a given slug. */
-export function matchesSlug(rawModelName: string, slug: string): boolean {
-  return modelSlug(rawModelName) === slug;
-}
 
 // ─── Friendly display names ─────────────────────────────────────────────────
 

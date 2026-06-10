@@ -149,7 +149,7 @@ export function LeaderboardTable({
   );
 }
 
-export function LeaderboardRowItem({
+function LeaderboardRowItem({
   row,
   index,
   isCurrentUser,

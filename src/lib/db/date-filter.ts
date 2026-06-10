@@ -52,7 +52,7 @@ export function statsDateFilter(
 }
 
 /** Human-readable label for a period (mirrors periodFilter's fallbacks). */
-export function periodLabel(period: Period, range?: DateRange): string {
+function periodLabel(period: Period, range?: DateRange): string {
   switch (period) {
     case "today":
       return "today";

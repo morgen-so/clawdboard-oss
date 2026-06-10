@@ -2,7 +2,6 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { env } from "@/lib/env";
 import { seoAlternates } from "@/lib/seo";
 import { cachedAuth } from "@/lib/auth";
 import { getUserTeams } from "@/lib/db/teams";

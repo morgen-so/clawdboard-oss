@@ -40,7 +40,6 @@ export default async function AdminPage() {
   }
 
   // ── Queries ─────────────────────────────────────────
-  const now = new Date();
   const day1 = daysAgo(1);
   const day7 = daysAgo(7);
   const day30 = daysAgo(30);
