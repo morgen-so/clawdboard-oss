@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, executeRows } from "@/lib/db";
 import { users, dailyAggregates } from "@/lib/db/schema";
 import { eq, sql, asc, and } from "drizzle-orm";
 import type { Period, DateRange } from "./leaderboard";
@@ -192,7 +192,7 @@ export async function getUserModelBreakdown(
     ? sql`AND ${periodFilter(sql`da.date`, period, range)}`
     : sql``;
 
-  const result = await db.execute(sql`
+  return executeRows<ModelBreakdownRow>(sql`
     SELECT
       elem->>'modelName' AS model_name,
       SUM((elem->>'inputTokens')::bigint) AS input_tokens,
@@ -207,7 +207,6 @@ export async function getUserModelBreakdown(
     GROUP BY elem->>'modelName'
     ORDER BY SUM((elem->>'cost')::numeric) DESC
   `);
-  return result.rows as unknown as ModelBreakdownRow[];
 }
 
 /**

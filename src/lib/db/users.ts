@@ -1,6 +1,6 @@
 import "server-only";
 
-import { db } from "@/lib/db";
+import { executeRows } from "@/lib/db";
 import { sql } from "drizzle-orm";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -32,7 +32,7 @@ export async function searchUsers(
       )`
     : sql``;
 
-  const result = await db.execute(sql`
+  return executeRows<UserSearchResult>(sql`
     SELECT u.id, u.github_username, u.name, u.image
     FROM users u
     WHERE (u.github_username ILIKE ${pattern} OR u.name ILIKE ${pattern})
@@ -40,5 +40,4 @@ export async function searchUsers(
     ORDER BY u.github_username ASC
     LIMIT 10
   `);
-  return result.rows as unknown as UserSearchResult[];
 }

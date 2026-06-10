@@ -1,6 +1,6 @@
 import "server-only";
 
-import { db } from "@/lib/db";
+import { db, executeRows } from "@/lib/db";
 import { teams, teamMembers, users } from "./schema";
 import { eq, and, isNull, sql, count } from "drizzle-orm";
 import { getDateFilter, SQL_COL_MAP, getPreviousRanks, mapRawRows } from "./leaderboard";
@@ -202,8 +202,8 @@ export async function getTeamLeaderboardData(
   const colName = SQL_COL_MAP[sortBy];
   const direction = order === "desc" ? "DESC" : "ASC";
 
-  const [result, globalPrevRanks] = await Promise.all([
-    db.execute(sql`
+  const [rows, globalPrevRanks] = await Promise.all([
+    executeRows<RawRow>(sql`
       WITH team_contributions AS (
         SELECT
           da.user_id,
@@ -267,8 +267,6 @@ export async function getTeamLeaderboardData(
     getPreviousRanks(),
   ]);
 
-  const rows = result.rows as unknown as RawRow[];
-
   // Derive previous team-internal ranking from global rank snapshots:
   // sort team members by their previous global rank to get previous positions.
   const membersByPrevRank = rows
@@ -286,13 +284,24 @@ export async function getTeamLeaderboardData(
 
 // ─── Public team leaderboard ────────────────────────────────────────────────
 
+type PublicTeamRow = {
+  team_id: string;
+  team_name: string;
+  team_slug: string;
+  cooking_url: string | null;
+  cooking_label: string | null;
+  active_members: string | number;
+  total_cost: string | null;
+  total_tokens: string | number | null;
+};
+
 export async function getPublicTeamLeaderboard(
   period: Period,
   range?: DateRange
 ): Promise<TeamLeaderboardRow[]> {
   const dateFilter = sql`AND ${getDateFilter(period, range)}`;
 
-  const result = await db.execute(sql`
+  const rows = await executeRows<PublicTeamRow>(sql`
     WITH member_counts AS (
       SELECT team_id, COUNT(*) AS cnt
       FROM team_members
@@ -323,18 +332,7 @@ export async function getPublicTeamLeaderboard(
     ORDER BY total_cost::numeric DESC
   `);
 
-  return (
-    result.rows as unknown as {
-      team_id: string;
-      team_name: string;
-      team_slug: string;
-      cooking_url: string | null;
-      cooking_label: string | null;
-      active_members: string | number;
-      total_cost: string | null;
-      total_tokens: string | number | null;
-    }[]
-  ).map((row, i) => ({
+  return rows.map((row, i) => ({
     rank: i + 1,
     teamId: row.team_id,
     teamName: row.team_name,
