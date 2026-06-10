@@ -18,9 +18,10 @@ import { StatsCta } from "@/components/stats/StatsCta";
 import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/models";
 import { type ToolMeta, getToolMeta, getActiveTools, toolNameList } from "@/lib/tools";
-import { seoAlternates } from "@/lib/seo";
+import { seoAlternates, breadcrumbLd, faqPageLd } from "@/lib/seo";
 import { formatDateLong, formatTokens, formatUsdCompact } from "@/lib/format";
 import { getTranslations } from "next-intl/server";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -169,21 +170,6 @@ export default async function ToolsPage() {
 
   // ─── JSON-LD ──────────────────────────────────────────────────────────────
 
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Usage Statistics",
-        item: `${BASE_URL}/stats`,
-      },
-      { "@type": "ListItem", position: 3, name: "Tool Comparison" },
-    ],
-  };
-
   const datasetLd = {
     "@context": "https://schema.org",
     "@type": "Dataset",
@@ -204,30 +190,16 @@ export default async function ToolsPage() {
     ],
   };
 
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: { "@type": "Answer", text: faq.a },
-    })),
-  };
-
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      <JsonLd
+        data={breadcrumbLd([
+          { name: "Usage Statistics", item: `${BASE_URL}/stats` },
+          { name: "Tool Comparison" },
+        ])}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
-      />
+      <JsonLd data={datasetLd} />
+      <JsonLd data={faqPageLd(faqs)} />
 
       <Header
         subtitle={t("subtitle")}

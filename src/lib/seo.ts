@@ -20,3 +20,44 @@ export function seoAlternates(path: string) {
     languages,
   };
 }
+
+// ─── JSON-LD builders ────────────────────────────────────────────────────────
+
+interface Crumb {
+  name: string;
+  /** Absolute URL; omit on the final crumb (Google's guidance). */
+  item?: string;
+}
+
+/**
+ * schema.org BreadcrumbList. The Home crumb is implicit and always first;
+ * pass the remaining crumbs in order.
+ */
+export function breadcrumbLd(crumbs: Crumb[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
+      ...crumbs.map((c, i) => ({
+        "@type": "ListItem",
+        position: i + 2,
+        name: c.name,
+        ...(c.item && { item: c.item }),
+      })),
+    ],
+  };
+}
+
+/** schema.org FAQPage from question/answer pairs. */
+export function faqPageLd(faqs: { q: string; a: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: { "@type": "Answer", text: faq.a },
+    })),
+  };
+}

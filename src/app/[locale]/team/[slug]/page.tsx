@@ -36,9 +36,10 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { safeHostname, buildInviteUrl } from "@/lib/url";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import { seoAlternates } from "@/lib/seo";
+import { seoAlternates, breadcrumbLd } from "@/lib/seo";
 import { formatTokensCompact, formatUsd, formatUsdShort } from "@/lib/format";
 import { getTranslations } from "next-intl/server";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -138,21 +139,13 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
   const pendingMembers = members.filter((m) => !m.leftAt && m.status === "pending");
   const formerMembers = members.filter((m) => m.leftAt !== null);
 
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      { "@type": "ListItem", position: 2, name: "Teams", item: `${BASE_URL}/teams` },
-      { "@type": "ListItem", position: 3, name: team.name },
-    ],
-  };
-
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      <JsonLd
+        data={breadcrumbLd([
+          { name: "Teams", item: `${BASE_URL}/teams` },
+          { name: team.name },
+        ])}
       />
 
       {/* Post-creation invite modal (owner only, on first redirect) */}

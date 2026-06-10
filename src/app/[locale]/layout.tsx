@@ -11,6 +11,7 @@ import { Footer } from "@/components/layout/Footer";
 import { ClientAnalytics } from "@/components/layout/ClientAnalytics";
 import { ActivityTracker } from "@/components/layout/ActivityTracker";
 import { FeedbackWidget } from "@/components/feedback/FeedbackWidget";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const syne = Syne({
   variable: "--font-syne",
@@ -106,10 +107,7 @@ export default async function LocaleLayout({
       <body
         className={`${syne.variable} ${firaCode.variable} antialiased flex min-h-screen flex-col`}
       >
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationLd) }}
-        />
+        <JsonLd data={organizationLd} />
         <NextIntlClientProvider messages={messages}>
           <a href="#main-content" className="skip-to-content">
             Skip to content
