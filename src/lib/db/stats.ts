@@ -3,6 +3,7 @@ import { dailyAggregates } from "./schema";
 import { sql } from "drizzle-orm";
 import type { Period, DateRange } from "./leaderboard";
 import { VALID_PERIODS, parseDateRange } from "./leaderboard";
+import { periodFilter, periodLabel } from "./date-filter";
 
 export { VALID_PERIODS, parseDateRange };
 export type { Period, DateRange };
@@ -11,26 +12,10 @@ export type { Period, DateRange };
 
 function statsDateFilter(period?: Period, range?: DateRange) {
   if (!period) return { filter: sql`TRUE`, label: "all time" };
-  switch (period) {
-    case "today":
-      return { filter: sql`date::date = CURRENT_DATE`, label: "today" };
-    case "7d":
-      return { filter: sql`date::date >= CURRENT_DATE - 6`, label: "last 7 days" };
-    case "30d":
-      return { filter: sql`date::date >= CURRENT_DATE - 29`, label: "last 30 days" };
-    case "this-month":
-      return { filter: sql`date::date >= date_trunc('month', CURRENT_DATE)::date`, label: "this month" };
-    case "ytd":
-      return { filter: sql`date::date >= date_trunc('year', CURRENT_DATE)::date`, label: "year to date" };
-    case "custom":
-      if (range) {
-        return {
-          filter: sql`date::date >= ${range.from}::date AND date::date <= ${range.to}::date`,
-          label: `${range.from} to ${range.to}`,
-        };
-      }
-      return { filter: sql`date::date >= CURRENT_DATE - 29`, label: "last 30 days" };
-  }
+  return {
+    filter: periodFilter(sql`date`, period, range),
+    label: periodLabel(period, range),
+  };
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
