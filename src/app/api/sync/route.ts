@@ -6,6 +6,7 @@ import { dailyAggregates, users } from "@/lib/db/schema";
 import { eq, and, or, isNull, inArray, sql } from "drizzle-orm";
 import { SyncPayloadSchema } from "@/lib/sync/validate";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateApiToken } from "@/lib/api-auth";
 import { isOrgDataStale, syncUserGitHubOrgs } from "@/lib/db/github-orgs";
 
 export async function POST(req: NextRequest) {
@@ -14,27 +15,9 @@ export async function POST(req: NextRequest) {
 
   try {
     // 1. Authenticate via Bearer token
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "Missing authorization token" },
-        { status: 401 }
-      );
-    }
-
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.apiToken, token))
-      .limit(1);
-
-    if (!user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
+    const tokenAuth = await authenticateApiToken(req);
+    if (tokenAuth.response) return tokenAuth.response;
+    const { user } = tokenAuth;
 
     if (user.bannedAt) {
       return NextResponse.json({ error: "Account suspended" }, { status: 403 });

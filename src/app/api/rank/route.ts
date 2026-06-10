@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { dailyAggregates, users } from "@/lib/db/schema";
+import { dailyAggregates } from "@/lib/db/schema";
 import { eq, sql } from "drizzle-orm";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateApiToken } from "@/lib/api-auth";
 
 export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { key: "rank", limit: 15 });
@@ -10,27 +11,9 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. Authenticate via Bearer token (same pattern as POST /api/sync)
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "Missing authorization token" },
-        { status: 401 }
-      );
-    }
-
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.apiToken, token))
-      .limit(1);
-
-    if (!user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
-    }
+    const tokenAuth = await authenticateApiToken(req);
+    if (tokenAuth.response) return tokenAuth.response;
+    const { user } = tokenAuth;
 
     // 2. Get the authenticated user's total cost
     const [userCostRow] = await db
