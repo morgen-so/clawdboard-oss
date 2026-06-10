@@ -1,4 +1,4 @@
-import { db } from "@/lib/db";
+import { db, executeRows } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { MIN_DATE, NEW_USER_WINDOW_MS, VALID_PERIODS, type Period } from "@/lib/constants";
 import { periodFilter } from "./date-filter";
@@ -139,15 +139,15 @@ export async function getPreviousRanks(): Promise<Map<string, number>> {
   const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
   try {
-    const result = await db.execute(sql`
+    const rows = await executeRows<{ user_id: string; rank: number | string }>(sql`
       SELECT user_id, rank FROM rank_snapshots
       WHERE snapshot_date = (
         SELECT MAX(snapshot_date) FROM rank_snapshots WHERE snapshot_date < ${today}
       )
     `);
     const map = new Map<string, number>();
-    for (const row of result.rows) {
-      map.set(row.user_id as string, Number(row.rank));
+    for (const row of rows) {
+      map.set(row.user_id, Number(row.rank));
     }
     return map;
   } catch {
@@ -176,8 +176,8 @@ export async function getLeaderboardData(
   const dateFilter = getDateFilter(period, range);
   const ctes = buildLeaderboardCTEs(dateFilter);
 
-  const [result, previousRanks] = await Promise.all([
-    db.execute(sql`
+  const [rawRows, previousRanks] = await Promise.all([
+    executeRows<RawRowWithCount>(sql`
       ${ctes}
       SELECT
         f.user_id,
@@ -199,7 +199,6 @@ export async function getLeaderboardData(
     getPreviousRanks(),
   ]);
 
-  const rawRows = result.rows as unknown as RawRowWithCount[];
   const totalCount = rawRows.length > 0 ? Number(rawRows[0].total_count) : 0;
 
   return {
@@ -227,8 +226,8 @@ export async function getUserLeaderboardRow(
   const dateFilter = getDateFilter(period, range);
   const ctes = buildLeaderboardCTEs(dateFilter);
 
-  const [result, previousRanks] = await Promise.all([
-    db.execute(sql`
+  const [rows, previousRanks] = await Promise.all([
+    executeRows<RawRowWithRank>(sql`
       ${ctes},
       ranked AS (
         SELECT
@@ -251,9 +250,9 @@ export async function getUserLeaderboardRow(
     getPreviousRanks(),
   ]);
 
-  if (result.rows.length === 0) return null;
+  if (rows.length === 0) return null;
 
-  const raw = result.rows[0] as unknown as RawRowWithRank;
+  const raw = rows[0];
   const rank = Number(raw.rank);
 
   return mapSingleRow(raw, rank, previousRanks);
