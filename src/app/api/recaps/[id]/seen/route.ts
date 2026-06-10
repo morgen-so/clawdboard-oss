@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireSessionUser } from "@/lib/api-auth";
 import { markRecapSeen } from "@/lib/db/recaps";
 import { rateLimit } from "@/lib/rate-limit";
 
@@ -10,13 +10,11 @@ export async function POST(
   const limited = rateLimit(request, { key: "recap-seen", limit: 30 });
   if (limited) return limited;
 
-  const session = await auth();
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const session = await requireSessionUser();
+  if (session.response) return session.response;
 
   const { id } = await params;
-  const updated = await markRecapSeen(id, session.user.id);
+  const updated = await markRecapSeen(id, session.userId);
   if (!updated) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }

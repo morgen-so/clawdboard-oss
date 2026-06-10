@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { revalidateAllCaches } from "@/lib/db/cached";
 import { db } from "@/lib/db";
-import { env } from "@/lib/env";
 import { sql } from "drizzle-orm";
 
 import { rateLimit } from "@/lib/rate-limit";
-import { timingSafeEqual } from "crypto";
+import { verifyCronSecret } from "@/lib/api-auth";
 
 export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { key: "cron-refresh", limit: 2 });
@@ -13,20 +12,8 @@ export async function GET(req: NextRequest) {
 
   try {
     // Verify CRON_SECRET if set (skip in local dev where it's not configured)
-    const cronSecret = env.CRON_SECRET;
-    if (cronSecret) {
-      const authorization = req.headers.get("authorization");
-      const token = authorization?.startsWith("Bearer ")
-        ? authorization.slice(7)
-        : null;
-      if (
-        !token ||
-        token.length !== cronSecret.length ||
-        !timingSafeEqual(Buffer.from(token), Buffer.from(cronSecret))
-      ) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    }
+    const unauthorized = verifyCronSecret(req);
+    if (unauthorized) return unauthorized;
 
     // Ensure source and machine_id columns exist on daily_aggregates (idempotent migration)
     await db.execute(sql`

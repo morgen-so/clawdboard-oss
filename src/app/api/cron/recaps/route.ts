@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { env } from "@/lib/env";
 import { rateLimit } from "@/lib/rate-limit";
-import { timingSafeEqual } from "crypto";
+import { verifyCronSecret } from "@/lib/api-auth";
 import { generateAllRecaps } from "@/lib/recaps/generate";
 
 export async function GET(req: NextRequest) {
@@ -10,20 +9,8 @@ export async function GET(req: NextRequest) {
 
   try {
     // Verify CRON_SECRET if set (skip in local dev where it's not configured)
-    const cronSecret = env.CRON_SECRET;
-    if (cronSecret) {
-      const authorization = req.headers.get("authorization");
-      const token = authorization?.startsWith("Bearer ")
-        ? authorization.slice(7)
-        : null;
-      if (
-        !token ||
-        token.length !== cronSecret.length ||
-        !timingSafeEqual(Buffer.from(token), Buffer.from(cronSecret))
-      ) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-    }
+    const unauthorized = verifyCronSecret(req);
+    if (unauthorized) return unauthorized;
 
     const now = new Date();
     const utcDay = now.getUTCDay(); // 0=Sun, 1=Mon
