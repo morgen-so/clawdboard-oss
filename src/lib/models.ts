@@ -19,6 +19,33 @@ export function matchesSlug(rawModelName: string, slug: string): boolean {
   return modelSlug(rawModelName) === slug;
 }
 
+// ─── Friendly display names ─────────────────────────────────────────────────
+
+const MODEL_NAME_RE = /^claude-([a-z]+)-(\d+)(?:-(\d))?(?:-\d{6,})?$/;
+const MODEL_NAME_LEGACY_RE = /^claude-(\d+)(?:-(\d))?-([a-z]+)(?:-\d{6,})?$/;
+
+/**
+ * Map raw API model IDs to friendly display names.
+ * e.g., "claude-opus-4-5-20251101" -> "Opus 4.5"
+ */
+export function friendlyModelName(raw: string): string {
+  // New-style: claude-{family}-{major}-{minor}-{date} or claude-{family}-{major}-{date}
+  const m = raw.match(MODEL_NAME_RE);
+  if (m) {
+    const family = m[1].charAt(0).toUpperCase() + m[1].slice(1);
+    const version = m[3] ? `${m[2]}.${m[3]}` : m[2];
+    return `${family} ${version}`;
+  }
+  // Legacy: claude-{major}-{minor}-{family}-{date} or claude-{major}-{family}-{date}
+  const legacy = raw.match(MODEL_NAME_LEGACY_RE);
+  if (legacy) {
+    const version = legacy[2] ? `${legacy[1]}.${legacy[2]}` : legacy[1];
+    const family = legacy[3].charAt(0).toUpperCase() + legacy[3].slice(1);
+    return `${family} ${version}`;
+  }
+  return raw;
+}
+
 // ─── SEO metadata per model family ──────────────────────────────────────────
 
 interface ModelSeoMeta {

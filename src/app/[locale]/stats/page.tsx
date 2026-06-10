@@ -18,7 +18,7 @@ import { ChartCard } from "@/components/stats/ChartCard";
 import { StatsFaq } from "@/components/stats/StatsFaq";
 import { StatsCta } from "@/components/stats/StatsCta";
 import { StatsNav } from "@/components/stats/StatsNav";
-import { friendlyModelName } from "@/lib/chart-utils";
+import { friendlyModelName } from "@/lib/models";
 import {
   formatDateLong,
   formatNumber,

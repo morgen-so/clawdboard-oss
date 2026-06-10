@@ -10,7 +10,8 @@ import {
   Cell,
 } from "recharts";
 import type { ModelStats } from "@/lib/db/stats";
-import { MODEL_COLORS, friendlyModelName } from "@/lib/chart-utils";
+import { MODEL_COLORS } from "@/lib/chart-utils";
+import { friendlyModelName } from "@/lib/models";
 import { Link } from "@/i18n/navigation";
 import { formatTokensCompact } from "@/lib/format";
 

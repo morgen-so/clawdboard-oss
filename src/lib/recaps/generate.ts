@@ -3,6 +3,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import type { RecapData } from "@/lib/db/schema";
+import { friendlyModelName } from "@/lib/models";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -31,27 +32,6 @@ interface RawRivalRow {
   rival_image: string | null;
   rival_cost: string;
   rival_rank: number;
-}
-
-// ─── Friendly model names ───────────────────────────────────────────────────
-
-const MODEL_NAME_RE = /^claude-([a-z]+)-(\d+)(?:-(\d))?(?:-\d{6,})?$/;
-const MODEL_NAME_LEGACY_RE = /^claude-(\d+)(?:-(\d))?-([a-z]+)(?:-\d{6,})?$/;
-
-function friendlyModelName(raw: string): string {
-  const m = raw.match(MODEL_NAME_RE);
-  if (m) {
-    const family = m[1].charAt(0).toUpperCase() + m[1].slice(1);
-    const version = m[3] ? `${m[2]}.${m[3]}` : m[2];
-    return `${family} ${version}`;
-  }
-  const legacy = raw.match(MODEL_NAME_LEGACY_RE);
-  if (legacy) {
-    const version = legacy[2] ? `${legacy[1]}.${legacy[2]}` : legacy[1];
-    const family = legacy[3].charAt(0).toUpperCase() + legacy[3].slice(1);
-    return `${family} ${version}`;
-  }
-  return raw;
 }
 
 // ─── Day of week helper ─────────────────────────────────────────────────────
