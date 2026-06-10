@@ -1,7 +1,8 @@
 import { db } from "@/lib/db";
 import { users, dailyAggregates } from "@/lib/db/schema";
-import { eq, sql, asc, and, type SQL } from "drizzle-orm";
+import { eq, sql, asc, and } from "drizzle-orm";
 import type { Period, DateRange } from "./leaderboard";
+import { periodFilter } from "./date-filter";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -52,61 +53,6 @@ export type UserRank = {
   totalUsers: number;
   percentile: number;
 };
-
-// ─── Date filter helpers ─────────────────────────────────────────────────────
-
-/**
- * Returns a Drizzle SQL fragment filtering dailyAggregates.date by the given period.
- * Uses the Drizzle column reference (for query-builder WHERE clauses).
- */
-function getProfileDateFilter(
-  period: Period,
-  range?: DateRange
-): SQL {
-  switch (period) {
-    case "today":
-      return sql`${dailyAggregates.date}::date = CURRENT_DATE`;
-    case "7d":
-      return sql`${dailyAggregates.date}::date >= CURRENT_DATE - 6`;
-    case "30d":
-      return sql`${dailyAggregates.date}::date >= CURRENT_DATE - 29`;
-    case "this-month":
-      return sql`${dailyAggregates.date}::date >= date_trunc('month', CURRENT_DATE)::date`;
-    case "ytd":
-      return sql`${dailyAggregates.date}::date >= date_trunc('year', CURRENT_DATE)::date`;
-    case "custom":
-      if (range) {
-        return sql`${dailyAggregates.date}::date >= ${range.from}::date AND ${dailyAggregates.date}::date <= ${range.to}::date`;
-      }
-      return sql`${dailyAggregates.date}::date >= CURRENT_DATE - 29`;
-  }
-}
-
-/**
- * Returns a raw SQL fragment using `da.` alias for getUserModelBreakdown's raw query.
- */
-function getProfileDateFilterRaw(
-  period: Period,
-  range?: DateRange
-): SQL {
-  switch (period) {
-    case "today":
-      return sql`AND da.date::date = CURRENT_DATE`;
-    case "7d":
-      return sql`AND da.date::date >= CURRENT_DATE - 6`;
-    case "30d":
-      return sql`AND da.date::date >= CURRENT_DATE - 29`;
-    case "this-month":
-      return sql`AND da.date::date >= date_trunc('month', CURRENT_DATE)::date`;
-    case "ytd":
-      return sql`AND da.date::date >= date_trunc('year', CURRENT_DATE)::date`;
-    case "custom":
-      if (range) {
-        return sql`AND da.date::date >= ${range.from}::date AND da.date::date <= ${range.to}::date`;
-      }
-      return sql`AND da.date::date >= CURRENT_DATE - 29`;
-  }
-}
 
 // ─── Query Functions ─────────────────────────────────────────────────────────
 
@@ -163,7 +109,8 @@ export async function getUserSummary(
   range?: DateRange
 ): Promise<UserSummary> {
   const conditions = [eq(dailyAggregates.userId, userId)];
-  if (period) conditions.push(getProfileDateFilter(period, range));
+  if (period)
+    conditions.push(periodFilter(sql`${dailyAggregates.date}`, period, range));
 
   const [row] = await db
     .select({
@@ -203,7 +150,8 @@ export async function getUserDailyData(
   range?: DateRange
 ): Promise<DailyDataRow[]> {
   const conditions = [eq(dailyAggregates.userId, userId)];
-  if (period) conditions.push(getProfileDateFilter(period, range));
+  if (period)
+    conditions.push(periodFilter(sql`${dailyAggregates.date}`, period, range));
 
   const rows = await db
     .select({
@@ -241,7 +189,7 @@ export async function getUserModelBreakdown(
   range?: DateRange
 ): Promise<ModelBreakdownRow[]> {
   const dateFilter = period
-    ? getProfileDateFilterRaw(period, range)
+    ? sql`AND ${periodFilter(sql`da.date`, period, range)}`
     : sql``;
 
   const result = await db.execute(sql`

@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { MIN_DATE, NEW_USER_WINDOW_MS, VALID_PERIODS, type Period } from "@/lib/constants";
+import { periodFilter } from "./date-filter";
 export type { Period };
 export { VALID_PERIODS };
 
@@ -75,24 +76,7 @@ export function getDateFilter(
   period: Period,
   range?: DateRange
 ): ReturnType<typeof sql> {
-  switch (period) {
-    case "today":
-      return sql`da.date::date = CURRENT_DATE`;
-    case "7d":
-      return sql`da.date::date >= CURRENT_DATE - 6`;
-    case "30d":
-      return sql`da.date::date >= CURRENT_DATE - 29`;
-    case "this-month":
-      return sql`da.date::date >= date_trunc('month', CURRENT_DATE)::date`;
-    case "ytd":
-      return sql`da.date::date >= date_trunc('year', CURRENT_DATE)::date`;
-    case "custom":
-      if (range) {
-        return sql`da.date::date >= ${range.from}::date AND da.date::date <= ${range.to}::date`;
-      }
-      // Fallback to 30d if no valid range
-      return sql`da.date::date >= CURRENT_DATE - 29`;
-  }
+  return periodFilter(sql`da.date`, period, range);
 }
 
 // ─── Shared SQL CTEs ────────────────────────────────────────────────────────
