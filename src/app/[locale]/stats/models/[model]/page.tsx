@@ -17,7 +17,12 @@ import { StatsCta } from "@/components/stats/StatsCta";
 import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName, getModelSeoMeta } from "@/lib/models";
 import { seoAlternates, breadcrumbLd, faqPageLd } from "@/lib/seo";
-import { formatDateLong, formatTokens, formatUsdCompact } from "@/lib/format";
+import {
+  formatDateLong,
+  formatDateTimeLong,
+  formatTokens,
+  formatUsdCompact,
+} from "@/lib/format";
 import { getTranslations } from "next-intl/server";
 import { JsonLd } from "@/components/ui/JsonLd";
 
@@ -192,14 +197,7 @@ export default async function ModelPage({ params }: PageProps) {
     ],
   };
 
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  const lastUpdated = formatDateTimeLong(new Date());
 
   // Tier badge colors
   const tierColors: Record<string, string> = {

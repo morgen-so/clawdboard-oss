@@ -83,6 +83,18 @@ export function formatDateLong(dateStr: string): string {
   }
 }
 
+/** Date → "January 5, 2026 at 3:42 PM GMT+1" — "last updated" stamps */
+export function formatDateTimeLong(date: Date): string {
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
 /** Date → "Jan 2026", null → "Unknown" */
 export function formatMonthYear(date: Date | null): string {
   if (!date) return "Unknown";

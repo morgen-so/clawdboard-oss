@@ -19,7 +19,12 @@ import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/models";
 import { type ToolMeta, getToolMeta, getActiveTools, toolNameList } from "@/lib/tools";
 import { seoAlternates, breadcrumbLd, faqPageLd } from "@/lib/seo";
-import { formatDateLong, formatTokens, formatUsdCompact } from "@/lib/format";
+import {
+  formatDateLong,
+  formatDateTimeLong,
+  formatTokens,
+  formatUsdCompact,
+} from "@/lib/format";
 import { getTranslations } from "next-intl/server";
 import { JsonLd } from "@/components/ui/JsonLd";
 
@@ -159,14 +164,7 @@ export default async function ToolsPage() {
     },
   ];
 
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  const lastUpdated = formatDateTimeLong(new Date());
 
   // ─── JSON-LD ──────────────────────────────────────────────────────────────
 

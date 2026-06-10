@@ -21,6 +21,7 @@ import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/models";
 import {
   formatDateLong,
+  formatDateTimeLong,
   formatNumber,
   formatTokens,
   formatUsdCompact,
@@ -158,15 +159,7 @@ export default async function StatsPage() {
     ],
   };
 
-  const now = new Date();
-  const lastUpdated = now.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  const lastUpdated = formatDateTimeLong(new Date());
 
   return (
     <div className="relative min-h-screen bg-background">
