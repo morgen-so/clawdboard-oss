@@ -6,6 +6,7 @@ import {
   convertLitellmEntry,
   loadLivePricing,
   lookupLivePricing,
+  normalizeModelId,
   _setLiveTableForTests,
 } from "../src/litellm-pricing.js";
 import { getModelPricing, calculateCost } from "../src/pricing.js";
@@ -195,5 +196,128 @@ describe("loadLivePricing disk cache", () => {
     await loadLivePricing();
 
     expect(lookupLivePricing("claude-fable-5")).toBeNull();
+  });
+});
+
+describe("fetch-failure backoff", () => {
+  it("records the failure on disk so the next run can skip the fetch", async () => {
+    const home = await mkdtemp(join(tmpdir(), "clawdboard-test-"));
+    process.env.CLAWDBOARD_HOME = home;
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
+
+    await loadLivePricing();
+
+    const written = JSON.parse(
+      await readFile(join(home, "pricing-cache.json"), "utf8")
+    );
+    expect(typeof written.failedAt).toBe("string");
+  });
+
+  it("preserves stale models in the failure marker", async () => {
+    const home = await mkdtemp(join(tmpdir(), "clawdboard-test-"));
+    process.env.CLAWDBOARD_HOME = home;
+    await writeFile(
+      join(home, "pricing-cache.json"),
+      JSON.stringify({
+        fetchedAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+        models: { "claude-fable-5": FABLE },
+      })
+    );
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("offline"); }));
+
+    await loadLivePricing();
+
+    const written = JSON.parse(
+      await readFile(join(home, "pricing-cache.json"), "utf8")
+    );
+    expect(typeof written.failedAt).toBe("string");
+    expect(written.models["claude-fable-5"]).toEqual(FABLE);
+  });
+
+  it("skips the fetch while a recent failure is on record", async () => {
+    const home = await mkdtemp(join(tmpdir(), "clawdboard-test-"));
+    process.env.CLAWDBOARD_HOME = home;
+    await writeFile(
+      join(home, "pricing-cache.json"),
+      JSON.stringify({
+        fetchedAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+        models: { "claude-fable-5": FABLE },
+        failedAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+      })
+    );
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await loadLivePricing();
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+    // Stale models still serve lookups during the backoff window
+    expect(lookupLivePricing("claude-fable-5")).toEqual(FABLE);
+  });
+
+  it("retries the fetch once the backoff has elapsed", async () => {
+    const home = await mkdtemp(join(tmpdir(), "clawdboard-test-"));
+    process.env.CLAWDBOARD_HOME = home;
+    await writeFile(
+      join(home, "pricing-cache.json"),
+      JSON.stringify({
+        fetchedAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+        models: {},
+        failedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+      })
+    );
+    const fetchSpy = vi.fn(async () => { throw new Error("still offline"); });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    await loadLivePricing();
+
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("clears the failure marker after a successful fetch", async () => {
+    const home = await mkdtemp(join(tmpdir(), "clawdboard-test-"));
+    process.env.CLAWDBOARD_HOME = home;
+    await writeFile(
+      join(home, "pricing-cache.json"),
+      JSON.stringify({
+        fetchedAt: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
+        models: {},
+        failedAt: new Date(Date.now() - 2 * 3600 * 1000).toISOString(),
+      })
+    );
+    const upstream: Record<string, unknown> = {};
+    for (let i = 0; i < 300; i++) {
+      upstream[`model-${i}`] = { input_cost_per_token: 1e-6, output_cost_per_token: 2e-6 };
+    }
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response(JSON.stringify(upstream), { status: 200 }))
+    );
+
+    await loadLivePricing();
+
+    const written = JSON.parse(
+      await readFile(join(home, "pricing-cache.json"), "utf8")
+    );
+    expect(written.failedAt).toBeUndefined();
+  });
+});
+
+describe("shared model-ID normalizer", () => {
+  it("strips bracket suffixes in both lookup layers", () => {
+    expect(normalizeModelId("claude-fable-5[1m]")).toBe("claude-fable-5");
+    expect(normalizeModelId("claude-sonnet-4-20250514")).toBe("claude-sonnet-4");
+    expect(normalizeModelId("gpt-4o-2024-08-06")).toBe("gpt-4o");
+  });
+
+  it("prices a bracket-suffixed ID from the static table when live misses", () => {
+    // Regression: the static layer previously used its own normalizer that
+    // did not strip "[1m]", so this fell through to DEFAULT_PRICING.
+    _setLiveTableForTests({ "some-other-model": FABLE });
+    expect(getModelPricing("claude-sonnet-4-5[1m]").input).toBe(3);
+  });
+
+  it("prices a bracket-suffixed ID from the static table when live is not loaded", () => {
+    expect(getModelPricing("claude-sonnet-4-5[1m]").input).toBe(3);
   });
 });

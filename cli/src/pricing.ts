@@ -24,7 +24,7 @@
  * Last verified: 2026-06-10
  */
 
-import { lookupLivePricing } from "./litellm-pricing.js";
+import { lookupLivePricing, normalizeModelId } from "./litellm-pricing.js";
 
 export interface ModelPricing {
   input: number; // USD per 1M input tokens
@@ -119,19 +119,11 @@ const DEFAULT_PRICING: ModelPricing = {
 };
 
 /**
- * Normalize a model ID by stripping the date suffix.
- * "claude-sonnet-4-20250514" → "claude-sonnet-4"
- * "gpt-4o-2024-08-06" → "gpt-4o"
- */
-function normalizeModelId(modelId: string): string {
-  // Strip trailing date suffix: -YYYYMMDD or -YYYY-MM-DD
-  return modelId.replace(/-\d{4}-?\d{2}-?\d{2}$/, "");
-}
-
-/**
  * Look up pricing for a model ID.
  * Live LiteLLM pricing first (exact match), then the static table
  * (exact match on normalized ID, then progressively shorter prefixes).
+ * Normalization (date + bracket suffix stripping) is shared with the
+ * live-table lookup — see normalizeModelId in litellm-pricing.ts.
  */
 export function getModelPricing(modelId: string): ModelPricing {
   // Live pricing covers models launched after this CLI version shipped.
