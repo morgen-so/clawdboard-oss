@@ -2,6 +2,12 @@ import { describe, it, expect } from "vitest";
 import { getModelPricing, calculateCost } from "../src/pricing.js";
 
 describe("getModelPricing", () => {
+  it("matches claude-fable-5 (static fallback)", () => {
+    const pricing = getModelPricing("claude-fable-5");
+    expect(pricing.input).toBe(10);
+    expect(pricing.output).toBe(50);
+  });
+
   it("matches claude-sonnet-4 with date suffix", () => {
     const pricing = getModelPricing("claude-sonnet-4-20250514");
     expect(pricing.input).toBe(3);
