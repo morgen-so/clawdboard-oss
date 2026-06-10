@@ -12,6 +12,8 @@ import {
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import { formatTokensCompact, formatUsdPlain } from "@/lib/format";
+import { MODEL_COLORS } from "@/lib/chart-utils";
+import { friendlyModelName } from "@/lib/models";
 
 interface ModelDataPoint {
   modelName: string;
@@ -24,42 +26,6 @@ interface ModelBreakdownProps {
   data: ModelDataPoint[];
 }
 
-const MODEL_COLORS = [
-  "#F9A615", // marigold (accent)
-  "#3b82f6", // blue
-  "#10b981", // emerald
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#6366f1", // indigo
-];
-
-const MODEL_NAME_RE = /^claude-([a-z]+)-(\d+)(?:-(\d))?(?:-\d{6,})?$/;
-const MODEL_NAME_LEGACY_RE = /^claude-(\d+)(?:-(\d))?-([a-z]+)(?:-\d{6,})?$/;
-
-/**
- * Map raw API model IDs to friendly display names.
- * e.g., "claude-opus-4-5-20251101" -> "Opus 4.5"
- */
-function friendlyModelName(raw: string): string {
-  // New-style: claude-{family}-{major}-{minor}-{date} or claude-{family}-{major}-{date}
-  const m = raw.match(MODEL_NAME_RE);
-  if (m) {
-    const family = m[1].charAt(0).toUpperCase() + m[1].slice(1);
-    const version = m[3] ? `${m[2]}.${m[3]}` : m[2];
-    return `${family} ${version}`;
-  }
-  // Legacy: claude-{major}-{minor}-{family}-{date} or claude-{major}-{family}-{date}
-  const legacy = raw.match(MODEL_NAME_LEGACY_RE);
-  if (legacy) {
-    const version = legacy[2] ? `${legacy[1]}.${legacy[2]}` : legacy[1];
-    const family =
-      legacy[3].charAt(0).toUpperCase() + legacy[3].slice(1);
-    return `${family} ${version}`;
-  }
-  return raw;
-}
 
 
 export function ModelBreakdown({ data }: ModelBreakdownProps) {
