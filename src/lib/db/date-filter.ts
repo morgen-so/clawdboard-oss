@@ -36,6 +36,21 @@ export function periodFilter(
   }
 }
 
+/**
+ * Stats variant: optional period (undefined → match everything, labeled
+ * "all time") with the human label, against a bare `date` column.
+ */
+export function statsDateFilter(
+  period?: Period,
+  range?: DateRange
+): { filter: SQL; label: string } {
+  if (!period) return { filter: sql`TRUE`, label: "all time" };
+  return {
+    filter: periodFilter(sql`date`, period, range),
+    label: periodLabel(period, range),
+  };
+}
+
 /** Human-readable label for a period (mirrors periodFilter's fallbacks). */
 export function periodLabel(period: Period, range?: DateRange): string {
   switch (period) {
