@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/lib/auth";
+import { actionUser } from "./guards";
 import { db } from "@/lib/db";
 import { teamMembers } from "@/lib/db/schema";
 import {
@@ -23,22 +23,22 @@ type ValidationSuccess = {
 async function validateTeamInviteNotification(
   formData: FormData
 ): Promise<{ error: string } | ValidationSuccess> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const notificationId = formData.get("notificationId") as string;
   if (!notificationId) return { error: "Missing notificationId" };
 
   const notification = await getNotificationById(notificationId);
   if (!notification) return { error: "Notification not found" };
-  if (notification.userId !== session.user.id)
+  if (notification.userId !== user.id)
     return { error: "Not your notification" };
   if (notification.type !== "team_invite")
     return { error: "Invalid notification type" };
   if (notification.actedAt) return { error: "Already acted on" };
 
   return {
-    userId: session.user.id,
+    userId: user.id,
     notificationId,
     teamId: notification.data.teamId as string,
   };
