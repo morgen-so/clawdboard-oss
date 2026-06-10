@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { env } from "@/lib/env";
 import { buildInviteUrl } from "@/lib/url";
 import { UserSearchInvite } from "./UserSearchInvite";
+import { CheckIcon } from "@/components/icons/CommonIcons";
 
 type CopyAction = "link" | "slack";
 type InviteTab = "link" | "search";
@@ -15,24 +16,6 @@ interface TeamInviteSectionProps {
   inviteToken: string;
   isLocked: boolean;
   memberCount: number;
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
 }
 
 function CopiedLabel({ text }: { text: string }) {
