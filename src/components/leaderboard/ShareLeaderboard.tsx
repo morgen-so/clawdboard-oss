@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ShareIcon } from "@/components/icons/CommonIcons";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 import {
   buildTwitterIntentUrl,
   buildLinkedInShareUrl,
@@ -16,7 +17,7 @@ interface ShareLeaderboardProps {
 export function ShareLeaderboard({ topCost, leaderboardUrl }: ShareLeaderboardProps) {
   const t = useTranslations("leaderboard");
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   const shareText = t("shareLeaderboardText", { topCost });
 
@@ -42,9 +43,7 @@ export function ShareLeaderboard({ topCost, leaderboardUrl }: ShareLeaderboardPr
 
   const handleCopy = async () => {
     window.plausible?.("ShareLeaderboard", { props: { method: "copy" } });
-    await navigator.clipboard.writeText(`${shareText}\n${leaderboardUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    await copy(`${shareText}\n${leaderboardUrl}`);
     setOpen(false);
   };
 

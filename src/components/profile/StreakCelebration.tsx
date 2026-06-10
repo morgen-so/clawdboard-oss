@@ -10,6 +10,7 @@ import {
 import { buildInviteUrl } from "@/lib/url";
 import { env } from "@/lib/env";
 import { CheckIcon, LinkIcon, LinkedInIcon, XIcon } from "@/components/icons/CommonIcons";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 
 interface StreakCelebrationProps {
   username: string;
@@ -57,8 +58,8 @@ export function StreakCelebration({
   team,
 }: StreakCelebrationProps) {
   const [showCelebration, setShowCelebration] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [inviteCopied, setInviteCopied] = useState(false);
+  const { copied, copy: copyProfileUrl } = useCopyToClipboard();
+  const { copied: inviteCopied, copy: copyInviteUrl } = useCopyToClipboard();
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const dismiss = useCallback(() => {
@@ -88,10 +89,8 @@ export function StreakCelebration({
 
   const handleCopyLink = useCallback(async () => {
     window.plausible?.("StreakShare", { props: { method: "copy_link" } });
-    await navigator.clipboard.writeText(profileUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [profileUrl]);
+    await copyProfileUrl(profileUrl);
+  }, [profileUrl, copyProfileUrl]);
 
   const inviteUrl = team
     ? buildInviteUrl(env.NEXT_PUBLIC_BASE_URL, team.teamSlug, team.inviteToken)
@@ -100,10 +99,8 @@ export function StreakCelebration({
   const handleCopyInvite = useCallback(async () => {
     if (!inviteUrl) return;
     window.plausible?.("Invite_Copied", { props: { source: "streak_celebration" } });
-    await navigator.clipboard.writeText(inviteUrl);
-    setInviteCopied(true);
-    setTimeout(() => setInviteCopied(false), 2000);
-  }, [inviteUrl]);
+    await copyInviteUrl(inviteUrl);
+  }, [inviteUrl, copyInviteUrl]);
 
   useEffect(() => {
     if (!isOwner) return;

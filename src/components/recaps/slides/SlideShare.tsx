@@ -12,6 +12,7 @@ import {
   formatUsdWhole,
 } from "@/lib/format";
 import { CheckIcon, DownloadIcon, LinkedInIcon, XIcon } from "@/components/icons/CommonIcons";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 
 interface SlideShareProps {
   recapId: string;
@@ -33,7 +34,7 @@ const actionBtn =
 
 export function SlideShare({ recapId, data, type, periodStart, periodEnd }: SlideShareProps) {
   const [downloading, setDownloading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const cardRef = useRef<HTMLDivElement>(null);
 
   const periodLabel = type === "weekly" ? "Weekly" : "Monthly";
@@ -88,9 +89,7 @@ export function SlideShare({ recapId, data, type, periodStart, periodEnd }: Slid
 
   const handleCopy = async () => {
     window.plausible?.("RecapShare", { props: { method: "copy" } });
-    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    await copy(`${shareText}\n${shareUrl}`);
   };
 
   const modelBars = data.modelBreakdown.slice(0, 3);
