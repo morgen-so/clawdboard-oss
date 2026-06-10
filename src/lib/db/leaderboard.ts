@@ -279,7 +279,7 @@ interface RawRowWithRank extends RawRow {
   rank: string | number;
 }
 
-export function mapSingleRow(
+function mapSingleRow(
   row: RawRow,
   rank: number,
   previousRanks?: Map<string, number>

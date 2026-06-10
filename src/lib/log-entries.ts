@@ -1,4 +1,4 @@
-export interface LogItem {
+interface LogItem {
   title: string;
   type: "feature" | "fix" | "improvement";
   description: string;

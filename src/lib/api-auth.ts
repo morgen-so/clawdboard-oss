@@ -9,7 +9,7 @@ import { eq } from "drizzle-orm";
 import { env } from "@/lib/env";
 
 /** Extract the Bearer token from an Authorization header, if present. */
-export function bearerToken(header: string | null): string | null {
+function bearerToken(header: string | null): string | null {
   return header?.startsWith("Bearer ") ? header.slice(7) : null;
 }
 

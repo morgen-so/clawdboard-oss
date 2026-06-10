@@ -100,7 +100,7 @@ export const BADGES: BadgeDefinition[] = [
 
 // ─── Badge Inputs ────────────────────────────────────────────────────────────
 
-export type BadgeInputs = {
+type BadgeInputs = {
   streak: number;
   totalCost: number;
   rank: number;
@@ -117,7 +117,7 @@ export type BadgeInputs = {
  * Derive daily/monthly aggregates from raw daily data rows.
  * Computes best single-day cost/tokens, best month cost/active days.
  */
-export function computeBadgeInputs(allDailyData: DailyDataRow[]): {
+function computeBadgeInputs(allDailyData: DailyDataRow[]): {
   totalDaysActive: number;
   totalCost: number;
   bestDayCost: number;
@@ -176,7 +176,7 @@ export function computeBadgeInputs(allDailyData: DailyDataRow[]): {
 /**
  * Pure function: compute which badges a user has earned.
  */
-export function computeBadges(params: BadgeInputs): EarnedBadge[] {
+function computeBadges(params: BadgeInputs): EarnedBadge[] {
   return BADGES.map((definition) => {
     let earned = false;
 
@@ -231,7 +231,7 @@ export function computeBadges(params: BadgeInputs): EarnedBadge[] {
 /**
  * Compute total XP from earned badges.
  */
-export function computeTotalXp(badges: EarnedBadge[]): number {
+function computeTotalXp(badges: EarnedBadge[]): number {
   return badges
     .filter((b) => b.earned)
     .reduce((sum, b) => sum + b.definition.xp, 0);

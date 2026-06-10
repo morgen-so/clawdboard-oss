@@ -15,7 +15,7 @@ export interface ToolMeta {
   website: string;
 }
 
-export const TOOL_REGISTRY: Record<string, ToolMeta> = {
+const TOOL_REGISTRY: Record<string, ToolMeta> = {
   "claude-code": {
     slug: "claude-code",
     name: "Claude Code",

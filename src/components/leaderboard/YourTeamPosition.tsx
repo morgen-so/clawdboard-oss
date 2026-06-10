@@ -12,8 +12,6 @@ interface YourTeamPositionProps {
 }
 
 export function YourTeamPosition({ team, publicRow }: YourTeamPositionProps) {
-  const t = useTranslations("team");
-
   return (
     <div className="mb-4 rounded-lg border border-accent/20 bg-accent/[0.03]">
       <div className="px-4 pt-3 pb-1">

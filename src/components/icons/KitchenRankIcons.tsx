@@ -14,7 +14,7 @@ const svgProps = {
 };
 
 /** Tier 1 — Dishwasher: plate/dish */
-export function DishwasherIcon({ className }: { className?: string }) {
+function DishwasherIcon({ className }: { className?: string }) {
   return (
     <svg {...svgProps} className={className}>
       <ellipse cx="12" cy="14" rx="9" ry="5" />
@@ -25,7 +25,7 @@ export function DishwasherIcon({ className }: { className?: string }) {
 }
 
 /** Tier 2 — Prep Cook: knife */
-export function PrepCookIcon({ className }: { className?: string }) {
+function PrepCookIcon({ className }: { className?: string }) {
   return (
     <svg {...svgProps} className={className}>
       <path d="M15.5 3L7 11.5l1.5 1.5 8.5-8.5" />
@@ -37,7 +37,7 @@ export function PrepCookIcon({ className }: { className?: string }) {
 }
 
 /** Tier 3 — Line Cook: frying pan */
-export function LineCookIcon({ className }: { className?: string }) {
+function LineCookIcon({ className }: { className?: string }) {
   return (
     <svg {...svgProps} className={className}>
       <circle cx="10" cy="12" r="7" />
@@ -48,7 +48,7 @@ export function LineCookIcon({ className }: { className?: string }) {
 }
 
 /** Tier 4 — Sous Chef: chef hat */
-export function SousChefIcon({ className }: { className?: string }) {
+function SousChefIcon({ className }: { className?: string }) {
   return (
     <svg {...svgProps} className={className}>
       <path d="M6 15v4h12v-4" />
@@ -58,7 +58,7 @@ export function SousChefIcon({ className }: { className?: string }) {
 }
 
 /** Tier 5 — Head Chef: flame */
-export function HeadChefIcon({ className }: { className?: string }) {
+function HeadChefIcon({ className }: { className?: string }) {
   return (
     <svg {...svgProps} className={className}>
       <path d="M12 22c-4 0-6-3-6-6 0-4 4-6 4-10 0 0 2 2 2 5 1-2 2-4 2-6 4 3 6 5 6 8 0 6-4 9-8 9z" />
@@ -68,7 +68,7 @@ export function HeadChefIcon({ className }: { className?: string }) {
 }
 
 /** Tier 6 — Executive Chef: diamond */
-export function ExecutiveChefIcon({ className }: { className?: string }) {
+function ExecutiveChefIcon({ className }: { className?: string }) {
   return (
     <svg {...svgProps} className={className}>
       <path d="M12 2l4 6-4 12-4-12 4-6z" />
@@ -80,7 +80,7 @@ export function ExecutiveChefIcon({ className }: { className?: string }) {
 }
 
 /** Tier 7 — Master Chef: crown */
-export function MasterChefIcon({ className }: { className?: string }) {
+function MasterChefIcon({ className }: { className?: string }) {
   return (
     <svg {...svgProps} className={className}>
       <path d="M2 18h20v2H2z" />

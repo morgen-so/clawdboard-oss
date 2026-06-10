@@ -24,6 +24,12 @@ import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import type { Period, DateRange } from "@/lib/db/leaderboard";
 import {
+  AXIS_COMMON,
+  COST_COLOR,
+  TOKENS_COLOR,
+  TOOLTIP_STYLES,
+} from "@/lib/chart-utils";
+import {
   formatChartDate,
   formatTokensCompact,
   formatUsdPlain,
@@ -120,27 +126,6 @@ function getPeriodTitle(period: Period, range: DateRange | undefined, t: (key: s
   }
 }
 
-const COST_COLOR = "#F9A615";
-const TOKENS_COLOR = "#06b6d4";
-
-const TOOLTIP_STYLES = {
-  contentStyle: {
-    backgroundColor: "#111113",
-    border: "1px solid #23232a",
-    borderRadius: "8px",
-    fontSize: "12px",
-    color: "#fafafa",
-  },
-  itemStyle: { color: "#fafafa" } as const,
-  labelStyle: { color: "#a1a1aa" } as const,
-};
-
-const AXIS_COMMON = {
-  stroke: "var(--muted)",
-  fontSize: 11,
-  tickLine: false,
-  axisLine: false,
-} as const;
 
 function tooltipFormatter(value: number | undefined, name: string | undefined) {
   const v = value ?? 0;
