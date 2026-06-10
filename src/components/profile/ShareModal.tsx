@@ -1,9 +1,10 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useState } from "react";
 import { ShareCard } from "./ShareCard";
 import { useTranslations } from "next-intl";
 import { CheckIcon, DownloadIcon, LinkIcon, LinkedInIcon, XIcon } from "@/components/icons/CommonIcons";
+import { useModalDismiss } from "@/components/ui/useModalDismiss";
 import {
   buildShareText,
   buildTwitterIntentUrl,
@@ -24,11 +25,6 @@ interface ShareModalProps {
   profileUrl: string;
 }
 
-/** X/Twitter logo */
-/** LinkedIn logo */
-/** Link/chain icon */
-/** Checkmark icon */
-/** Download icon */
 const secondaryBtn =
   "inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-border hover:border-border-bright text-muted hover:text-foreground transition-colors text-xs font-mono cursor-pointer";
 
@@ -50,23 +46,7 @@ export function ShareModal({
   const [copied, setCopied] = useState(false);
   const [downloading, setDownloading] = useState(false);
 
-  // Close on Escape
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    },
-    [onClose]
-  );
-
-  useEffect(() => {
-    if (!open) return;
-    document.addEventListener("keydown", handleKeyDown);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = "";
-    };
-  }, [open, handleKeyDown]);
+  useModalDismiss(open, onClose);
 
   if (!open) return null;
 

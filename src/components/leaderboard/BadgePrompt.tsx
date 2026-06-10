@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import { buildBadgeSnippet } from "@/lib/badge";
 import { dismissBadgePrompt } from "@/actions/users";
 import { CheckIcon, CloseIcon, CopyIcon } from "@/components/icons/CommonIcons";
+import { useModalDismiss } from "@/components/ui/useModalDismiss";
 
 const VISIT_KEY = "clawdboard:visit-count";
 const DISMISS_KEY = "clawdboard:badge-prompt-dismissed";
@@ -365,19 +366,7 @@ export function BadgeWizardModal({
     if (open) setStep(initialStep);
   }, [open, initialStep]);
 
-  // Close on Escape + lock body scroll
-  useEffect(() => {
-    if (!open) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = "";
-    };
-  }, [open, onClose]);
+  useModalDismiss(open, onClose);
 
   if (!open) return null;
 
