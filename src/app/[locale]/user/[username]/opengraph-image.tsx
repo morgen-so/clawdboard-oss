@@ -10,6 +10,7 @@ import {
 import { loadGoogleFont } from "@/lib/og-fonts";
 import { computeCurrentStreak } from "@/lib/streak";
 import { getStreakTier } from "@/lib/streak-tiers";
+import { formatTokensCompact, formatUsd } from "@/lib/format";
 
 // ─── Next.js OG Image file convention exports ──────────────────────────────
 
@@ -17,22 +18,6 @@ export const alt = "clawdboard profile stats";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 export const revalidate = 3600; // 1 hour cache
-
-// ─── Formatting helpers ─────────────────────────────────────────────────────
-
-function formatCost(cost: string): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(parseFloat(cost));
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 // ─── Fallback card for missing users ────────────────────────────────────────
 
@@ -281,7 +266,7 @@ export default async function Image({
                 color: "#F9A615",
               }}
             >
-              {formatCost(summary.totalCost)}
+              {formatUsd(summary.totalCost)}
             </div>
           </div>
 
@@ -320,7 +305,7 @@ export default async function Image({
                 color: "#fafafa",
               }}
             >
-              {formatTokens(totalTokens)}
+              {formatTokensCompact(totalTokens)}
             </div>
           </div>
 

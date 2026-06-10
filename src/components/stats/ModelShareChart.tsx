@@ -12,17 +12,11 @@ import {
 import type { ModelStats } from "@/lib/db/stats";
 import { MODEL_COLORS, friendlyModelName } from "@/lib/chart-utils";
 import { Link } from "@/i18n/navigation";
+import { formatTokensCompact } from "@/lib/format";
 
 function formatCurrency(value: number): string {
   if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
   return `$${value.toFixed(2)}`;
-}
-
-function formatTokensCompact(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
 }
 
 export function ModelShareChart({

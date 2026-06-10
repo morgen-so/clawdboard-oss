@@ -4,18 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import type { RecapData } from "@/lib/db/schema";
 import { RadialBurst } from "../visuals/RadialBurst";
 import { AmbientParticles } from "../visuals/AmbientParticles";
+import { formatUsd } from "@/lib/format";
 
 interface SlideRankProps {
   data: RecapData;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
 }
 
 /** Animated number counter */
@@ -296,7 +288,7 @@ export function SlideRank({ data }: SlideRankProps) {
           ) : (
             <p className="font-mono text-xs text-white/60">
               <span className="text-accent font-semibold">
-                {formatCurrency(data.rivalGap)}
+                {formatUsd(data.rivalGap)}
               </span>{" "}
               behind{" "}
               <span className="text-white/80">@{data.rivalUsername}</span> for{" "}

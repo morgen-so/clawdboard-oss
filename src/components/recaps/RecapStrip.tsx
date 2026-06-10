@@ -4,6 +4,7 @@ import { useState } from "react";
 import { RecapStories } from "./RecapStories";
 import type { RecapRow } from "@/lib/db/recaps";
 import type { RecapData } from "@/lib/db/schema";
+import { formatTokensCompact, formatUsdWhole } from "@/lib/format";
 
 interface RecapStripProps {
   recaps: RecapRow[];
@@ -15,22 +16,6 @@ function formatPeriod(type: string, periodStart: string): string {
     return `Week of ${d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })}`;
   }
   return d.toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
-}
-
-function formatCost(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
 }
 
 function getMedalEmoji(rank: number): string {
@@ -97,7 +82,7 @@ function RecapCard({
         </span>
       </div>
       <p className="font-mono text-[11px] text-muted mt-1">
-        {formatCost(data.totalCost)}
+        {formatUsdWhole(data.totalCost)}
       </p>
       {data.stateTier !== "empty" && data.stateTier !== "low" && data.stateTier !== "normal" && (
         <div className="absolute top-3 right-3">
@@ -201,7 +186,7 @@ function RecapCardWide({
         <div className="shrink-0">
           <p className="font-mono text-[10px] text-muted">Spend</p>
           <p className="font-display text-lg font-bold text-foreground">
-            {formatCost(data.totalCost)}
+            {formatUsdWhole(data.totalCost)}
           </p>
         </div>
 
@@ -211,7 +196,7 @@ function RecapCardWide({
         <div className="shrink-0">
           <p className="font-mono text-[10px] text-muted">Tokens</p>
           <p className="font-display text-lg font-bold text-foreground">
-            {formatTokens(data.totalTokens)}
+            {formatTokensCompact(data.totalTokens)}
           </p>
         </div>
 

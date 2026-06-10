@@ -6,6 +6,7 @@ import {
   buildTwitterIntentUrl,
   buildLinkedInShareUrl,
 } from "@/lib/share";
+import { formatTokensCompact, formatUsdWhole } from "@/lib/format";
 
 interface SlideShareProps {
   recapId: string;
@@ -13,22 +14,6 @@ interface SlideShareProps {
   type: string;
   periodStart: string;
   periodEnd: string;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
 }
 
 function getMedalEmoji(rank: number): string {
@@ -85,7 +70,7 @@ export function SlideShare({ recapId, data, type, periodStart, periodEnd }: Slid
   const e = new Date(periodEnd + "T12:00:00Z");
   const dateRange = `${s.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} \u2013 ${e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
 
-  const shareText = `${periodLabel} recap: Rank #${data.rank} | ${formatCurrency(data.totalCost)} spent vibecoding`;
+  const shareText = `${periodLabel} recap: Rank #${data.rank} | ${formatUsdWhole(data.totalCost)} spent vibecoding`;
   const shareUrl = `https://clawdboard.ai/recap/${recapId}`;
 
   const handleDownload = async () => {
@@ -194,13 +179,13 @@ export function SlideShare({ recapId, data, type, periodStart, periodEnd }: Slid
                 <div>
                   <p className="font-mono text-xs text-white/30">Spent</p>
                   <p className="font-display text-xl font-bold text-white">
-                    {formatCurrency(data.totalCost)}
+                    {formatUsdWhole(data.totalCost)}
                   </p>
                 </div>
                 <div>
                   <p className="font-mono text-xs text-white/30">Tokens</p>
                   <p className="font-display text-xl font-bold text-white">
-                    {formatTokens(data.totalTokens)}
+                    {formatTokensCompact(data.totalTokens)}
                   </p>
                 </div>
                 <div>

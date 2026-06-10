@@ -18,6 +18,7 @@ import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/chart-utils";
 import { getModelSeoMeta } from "@/lib/models";
 import { seoAlternates } from "@/lib/seo";
+import { formatDateLong, formatTokens, formatUsdCompact } from "@/lib/format";
 import { getTranslations } from "next-intl/server";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -33,34 +34,6 @@ interface PageProps {
 export async function generateStaticParams() {
   const slugs = await getDistinctModelSlugsCached();
   return slugs.map((model) => ({ model }));
-}
-
-// ─── Formatting helpers ─────────────────────────────────────────────────────
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 100_000) return `$${(n / 1_000).toFixed(0)}k`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
 }
 
 function tokenRatio(input: number, output: number): string {
@@ -81,7 +54,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const displayName = friendlyModelName(detail.rawModelIds[0] ?? slug);
   const seo = getModelSeoMeta(slug);
-  const cost = formatCurrency(parseFloat(detail.totalCost));
+  const cost = formatUsdCompact(parseFloat(detail.totalCost));
   const users = detail.userCount;
 
   const title = `${displayName} Usage & Cost Statistics — Real Data from ${users} Developers`;
@@ -159,8 +132,8 @@ export default async function ModelPage({ params }: PageProps) {
       a: t("faqA1", {
         userCount: detail.userCount,
         modelName: displayName,
-        avgCost: formatCurrency(avgCost),
-        medianCost: formatCurrency(medianCost),
+        avgCost: formatUsdCompact(avgCost),
+        medianCost: formatUsdCompact(medianCost),
         provider: seo.provider,
       }),
     },
@@ -189,7 +162,7 @@ export default async function ModelPage({ params }: PageProps) {
     {
       q: t("faqQ5", { modelName: displayName }),
       a: detail.firstSeen
-        ? t("faqA5", { modelName: displayName, trackedSince: formatDate(detail.firstSeen) })
+        ? t("faqA5", { modelName: displayName, trackedSince: formatDateLong(detail.firstSeen) })
         : t("faqA5NoDate", { modelName: displayName }),
     },
   ];
@@ -215,7 +188,7 @@ export default async function ModelPage({ params }: PageProps) {
     "@context": "https://schema.org",
     "@type": "Dataset",
     name: `${displayName} Coding Usage Statistics`,
-    description: `Usage statistics for ${displayName} across ${detail.userCount} developers — estimated cost ${formatCurrency(totalCost)}+, ${formatTokens(detail.totalTokens)}+ tokens consumed. Updated hourly from opt-in developer usage logs.`,
+    description: `Usage statistics for ${displayName} across ${detail.userCount} developers — estimated cost ${formatUsdCompact(totalCost)}+, ${formatTokens(detail.totalTokens)}+ tokens consumed. Updated hourly from opt-in developer usage logs.`,
     url: `${BASE_URL}/stats/models/${slug}`,
     dateModified: new Date().toISOString(),
     temporalCoverage: detail.firstSeen
@@ -348,22 +321,22 @@ export default async function ModelPage({ params }: PageProps) {
             models on clawdboard, accounting for {detail.costShare}% of total
             community spend. {detail.userCount.toLocaleString()} developer
             {detail.userCount !== 1 ? "s have" : " has"} used {displayName},{" "}
-            generating {formatCurrency(totalCost)} in estimated API cost and{" "}
+            generating {formatUsdCompact(totalCost)} in estimated API cost and{" "}
             {formatTokens(detail.totalTokens)} tokens
             ({formatTokens(detail.inputTokens)} input,{" "}
             {formatTokens(detail.outputTokens)} output).
             The average estimated cost per developer is{" "}
-            {formatCurrency(avgCost)} (median: {formatCurrency(medianCost)}).
+            {formatUsdCompact(avgCost)} (median: {formatUsdCompact(medianCost)}).
             {detail.firstSeen && (
               <> {displayName} has been tracked on clawdboard since{" "}
-              {formatDate(detail.firstSeen)}.</>
+              {formatDateLong(detail.firstSeen)}.</>
             )}{" "}
             Data is updated hourly from opt-in developer usage logs.
           </span>
           <p className="mt-2 font-mono text-[11px] text-dim">
             {t("lastUpdated", { lastUpdated })} &middot; {t("refreshedHourly")}
             {detail.firstSeen && (
-              <> &middot; {t("trackedSince", { date: formatDate(detail.firstSeen) })}</>
+              <> &middot; {t("trackedSince", { date: formatDateLong(detail.firstSeen) })}</>
             )}
           </p>
         </div>
@@ -384,7 +357,7 @@ export default async function ModelPage({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3">
             <StatCard
               label={t("totalEstimatedCost")}
-              value={formatCurrency(totalCost)}
+              value={formatUsdCompact(totalCost)}
               sub={t("costShareSub", { costShare: detail.costShare })}
               accent
             />
@@ -412,8 +385,8 @@ export default async function ModelPage({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard
               label={t("avgCostPerDeveloper")}
-              value={formatCurrency(avgCost)}
-              sub={t("medianSub", { medianCost: formatCurrency(medianCost) })}
+              value={formatUsdCompact(avgCost)}
+              sub={t("medianSub", { medianCost: formatUsdCompact(medianCost) })}
             />
             <StatCard
               label={t("inputTokens")}
@@ -553,8 +526,8 @@ export default async function ModelPage({ params }: PageProps) {
               {t.rich("costAnalysisP1", {
                 userCount: detail.userCount,
                 modelName: displayName,
-                avgCost: formatCurrency(avgCost),
-                medianCost: formatCurrency(medianCost),
+                avgCost: formatUsdCompact(avgCost),
+                medianCost: formatUsdCompact(medianCost),
                 strong: (chunks) => (
                   <strong className="text-foreground">{chunks}</strong>
                 ),
@@ -618,7 +591,7 @@ export default async function ModelPage({ params }: PageProps) {
                         )}
                       </div>
                       <p className="font-mono text-xs text-muted">
-                        {formatCurrency(mCost)} &middot; {t("relatedModelSpend", { costShare: m.costShare })} &middot; {t("relatedModelUser", { count: m.userCount })}
+                        {formatUsdCompact(mCost)} &middot; {t("relatedModelSpend", { costShare: m.costShare })} &middot; {t("relatedModelUser", { count: m.userCount })}
                       </p>
                     </div>
                     <span className="text-muted text-xs">&rarr;</span>

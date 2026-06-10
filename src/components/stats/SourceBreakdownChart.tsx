@@ -9,6 +9,7 @@ import {
   Legend,
 } from "recharts";
 import { useTranslations } from "next-intl";
+import { formatTokensCompact, formatUsdPlain } from "@/lib/format";
 
 interface SourceDataPoint {
   source: string;
@@ -45,16 +46,6 @@ const SOURCE_LABELS: Record<string, string> = {
   "copilot-cli": "Copilot CLI",
 };
 
-function formatCurrency(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 export function SourceBreakdownChart({ data }: SourceBreakdownChartProps) {
   const t = useTranslations("stats");
@@ -115,9 +106,9 @@ export function SourceBreakdownChart({ data }: SourceBreakdownChartProps) {
               const v = value ?? 0;
               const item = props?.payload;
               if (!item)
-                return [formatCurrency(v), ""];
+                return [formatUsdPlain(v), ""];
               return [
-                `${formatCurrency(v)} (${formatTokens(item.totalTokens)} tokens, ${item.userCount} users)`,
+                `${formatUsdPlain(v)} (${formatTokensCompact(item.totalTokens)} tokens, ${item.userCount} users)`,
                 item.name,
               ];
             }}

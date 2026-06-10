@@ -3,28 +3,13 @@
 import type { RecapData } from "@/lib/db/schema";
 import { GenerativePattern } from "../visuals/GenerativePattern";
 import { AmbientParticles } from "../visuals/AmbientParticles";
+import { formatDateRange } from "@/lib/format";
 
 interface SlideHookProps {
   data: RecapData;
   periodLabel: string;
   periodStart: string;
   periodEnd: string;
-}
-
-function formatDateRange(start: string, end: string): string {
-  const s = new Date(start + "T12:00:00Z");
-  const e = new Date(end + "T12:00:00Z");
-  const opts: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  };
-  const startStr = s.toLocaleDateString("en-US", opts);
-  const endStr = e.toLocaleDateString("en-US", {
-    ...opts,
-    year: "numeric",
-  });
-  return `${startStr} \u2013 ${endStr}`;
 }
 
 function getTeaser(data: RecapData): string {

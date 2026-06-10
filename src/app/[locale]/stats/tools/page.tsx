@@ -19,6 +19,7 @@ import { StatsNav } from "@/components/stats/StatsNav";
 import { friendlyModelName } from "@/lib/chart-utils";
 import { type ToolMeta, getToolMeta, getActiveTools, toolNameList } from "@/lib/tools";
 import { seoAlternates } from "@/lib/seo";
+import { formatDateLong, formatTokens, formatUsdCompact } from "@/lib/format";
 import { getTranslations } from "next-intl/server";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -28,34 +29,6 @@ export const revalidate = 3600;
 /** Format tool names as "A vs B vs C" */
 function toolVsList(tools: ToolMeta[]): string {
   return tools.map((t) => t.name).join(" vs ");
-}
-
-// ─── Formatting helpers ─────────────────────────────────────────────────────
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 100_000) return `$${(n / 1_000).toFixed(0)}k`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
 }
 
 // ─── Metadata ───────────────────────────────────────────────────────────────
@@ -73,7 +46,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const listNames = toolNameList(activeTools);
 
   const title = `AI Coding Tool Comparison — ${vsNames} | clawdboard`;
-  const description = `Compare ${listNames} usage side by side. Real data from ${totalUsers}+ developers: ${formatCurrency(totalCost)}+ total spend, model breakdowns, daily trends, and adoption metrics. Updated hourly.`;
+  const description = `Compare ${listNames} usage side by side. Real data from ${totalUsers}+ developers: ${formatUsdCompact(totalCost)}+ total spend, model breakdowns, daily trends, and adoption metrics. Updated hourly.`;
 
   return {
     title,
@@ -163,7 +136,7 @@ export default async function ToolsPage() {
       a: t("faqA2", {
         totalUsers,
         topToolName: topTool?.name ?? "the leading tool",
-        topToolCost: topSource ? formatCurrency(topSource.totalCost) : "$0",
+        topToolCost: topSource ? formatUsdCompact(topSource.totalCost) : "$0",
         topToolShare: topSource && totalCost > 0 ? ((topSource.totalCost / totalCost) * 100).toFixed(1) : "0",
       }),
     },
@@ -215,7 +188,7 @@ export default async function ToolsPage() {
     "@context": "https://schema.org",
     "@type": "Dataset",
     name: "AI Coding Tool Usage Comparison",
-    description: `Side-by-side comparison of ${listNames} usage from ${totalUsers}+ developers. ${formatCurrency(totalCost)}+ total estimated cost, updated hourly.`,
+    description: `Side-by-side comparison of ${listNames} usage from ${totalUsers}+ developers. ${formatUsdCompact(totalCost)}+ total estimated cost, updated hourly.`,
     url: `${BASE_URL}/stats/tools`,
     dateModified: new Date().toISOString(),
     creator: {
@@ -329,16 +302,16 @@ export default async function ToolsPage() {
           <span className="sr-only">
             As of {lastUpdated.split(",").slice(0, 2).join(",")},{" "}
             {totalUsers.toLocaleString()} developers have tracked{" "}
-            {formatCurrency(totalCost)} in estimated AI coding spend and{" "}
+            {formatUsdCompact(totalCost)} in estimated AI coding spend and{" "}
             {formatTokens(totalTokens)} tokens across {toolCount} tool
             {toolCount !== 1 ? "s" : ""} on clawdboard.{" "}
             {rankedTools.map((rt, i) => (
               <span key={rt.slug}>
                 {i === 0
-                  ? `${rt.name} leads with ${rt.share}% of total spend (${formatCurrency(rt.cost)})`
+                  ? `${rt.name} leads with ${rt.share}% of total spend (${formatUsdCompact(rt.cost)})`
                   : i < rankedTools.length - 1
-                    ? `, followed by ${rt.name} at ${rt.share}% (${formatCurrency(rt.cost)})`
-                    : `, and ${rt.name} at ${rt.share}% (${formatCurrency(rt.cost)})`}
+                    ? `, followed by ${rt.name} at ${rt.share}% (${formatUsdCompact(rt.cost)})`
+                    : `, and ${rt.name} at ${rt.share}% (${formatUsdCompact(rt.cost)})`}
               </span>
             ))}
             . Data is updated hourly from opt-in developer usage logs.
@@ -363,7 +336,7 @@ export default async function ToolsPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
             <StatCard
               label={t("totalEstimatedCost")}
-              value={formatCurrency(totalCost)}
+              value={formatUsdCompact(totalCost)}
               sub={t("totalEstimatedCostSub")}
               accent
             />
@@ -407,7 +380,7 @@ export default async function ToolsPage() {
                           width: `${share}%`,
                           backgroundColor: tool.color,
                         }}
-                        title={`${tool.name}: ${formatCurrency(b?.totalCost ?? 0)} (${share.toFixed(1)}%)`}
+                        title={`${tool.name}: ${formatUsdCompact(b?.totalCost ?? 0)} (${share.toFixed(1)}%)`}
                       />
                     );
                   })}
@@ -426,7 +399,7 @@ export default async function ToolsPage() {
                           style={{ backgroundColor: tool.color }}
                         />
                         <span>
-                          {tool.name} — {share.toFixed(1)}% ({formatCurrency(b?.totalCost ?? 0)})
+                          {tool.name} — {share.toFixed(1)}% ({formatUsdCompact(b?.totalCost ?? 0)})
                         </span>
                       </div>
                     );
@@ -497,7 +470,7 @@ export default async function ToolsPage() {
                     <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-4">
                       <StatCard
                         label={t("estimatedCost")}
-                        value={formatCurrency(cost)}
+                        value={formatUsdCompact(cost)}
                         sub={t("costShareOfTotal", { costShare: detail.costShare })}
                       />
                       <StatCard
@@ -508,14 +481,14 @@ export default async function ToolsPage() {
                       <StatCard
                         label={t("developers")}
                         value={detail.userCount.toLocaleString()}
-                        sub={t("developerStats", { avg: formatCurrency(avgCost), med: formatCurrency(medianCost) })}
+                        sub={t("developerStats", { avg: formatUsdCompact(avgCost), med: formatUsdCompact(medianCost) })}
                       />
                       <StatCard
                         label={t("activeDays")}
                         value={detail.activeDays.toLocaleString()}
                         sub={
                           detail.firstSeen
-                            ? t("activeDaysSince", { date: formatDate(detail.firstSeen) })
+                            ? t("activeDaysSince", { date: formatDateLong(detail.firstSeen) })
                             : t("activeDaysTracked")
                         }
                       />
@@ -525,11 +498,11 @@ export default async function ToolsPage() {
                     <span className="sr-only">
                       {tool.name} accounts for {detail.costShare}% of
                       community spend on clawdboard with{" "}
-                      {formatCurrency(cost)} in estimated API cost across{" "}
+                      {formatUsdCompact(cost)} in estimated API cost across{" "}
                       {detail.userCount.toLocaleString()} developer
                       {detail.userCount !== 1 ? "s" : ""}.
                       The average {tool.name} user has spent an estimated{" "}
-                      {formatCurrency(avgCost)} (median: {formatCurrency(medianCost)}),
+                      {formatUsdCompact(avgCost)} (median: {formatUsdCompact(medianCost)}),
                       consuming {formatTokens(detail.totalTokens)} tokens
                       ({formatTokens(detail.inputTokens)} input,{" "}
                       {formatTokens(detail.outputTokens)} output).
@@ -547,7 +520,7 @@ export default async function ToolsPage() {
                       )}
                       {detail.firstSeen && (
                         <> Usage has been tracked since{" "}
-                        {formatDate(detail.firstSeen)}.</>
+                        {formatDateLong(detail.firstSeen)}.</>
                       )}
                     </span>
 
