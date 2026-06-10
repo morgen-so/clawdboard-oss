@@ -21,6 +21,10 @@ const LITELLM_URL =
   "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json";
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 10_000;
+// After a failed fetch, don't retry (and re-pay the timeout) until this much
+// time has passed — each CLI invocation is a fresh process, so without a
+// persisted marker an offline machine would stall on every single sync.
+const FAILURE_BACKOFF_MS = 60 * 60 * 1000;
 const CACHE_FILE = "pricing-cache.json";
 
 // Sanity floor: the litellm file has thousands of entries. A tiny result
@@ -30,6 +34,8 @@ const MIN_ENTRIES = 200;
 interface CacheFile {
   fetchedAt: string;
   models: Record<string, ModelPricing>;
+  /** Set when the last fetch attempt failed; cleared by a successful fetch. */
+  failedAt?: string;
 }
 
 let liveTable: Map<string, ModelPricing> | null = null;
@@ -97,6 +103,22 @@ async function writeCache(models: Map<string, ModelPricing>): Promise<void> {
   }
 }
 
+/** Record a failed fetch so the next invocation can skip the retry timeout. */
+async function writeFailureMarker(cached: CacheFile | null): Promise<void> {
+  try {
+    const cachePath = getCachePath();
+    await mkdir(join(cachePath, ".."), { recursive: true });
+    const file: CacheFile = {
+      fetchedAt: cached?.fetchedAt ?? new Date(0).toISOString(),
+      models: cached?.models ?? {},
+      failedAt: new Date().toISOString(),
+    };
+    await writeFile(cachePath, JSON.stringify(file), "utf8");
+  } catch {
+    // Non-fatal — worst case the next run retries the fetch.
+  }
+}
+
 /**
  * Load live pricing into memory: fresh disk cache if available, otherwise
  * fetch from LiteLLM (falling back to a stale cache when offline).
@@ -112,6 +134,16 @@ export async function loadLivePricing(): Promise<void> {
     return;
   }
 
+  // A recent failure is on record: skip the fetch (and its timeout) until
+  // the backoff elapses, using whatever stale data we have.
+  if (
+    cached?.failedAt &&
+    Date.now() - Date.parse(cached.failedAt) < FAILURE_BACKOFF_MS
+  ) {
+    liveTable = new Map(Object.entries(cached.models));
+    return;
+  }
+
   try {
     const response = await fetch(LITELLM_URL, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -122,18 +154,22 @@ export async function loadLivePricing(): Promise<void> {
     liveTable = table;
     await writeCache(table);
   } catch {
-    // Offline or upstream broken: a stale cache still beats the static table.
+    // Offline or upstream broken: a stale cache still beats the static
+    // table, and recording the failure lets the next run skip the timeout.
     if (cached) liveTable = new Map(Object.entries(cached.models));
+    await writeFailureMarker(cached);
   }
 }
 
 /**
- * Normalize a model ID for lookup:
+ * Normalize a model ID for pricing lookups (shared by the live table and
+ * the static table in pricing.ts — keep ONE normalizer so an ID can't slip
+ * between layers and land on DEFAULT_PRICING):
  *   "claude-fable-5[1m]"          → "claude-fable-5"  (context-window marker)
  *   "claude-sonnet-4-20250514"    → "claude-sonnet-4" (date suffix)
  *   "gpt-4o-2024-08-06"           → "gpt-4o"
  */
-function normalizeForLookup(modelId: string): string {
+export function normalizeModelId(modelId: string): string {
   return modelId
     .replace(/\[[^\]]*\]$/, "")
     .replace(/-\d{4}-?\d{2}-?\d{2}$/, "");
@@ -143,7 +179,7 @@ function normalizeForLookup(modelId: string): string {
 export function lookupLivePricing(modelId: string): ModelPricing | null {
   if (!liveTable) return null;
   return (
-    liveTable.get(modelId) ?? liveTable.get(normalizeForLookup(modelId)) ?? null
+    liveTable.get(modelId) ?? liveTable.get(normalizeModelId(modelId)) ?? null
   );
 }
 
