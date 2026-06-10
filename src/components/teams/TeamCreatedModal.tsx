@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { CheckIcon, CloseIcon, CopyIcon } from "@/components/icons/CommonIcons";
 import { useModalDismiss } from "@/components/ui/useModalDismiss";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 
 /* ── Icons ───────────────────────────────────────────── */
 
@@ -123,11 +124,9 @@ export function TeamCreatedModal({
   inviteUrl,
 }: TeamCreatedModalProps) {
   const [visible, setVisible] = useState(true);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedSlack, setCopiedSlack] = useState(false);
+  const { copied: copiedLink, copy: copyLink } = useCopyToClipboard();
+  const { copied: copiedSlack, copy: copySlack } = useCopyToClipboard();
   const t = useTranslations("team");
-  const linkTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const slackTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const handleClose = useCallback(() => {
     setVisible(false);
@@ -138,27 +137,12 @@ export function TeamCreatedModal({
 
   useModalDismiss(visible, handleClose);
 
-  // Cleanup timers
-  useEffect(() => {
-    return () => {
-      if (linkTimerRef.current) clearTimeout(linkTimerRef.current);
-      if (slackTimerRef.current) clearTimeout(slackTimerRef.current);
-    };
-  }, []);
-
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(inviteUrl);
-    setCopiedLink(true);
-    if (linkTimerRef.current) clearTimeout(linkTimerRef.current);
-    linkTimerRef.current = setTimeout(() => setCopiedLink(false), 2000);
+    await copyLink(inviteUrl);
   };
 
   const handleCopySlack = async () => {
-    const msg = t("slackMessage", { url: inviteUrl });
-    await navigator.clipboard.writeText(msg);
-    setCopiedSlack(true);
-    if (slackTimerRef.current) clearTimeout(slackTimerRef.current);
-    slackTimerRef.current = setTimeout(() => setCopiedSlack(false), 2000);
+    await copySlack(t("slackMessage", { url: inviteUrl }));
   };
 
   const handleEmail = () => {

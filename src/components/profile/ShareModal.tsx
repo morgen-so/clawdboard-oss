@@ -5,6 +5,7 @@ import { ShareCard } from "./ShareCard";
 import { useTranslations } from "next-intl";
 import { CheckIcon, DownloadIcon, LinkIcon, LinkedInIcon, XIcon } from "@/components/icons/CommonIcons";
 import { useModalDismiss } from "@/components/ui/useModalDismiss";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 import {
   buildShareText,
   buildTwitterIntentUrl,
@@ -43,7 +44,7 @@ export function ShareModal({
 }: ShareModalProps) {
   const t = useTranslations("profile");
   const cardRef = useRef<HTMLDivElement>(null);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const [downloading, setDownloading] = useState(false);
 
   useModalDismiss(open, onClose);
@@ -95,9 +96,7 @@ export function ShareModal({
 
   const handleCopyLink = async () => {
     window.plausible?.("Share", { props: { method: "copy_link" } });
-    await navigator.clipboard.writeText(profileUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    await copy(profileUrl);
   };
 
   return (

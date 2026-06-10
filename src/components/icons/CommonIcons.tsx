@@ -8,6 +8,7 @@
 
 interface IconProps {
   size?: number;
+  className?: string;
 }
 
 export function XIcon({ size = 14 }: IconProps) {
@@ -57,7 +58,7 @@ export function LinkIcon({ size = 14 }: IconProps) {
   );
 }
 
-export function CheckIcon({ size = 14 }: IconProps) {
+export function CheckIcon({ size = 14, className }: IconProps) {
   return (
     <svg
       width={size}
@@ -68,6 +69,7 @@ export function CheckIcon({ size = 14 }: IconProps) {
       strokeWidth="2"
       strokeLinecap="round"
       strokeLinejoin="round"
+      className={className}
       aria-hidden="true"
     >
       <polyline points="20 6 9 17 4 12" />
