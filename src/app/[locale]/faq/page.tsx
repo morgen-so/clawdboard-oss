@@ -2,12 +2,11 @@ export const dynamic = "force-dynamic";
 
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
-import { env } from "@/lib/env";
-import { seoAlternates } from "@/lib/seo";
+import { seoAlternates, breadcrumbLd, faqPageLd } from "@/lib/seo";
 import { Header } from "@/components/layout/Header";
 import { getTranslations } from "next-intl/server";
+import { JsonLd } from "@/components/ui/JsonLd";
 
-const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
 export const metadata: Metadata = {
   title: "FAQ — How AI Coding Tracking, Costs & Streaks Work",
@@ -28,39 +27,11 @@ export default async function FaqPage() {
   }));
 
   // JSON-LD structured data for Google rich results (uses translated text)
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.a,
-      },
-    })),
-  };
-
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      { "@type": "ListItem", position: 2, name: "FAQ" },
-    ],
-  };
-
   return (
     <div className="relative min-h-screen bg-background">
       {/* JSON-LD */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
+      <JsonLd data={faqPageLd(faqs)} />
+      <JsonLd data={breadcrumbLd([{ name: "FAQ" }])} />
 
       {/* Header */}
       <Header

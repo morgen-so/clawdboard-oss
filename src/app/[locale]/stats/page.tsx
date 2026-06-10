@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { env } from "@/lib/env";
-import { seoAlternates } from "@/lib/seo";
+import { seoAlternates, breadcrumbLd, faqPageLd } from "@/lib/seo";
 import { Header } from "@/components/layout/Header";
 import {
   getCommunityStatsCached,
@@ -26,6 +26,7 @@ import {
   formatUsdCompact,
 } from "@/lib/format";
 import { getTranslations } from "next-intl/server";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -130,15 +131,6 @@ export default async function StatsPage() {
 
   // ─── JSON-LD schemas ────────────────────────────────────────────────────────
 
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      { "@type": "ListItem", position: 2, name: "Usage Statistics" },
-    ],
-  };
-
   const datasetLd = {
     "@context": "https://schema.org",
     "@type": "Dataset",
@@ -166,19 +158,6 @@ export default async function StatsPage() {
     ],
   };
 
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.a,
-      },
-    })),
-  };
-
   const now = new Date();
   const lastUpdated = now.toLocaleDateString("en-US", {
     month: "long",
@@ -191,18 +170,9 @@ export default async function StatsPage() {
 
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
-      />
+      <JsonLd data={breadcrumbLd([{ name: "Usage Statistics" }])} />
+      <JsonLd data={datasetLd} />
+      <JsonLd data={faqPageLd(faqs)} />
 
       <Header
         subtitle={t("subtitle")}
