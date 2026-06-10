@@ -29,7 +29,7 @@ const PRICING_FILE = resolve(__dirname, "../cli/src/pricing.ts");
 
 // Pinned litellm commit. Bump quarterly during PR review. The auto-PR
 // body includes a checklist item reminding reviewers to consider bumping.
-const LITELLM_SHA = "06f6cfc5ae377edc9b6067475f2402fa34161e60";
+const LITELLM_SHA = "343e453c2a7c5351459ac72761fad3e25145e78e";
 const LITELLM_URL = `https://raw.githubusercontent.com/BerriAI/litellm/${LITELLM_SHA}/model_prices_and_context_window.json`;
 
 // Models that legitimately aren't in litellm and stay hand-maintained.
