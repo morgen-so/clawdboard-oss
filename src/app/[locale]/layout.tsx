@@ -115,9 +115,9 @@ export default async function LocaleLayout({
           <div id="main-content" className="flex-1">{children}</div>
           <Footer />
           <ActivityTracker />
+          <FeedbackWidget />
         </NextIntlClientProvider>
         <ClientAnalytics />
-        <FeedbackWidget />
       </body>
     </html>
   );

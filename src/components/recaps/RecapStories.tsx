@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import type { RecapRow } from "@/lib/db/recaps";
 import type { RecapData } from "@/lib/db/schema";
 import { SlideHook } from "./slides/SlideHook";
@@ -17,6 +18,7 @@ interface RecapStoriesProps {
 }
 
 export function RecapStories({ recap, onClose }: RecapStoriesProps) {
+  const t = useTranslations("recaps");
   const data = recap.data as RecapData;
   const isEmptyState = data.stateTier === "empty";
 
@@ -93,8 +95,7 @@ export function RecapStories({ recap, onClose }: RecapStoriesProps) {
     else goForward();
   };
 
-  const periodLabel =
-    recap.type === "weekly" ? "Weekly Recap" : "Monthly Recap";
+  const periodLabel = recap.type === "weekly" ? t("weekly") : t("monthly");
 
   return createPortal(
     <div

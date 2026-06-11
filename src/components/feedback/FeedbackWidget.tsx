@@ -2,9 +2,11 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import { submitFeedback } from "@/actions/feedback";
 
 export function FeedbackWidget() {
+  const t = useTranslations("feedback");
   const [open, setOpen] = useState(false);
 
   return (
@@ -27,7 +29,7 @@ export function FeedbackWidget() {
           >
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
-          Feedback
+          {t("button")}
         </button>
       )}
       {open && <FeedbackForm onClose={() => setOpen(false)} />}
@@ -36,6 +38,7 @@ export function FeedbackWidget() {
 }
 
 function FeedbackForm({ onClose }: { onClose: () => void }) {
+  const t = useTranslations("feedback");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
@@ -118,28 +121,27 @@ function FeedbackForm({ onClose }: { onClose: () => void }) {
               </svg>
             </div>
             <p className="text-sm text-zinc-300">
-              Thanks! Your feedback has been received.
+              {t("success")}
             </p>
           </div>
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="border-b border-zinc-700/80 px-4 py-3">
               <h2 className="text-sm font-semibold text-zinc-200 font-mono">
-                <span className="text-accent">$</span> feedback
+                <span className="text-accent">$</span> {t("title")}
               </h2>
             </div>
 
             <div className="space-y-3 p-4">
               <p className="text-xs text-zinc-500">
-                Feedback goes directly to the owner — typically implemented
-                within 48 hours.
+                {t("intro")}
               </p>
 
               <textarea
                 ref={textareaRef}
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
-                placeholder="What's on your mind? Bug reports, feature requests, or just say hi..."
+                placeholder={t("messagePlaceholder")}
                 required
                 minLength={10}
                 maxLength={2000}
@@ -151,7 +153,7 @@ function FeedbackForm({ onClose }: { onClose: () => void }) {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your@email.com (optional, for follow-up)"
+                placeholder={t("emailPlaceholder")}
                 className="w-full rounded border border-zinc-700 bg-zinc-800/50 px-3 py-2 text-sm text-zinc-200 placeholder:text-zinc-600 focus:border-accent/50 focus:outline-none focus:ring-1 focus:ring-accent/30"
               />
 
@@ -166,14 +168,14 @@ function FeedbackForm({ onClose }: { onClose: () => void }) {
                 onClick={onClose}
                 className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors cursor-pointer"
               >
-                Cancel
+                {t("cancel")}
               </button>
               <button
                 type="submit"
                 disabled={submitting}
                 className="rounded bg-accent px-4 py-1.5 text-xs font-semibold text-zinc-900 transition-opacity hover:opacity-90 disabled:opacity-50 cursor-pointer"
               >
-                {submitting ? "Sending..." : "Send feedback"}
+                {submitting ? t("sending") : t("send")}
               </button>
             </div>
           </form>

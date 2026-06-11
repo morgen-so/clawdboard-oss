@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import type { RecapData } from "@/lib/db/schema";
 import { GenerativePattern } from "../visuals/GenerativePattern";
 import { AmbientParticles } from "../visuals/AmbientParticles";
@@ -12,21 +13,23 @@ interface SlideHookProps {
   periodEnd: string;
 }
 
-function getTeaser(data: RecapData): string {
+function getTeaser(
+  data: RecapData,
+  t: ReturnType<typeof useTranslations<"recaps">>
+): string {
   if (data.stateTier === "podium") {
-    if (data.rank === 1) return "You dominated.";
-    return "You hit the podium.";
+    if (data.rank === 1) return t("hook.dominated");
+    return t("hook.podium");
   }
-  if (data.stateTier === "top10") return "You broke the top 10.";
+  if (data.stateTier === "top10") return t("hook.top10");
   if (data.previousRank && data.previousRank > data.rank) {
-    const delta = data.previousRank - data.rank;
-    return `You climbed ${delta} spot${delta > 1 ? "s" : ""}.`;
+    return t("hook.climbed", { count: data.previousRank - data.rank });
   }
   if (data.previousRank && data.previousRank < data.rank) {
-    return "Time to reclaim your spot.";
+    return t("hook.reclaim");
   }
-  if (data.stateTier === "top10pct") return "Top 10%. You're elite.";
-  return "Here's how you stacked up.";
+  if (data.stateTier === "top10pct") return t("hook.elite");
+  return t("hook.default");
 }
 
 export function SlideHook({
@@ -35,6 +38,8 @@ export function SlideHook({
   periodStart,
   periodEnd,
 }: SlideHookProps) {
+  const t = useTranslations("recaps");
+
   return (
     <div className="relative flex flex-col items-center text-center gap-6">
       {/* Generative background pattern */}
@@ -86,7 +91,7 @@ export function SlideHook({
         className="font-mono text-lg text-white/80 animate-fade-in max-w-[280px] relative z-10"
         style={{ animationDelay: "700ms" }}
       >
-        {getTeaser(data)}
+        {getTeaser(data, t)}
       </p>
 
       {/* Tap hint */}
@@ -94,7 +99,7 @@ export function SlideHook({
         className="font-mono text-[10px] text-white/20 animate-fade-in relative z-10"
         style={{ animationDelay: "1200ms" }}
       >
-        tap to continue
+        {t("hook.tapToContinue")}
       </p>
     </div>
   );
