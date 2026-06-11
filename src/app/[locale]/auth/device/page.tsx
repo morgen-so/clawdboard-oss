@@ -4,6 +4,7 @@ import { auth, cachedAuth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { deviceCodes, users } from "@/lib/db/schema";
 import { eq, and, gt } from "drizzle-orm";
+import { hashApiToken } from "@/lib/api-auth";
 import { DeviceSuccess } from "./DeviceSuccess";
 
 export const dynamic = "force-dynamic";
@@ -62,10 +63,10 @@ async function claimDevice(formData: FormData) {
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
 
-    // Store the API token on the user record
+    // Store the API token on the user record, with the hash auth uses
     await db
       .update(users)
-      .set({ apiToken })
+      .set({ apiToken, apiTokenHash: hashApiToken(apiToken) })
       .where(eq(users.id, session.user.id));
   }
 

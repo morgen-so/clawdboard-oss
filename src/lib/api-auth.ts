@@ -1,7 +1,7 @@
 import "server-only";
 
 import { type NextRequest, NextResponse } from "next/server";
-import { timingSafeEqual } from "crypto";
+import { createHash, timingSafeEqual } from "crypto";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
@@ -11,6 +11,11 @@ import { env } from "@/lib/env";
 /** Extract the Bearer token from an Authorization header, if present. */
 function bearerToken(header: string | null): string | null {
   return header?.startsWith("Bearer ") ? header.slice(7) : null;
+}
+
+/** SHA-256 hex digest under which API tokens are stored and looked up. */
+export function hashApiToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
 }
 
 type ApiTokenAuth =
@@ -34,11 +39,32 @@ export async function authenticateApiToken(
     };
   }
 
-  const [user] = await db
+  // Look up by SHA-256 hash so the unique-index comparison never runs on
+  // the raw secret — a direct plaintext lookup leaks token prefixes through
+  // comparison timing.
+  const tokenHash = hashApiToken(token);
+  let [user] = await db
     .select()
     .from(users)
-    .where(eq(users.apiToken, token))
+    .where(eq(users.apiTokenHash, tokenHash))
     .limit(1);
+
+  if (!user) {
+    // Legacy fallback: tokens issued before api_token_hash existed are only
+    // stored in plaintext. Look up directly and backfill the hash so the
+    // next request takes the hashed path.
+    [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.apiToken, token))
+      .limit(1);
+    if (user) {
+      await db
+        .update(users)
+        .set({ apiTokenHash: tokenHash })
+        .where(eq(users.id, user.id));
+    }
+  }
 
   if (!user) {
     return {
