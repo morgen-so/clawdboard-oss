@@ -27,10 +27,14 @@
   },
   "common": {
     "skipToContent": "Zum Inhalt springen",
-    "confirm": "Bist du sicher?"
+    "confirm": "Bist du sicher?",
+    "close": "Schliessen",
+    "copyCommand": "Befehl kopieren",
+    "moreInfo": "Mehr Infos"
   },
   "languageSwitcher": {
     "label": "Language",
+    "changeLanguage": "Sprache andern",
     "en": "English",
     "fr": "Francais",
     "de": "Deutsch",
@@ -107,6 +111,7 @@
     "refresh": "aktualisieren",
     "checking": "prufe…",
     "toSyncManually": "zum manuellen Synchronisieren,",
+    "syncManually": "Manuell synchronisieren",
     "inYourTerminal": "in deinem Terminal",
     "user": "Benutzer",
     "cost": "Kosten",
@@ -164,7 +169,8 @@
     "noProfileRepo": "Noch kein Profil-README?",
     "createOne": "In 30 Sekunden erstellen",
     "done": "Fertig",
-    "close": "Schliessen"
+    "close": "Schliessen",
+    "goToStep": "Zu Schritt {step} gehen"
   },
   "profile": {
     "rank": "Globaler Rang",
@@ -199,6 +205,7 @@
     "backToLeaderboard": "Zuruck zur Rangliste",
     "teamNudge": "Vergleiche deine Statistiken mit Teamkollegen.",
     "createOrJoin": "Team erstellen oder beitreten",
+    "dismissTeamNudge": "Teamvorschlag ausblenden",
     "joinHeadline": "Willst du deine eigenen KI-Coding-Stats sehen?",
     "joinDescription": "Verfolge deine Nutzung, verdiene Badges und konkurriere in der Rangliste.",
     "joinSignIn": "Mit GitHub anmelden",
@@ -360,6 +367,9 @@
     "shareLink": "Link teilen",
     "searchClawdboard": "Auf Clawdboard suchen",
     "searchPlaceholder": "Nach Benutzername oder Name suchen...",
+    "searchUsersLabel": "Benutzer nach Benutzername oder Name suchen",
+    "switchTeam": "Team wechseln",
+    "projectUrl": "Projekt-URL",
     "inviteAction": "Einladen",
     "invited": "Eingeladen",
     "pending": "ausstehend",
@@ -439,6 +449,7 @@
     "backToLeaderboard": "\u2190 Rangliste",
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "Statistiken",
+    "breadcrumbLabel": "Brotkrumennavigation",
     "heroTitle": "KI-Coding Nutzungsstatistiken",
     "heroDescription": "Echtzeit-Gesamtdaten von <strong>{totalUsers} Entwicklern</strong>, die ihre KI-Coding Nutzung auf <link>clawdboard</link> verfolgen. Alle Kostenangaben sind Schatzungen basierend auf veroffentlichten API-Token-Preisen — keine tatsachlichen Rechnungen. Die Daten decken die gesamte Nutzung seit Januar 2024 ab.",
     "lastUpdated": "Zuletzt aktualisiert: {lastUpdated}",
@@ -514,6 +525,7 @@
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "Statistiken",
     "breadcrumbTools": "Tools",
+    "breadcrumbLabel": "Brotkrumennavigation",
     "heroTitle": "KI-Coding Tool-Vergleich",
     "heroDescription": "Direktvergleich der Nutzung von {toolList} durch <strong>{totalUsers} Entwickler</strong> auf <link>clawdboard</link>. Alle Kosten werden aus Token-Zahlen und veroffentlichten API-Preisen geschatzt.",
     "lastUpdated": "Zuletzt aktualisiert: {lastUpdated}",
@@ -587,6 +599,7 @@
     "backToAllModels": "\u2190 alle Modelle",
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "Statistiken",
+    "breadcrumbLabel": "Brotkrumennavigation",
     "heroTitle": "{modelName} Nutzungsstatistiken",
     "heroDescription": "Reale Nutzungsdaten fur <strong>{modelName}</strong> von <strong>{userCount} Entwicklern</strong> auf <link>clawdboard</link>. {modelName} ist {modelDescription}. Alle Kosten werden aus Token-Zahlen und veroffentlichten {provider} API-Preisen geschatzt.",
     "lastUpdated": "Zuletzt aktualisiert: {lastUpdated}",

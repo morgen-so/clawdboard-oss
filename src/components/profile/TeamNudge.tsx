@@ -43,7 +43,7 @@ export function TeamNudge() {
             setVisible(false);
           }}
           className="shrink-0 rounded p-1 text-foreground/30 transition-colors hover:text-foreground cursor-pointer"
-          aria-label="Dismiss team suggestion"
+          aria-label={t("dismissTeamNudge")}
         >
           <svg
             width="14"

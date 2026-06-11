@@ -215,7 +215,7 @@ export default async function ToolsPage() {
         {/* ── Breadcrumb ─────────────────────────────────────────────── */}
         <nav
           className="mb-8 font-mono text-xs text-muted"
-          aria-label="Breadcrumb"
+          aria-label={t("breadcrumbLabel")}
         >
           <ol className="flex items-center gap-1.5">
             <li>

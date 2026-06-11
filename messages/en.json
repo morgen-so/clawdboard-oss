@@ -27,10 +27,14 @@
   },
   "common": {
     "skipToContent": "Skip to content",
-    "confirm": "Are you sure?"
+    "confirm": "Are you sure?",
+    "close": "Close",
+    "copyCommand": "Copy command",
+    "moreInfo": "More info"
   },
   "languageSwitcher": {
     "label": "Language",
+    "changeLanguage": "Change language",
     "en": "English",
     "fr": "Francais",
     "de": "Deutsch",
@@ -113,6 +117,7 @@
     "backToLeaderboard": "Back to Leaderboard",
     "teamNudge": "Compare your stats with teammates.",
     "createOrJoin": "create or join a team",
+    "dismissTeamNudge": "Dismiss team suggestion",
     "joinHeadline": "Want to see your own AI coding stats?",
     "joinDescription": "Track your usage, earn badges, and compete on the leaderboard.",
     "joinSignIn": "Sign in with GitHub",
@@ -209,6 +214,7 @@
     "refresh": "refresh",
     "checking": "checking…",
     "toSyncManually": "to sync manually,",
+    "syncManually": "Sync manually",
     "inYourTerminal": "in your terminal",
     "user": "User",
     "cost": "Cost",
@@ -266,7 +272,8 @@
     "noProfileRepo": "Don't have a profile README yet?",
     "createOne": "Create one in 30 seconds",
     "done": "Done",
-    "close": "Close"
+    "close": "Close",
+    "goToStep": "Go to step {step}"
   },
   "team": {
     "teamRankings": "Team Rankings",
@@ -361,6 +368,9 @@
     "shareLink": "Share Link",
     "searchClawdboard": "Search Clawdboard",
     "searchPlaceholder": "Search by username or name...",
+    "searchUsersLabel": "Search users by username or name",
+    "switchTeam": "Switch team",
+    "projectUrl": "Project URL",
     "inviteAction": "Invite",
     "invited": "Invited",
     "pending": "pending",
@@ -440,6 +450,7 @@
     "backToLeaderboard": "\u2190 leaderboard",
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "stats",
+    "breadcrumbLabel": "Breadcrumb",
     "heroTitle": "AI Coding Usage Statistics",
     "heroDescription": "Real-time aggregate data from <strong>{totalUsers} developers</strong> who track their AI coding usage on <link>clawdboard</link>. All cost figures are estimates based on published API token pricing — not actual bills. Data covers all usage since January 2024.",
     "lastUpdated": "Last updated: {lastUpdated}",
@@ -515,6 +526,7 @@
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "stats",
     "breadcrumbTools": "tools",
+    "breadcrumbLabel": "Breadcrumb",
     "heroTitle": "AI Coding Tool Comparison",
     "heroDescription": "Side-by-side comparison of {toolList} usage from <strong>{totalUsers} developers</strong> on <link>clawdboard</link>. All costs are estimated from token counts and published API pricing.",
     "lastUpdated": "Last updated: {lastUpdated}",
@@ -588,6 +600,7 @@
     "backToAllModels": "\u2190 all models",
     "breadcrumbHome": "clawdboard",
     "breadcrumbStats": "stats",
+    "breadcrumbLabel": "Breadcrumb",
     "heroTitle": "{modelName} Usage Statistics",
     "heroDescription": "Real usage data for <strong>{modelName}</strong> from <strong>{userCount} developers</strong> on <link>clawdboard</link>. {modelName} is {modelDescription}. All costs are estimated from token counts and published {provider} API pricing.",
     "lastUpdated": "Last updated: {lastUpdated}",

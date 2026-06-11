@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { CheckIcon, CopyIcon } from "@/components/icons/CommonIcons";
 import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 
@@ -10,6 +11,7 @@ export function CopyIconButton({
   text: string;
   onCopy?: () => void;
 }) {
+  const t = useTranslations("common");
   const { copied, copy } = useCopyToClipboard();
 
   const handleCopy = () => {
@@ -23,7 +25,7 @@ export function CopyIconButton({
         type="button"
         onClick={handleCopy}
         className="shrink-0 rounded p-1 text-muted transition-colors hover:text-foreground"
-        aria-label="Copy command"
+        aria-label={t("copyCommand")}
       >
         {copied ? <CheckIcon className="text-green-400" /> : <CopyIcon />}
       </button>

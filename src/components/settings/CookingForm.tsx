@@ -57,10 +57,14 @@ export function CookingForm({ currentUrl, currentLabel }: CookingFormProps) {
   return (
     <form action={handleSubmit} className="space-y-3">
       <div>
-        <label className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-muted">
+        <label
+          htmlFor="cooking-label"
+          className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-muted"
+        >
           {t("projectName")}
         </label>
         <input
+          id="cooking-label"
           name="cookingLabel"
           type="text"
           maxLength={50}
@@ -70,10 +74,14 @@ export function CookingForm({ currentUrl, currentLabel }: CookingFormProps) {
         />
       </div>
       <div>
-        <label className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-muted">
+        <label
+          htmlFor="cooking-url"
+          className="mb-1 block font-mono text-[10px] uppercase tracking-wider text-muted"
+        >
           {t("url")}
         </label>
         <input
+          id="cooking-url"
           name="cookingUrl"
           type="url"
           defaultValue={currentUrl ?? ""}

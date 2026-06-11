@@ -2,12 +2,14 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 
 interface InfoTooltipProps {
   text: string;
 }
 
 export function InfoTooltip({ text }: InfoTooltipProps) {
+  const t = useTranslations("common");
   const [visible, setVisible] = useState(false);
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const ref = useRef<HTMLButtonElement>(null);
@@ -42,7 +44,7 @@ export function InfoTooltip({ text }: InfoTooltipProps) {
         onMouseEnter={() => setVisible(true)}
         onMouseLeave={() => setVisible(false)}
         className="inline-flex text-muted hover:text-foreground transition-colors"
-        aria-label="More info"
+        aria-label={t("moreInfo")}
       >
         <svg
           width="14"

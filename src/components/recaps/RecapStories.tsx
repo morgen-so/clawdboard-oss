@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useTranslations } from "next-intl";
 import type { RecapRow } from "@/lib/db/recaps";
 import type { RecapData } from "@/lib/db/schema";
 import { SlideHook } from "./slides/SlideHook";
@@ -17,6 +18,7 @@ interface RecapStoriesProps {
 }
 
 export function RecapStories({ recap, onClose }: RecapStoriesProps) {
+  const tCommon = useTranslations("common");
   const data = recap.data as RecapData;
   const isEmptyState = data.stateTier === "empty";
 
@@ -131,7 +133,7 @@ export function RecapStories({ recap, onClose }: RecapStoriesProps) {
             onClose();
           }}
           className="absolute right-3 top-8 z-30 rounded-full bg-white/10 p-1.5 text-white/60 transition-colors hover:bg-white/20 hover:text-white cursor-pointer"
-          aria-label="Close"
+          aria-label={tCommon("close")}
         >
           <svg
             width="16"

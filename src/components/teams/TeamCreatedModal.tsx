@@ -127,6 +127,7 @@ export function TeamCreatedModal({
   const { copied: copiedLink, copy: copyLink } = useCopyToClipboard();
   const { copied: copiedSlack, copy: copySlack } = useCopyToClipboard();
   const t = useTranslations("team");
+  const tCommon = useTranslations("common");
 
   const handleClose = useCallback(() => {
     setVisible(false);
@@ -164,7 +165,7 @@ export function TeamCreatedModal({
         className="relative w-full max-w-md bg-surface border border-border rounded-lg overflow-hidden"
         role="dialog"
         aria-modal="true"
-        aria-label={`${teamName} created`}
+        aria-label={t("teamCreatedHeading", { teamName })}
         style={{ animation: "fadeInUp 0.2s ease-out" }}
       >
         {/* Confetti burst */}
@@ -174,7 +175,7 @@ export function TeamCreatedModal({
         <button
           onClick={handleClose}
           className="absolute top-3 right-3 p-1 text-muted hover:text-foreground transition-colors cursor-pointer z-10"
-          aria-label="Close"
+          aria-label={tCommon("close")}
         >
           <CloseIcon />
         </button>

@@ -61,7 +61,7 @@ function SyncNowTip() {
         type="button"
         onClick={() => setPinned((v) => !v)}
         className="cursor-help text-muted/70 hover:text-muted transition-colors"
-        aria-label="Sync manually"
+        aria-label={t("syncManually")}
       >
         <svg
           width="12"

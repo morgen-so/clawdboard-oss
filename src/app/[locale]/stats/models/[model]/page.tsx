@@ -231,7 +231,7 @@ export default async function ModelPage({ params }: PageProps) {
 
       <main className="relative z-10 mx-auto max-w-5xl px-4 py-12 sm:px-6">
         {/* ── Breadcrumb ─────────────────────────────────────────────── */}
-        <nav className="mb-8 font-mono text-xs text-muted" aria-label="Breadcrumb">
+        <nav className="mb-8 font-mono text-xs text-muted" aria-label={t("breadcrumbLabel")}>
           <ol className="flex items-center gap-1.5">
             <li>
               <Link href="/" className="hover:text-accent transition-colors">

@@ -83,6 +83,7 @@ export function UserSearchInvite({ teamId }: UserSearchInviteProps) {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder={t("searchPlaceholder")}
+          aria-label={t("searchUsersLabel")}
           className="w-full rounded-md border border-border bg-background px-3 py-1.5 font-mono text-xs text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
         />
         {loading && (
@@ -121,7 +122,7 @@ export function UserSearchInvite({ teamId }: UserSearchInviteProps) {
                 {user.image ? (
                   <Image
                     src={user.image}
-                    alt=""
+                    alt={user.github_username ?? user.name ?? ""}
                     width={24}
                     height={24}
                     className="h-6 w-6 rounded-full ring-1 ring-border"
