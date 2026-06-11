@@ -41,7 +41,12 @@ export async function runSetupHook(): Promise<boolean> {
     ocAlready = result.alreadyInstalled;
     if (result.installed || result.updated) anyInstalled = true;
   } catch {
-    // OpenCode plugin install failure is non-fatal
+    // Non-fatal — Claude Code syncing still works without it.
+    console.error(
+      chalk.yellow(
+        "Warning: failed to install the OpenCode plugin — OpenCode usage won't auto-sync."
+      )
+    );
   }
 
   // Codex: install Stop hook in ~/.codex/hooks.json + features.codex_hooks flag
@@ -61,7 +66,12 @@ export async function runSetupHook(): Promise<boolean> {
       );
     }
   } catch {
-    // Codex hook install failure is non-fatal
+    // Non-fatal — Claude Code syncing still works without it.
+    console.error(
+      chalk.yellow(
+        "Warning: failed to install the Codex hook — Codex usage won't auto-sync."
+      )
+    );
   }
 
   if (claudeAlready && ocAlready && codexAlready) {
