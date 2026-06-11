@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import type { RecapData } from "@/lib/db/schema";
 import { GenerativePattern } from "../visuals/GenerativePattern";
+import { formatUsd } from "@/lib/format";
 
 interface SlideRhythmProps {
   data: RecapData;
@@ -307,11 +308,7 @@ export function SlideRhythm({
             </span>
           </p>
           <p className="font-mono text-[10px] text-white/30 mt-0.5">
-            {new Intl.NumberFormat("en-US", {
-              style: "currency",
-              currency: "USD",
-              minimumFractionDigits: 2,
-            }).format(data.peakDayCost)}{" "}
+            {formatUsd(data.peakDayCost)}{" "}
             that day
           </p>
         </div>

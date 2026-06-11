@@ -12,7 +12,7 @@ import {
 } from "recharts";
 import type { ModelDailyTrend } from "@/lib/db/stats";
 import { COST_COLOR, TOOLTIP_STYLES } from "@/lib/chart-utils";
-import { formatChartDate, formatUsdShort } from "@/lib/format";
+import { formatChartDate, formatUsd, formatUsdShort } from "@/lib/format";
 
 type Metric = "cost" | "users";
 
@@ -142,7 +142,7 @@ export function ModelTrendChart({
             formatter={(value: number | undefined, name: string | undefined) => {
               const v = value ?? 0;
               if (name === "smoothCost")
-                return [`$${v.toFixed(2)}`, "Avg Daily Cost"];
+                return [formatUsd(v), "Avg Daily Cost"];
               if (name === "smoothUsers")
                 return [v.toFixed(1), "Avg Active Users"];
               return [String(v), name ?? ""];
