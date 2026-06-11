@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 
 interface TeamSwitcherProps {
@@ -15,6 +16,7 @@ interface TeamSwitcherProps {
 }
 
 function TeamSwitcherInner({ teams, currentSlug }: TeamSwitcherProps) {
+  const t = useTranslations("team");
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -38,6 +40,7 @@ function TeamSwitcherInner({ teams, currentSlug }: TeamSwitcherProps) {
     <select
       value={currentSlug}
       onChange={handleChange}
+      aria-label={t("switchTeam")}
       className="rounded-md border border-border bg-surface px-3 py-1.5 font-mono text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
     >
       {teams.map((team) => (

@@ -70,10 +70,14 @@ export function DeleteAccountDialog({
             {t("description")}
           </p>
 
-          <label className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted">
+          <label
+            htmlFor="delete-confirmation"
+            className="mb-1.5 block font-mono text-[10px] uppercase tracking-wider text-muted"
+          >
             {t("typeToConfirm", { username })}
           </label>
           <input
+            id="delete-confirmation"
             ref={inputRef}
             type="text"
             value={confirmation}

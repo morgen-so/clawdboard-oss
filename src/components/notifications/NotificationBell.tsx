@@ -69,7 +69,7 @@ function TeamInviteNotification({
         {invitedByImage ? (
           <Image
             src={invitedByImage}
-            alt=""
+            alt={invitedBy ?? ""}
             width={24}
             height={24}
             className="mt-0.5 h-6 w-6 rounded-full ring-1 ring-border"

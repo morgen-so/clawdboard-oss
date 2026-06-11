@@ -120,6 +120,7 @@ export function TeamSettings({
                 type="text"
                 defaultValue={team.name}
                 maxLength={50}
+                aria-label={t("teamName")}
                 className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 font-mono text-sm text-foreground focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
               />
               <SubmitButton
@@ -151,6 +152,7 @@ export function TeamSettings({
                   maxLength={50}
                   defaultValue={team.cookingLabel ?? ""}
                   placeholder={t("projectName")}
+                  aria-label={t("projectName")}
                   className="flex-1 rounded-md border border-border bg-background px-3 py-1.5 font-mono text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
                 <input
@@ -158,6 +160,7 @@ export function TeamSettings({
                   type="url"
                   defaultValue={team.cookingUrl ?? ""}
                   placeholder="https://..."
+                  aria-label={t("projectUrl")}
                   className="flex-[2] rounded-md border border-border bg-background px-3 py-1.5 font-mono text-sm text-foreground placeholder:text-muted focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
@@ -230,7 +233,7 @@ export function TeamSettings({
                     {member.image && (
                       <Image
                         src={member.image}
-                        alt=""
+                        alt={member.githubUsername ?? ""}
                         width={24}
                         height={24}
                         className="h-6 w-6 rounded-full"

@@ -23,6 +23,7 @@ function StepDots({
   current: number;
   onNavigate: (step: 1 | 2 | 3) => void;
 }) {
+  const t = useTranslations("badgePrompt");
   return (
     <div className="flex items-center justify-center gap-2 mb-4">
       {([1, 2, 3] as const).map((s) => (
@@ -36,7 +37,7 @@ function StepDots({
                 ? "bg-foreground/40 hover:bg-foreground/60 cursor-pointer"
                 : "bg-foreground/20"
           }`}
-          aria-label={`Go to step ${s}`}
+          aria-label={t("goToStep", { step: s })}
           aria-current={s === current ? "step" : undefined}
         />
       ))}

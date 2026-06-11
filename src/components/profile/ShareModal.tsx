@@ -43,6 +43,7 @@ export function ShareModal({
   profileUrl,
 }: ShareModalProps) {
   const t = useTranslations("profile");
+  const tCommon = useTranslations("common");
   const cardRef = useRef<HTMLDivElement>(null);
   const { copied, copy } = useCopyToClipboard();
   const [downloading, setDownloading] = useState(false);
@@ -110,13 +111,13 @@ export function ShareModal({
         className="relative w-full max-w-[680px] bg-surface border border-border rounded-lg animate-in fade-in slide-in-from-bottom-4 duration-200"
         role="dialog"
         aria-modal="true"
-        aria-label="Share your stats"
+        aria-label={t("shareProfile")}
       >
         {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-3 right-3 p-1 text-muted hover:text-foreground transition-colors cursor-pointer"
-          aria-label="Close"
+          aria-label={tCommon("close")}
         >
           <svg
             width="20"
