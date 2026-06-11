@@ -25,18 +25,6 @@ interface BadgesClientProps {
 
 const TAB_KEYS: BadgeCategory[] = ["all-time", "daily", "monthly"];
 
-const GROUP_LABELS: Record<BadgeGroup, string> = {
-  spend: "Spending",
-  streak: "Streaks",
-  rank: "Leaderboard Rank",
-  "days-active": "Days Active",
-  "daily-spend": "Daily Spending",
-  "daily-tokens": "Daily Tokens",
-  "monthly-spend": "Monthly Spending",
-  "monthly-days": "Monthly Activity",
-  "perfect-month": "Perfect Month",
-};
-
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export function BadgesClient({
@@ -170,7 +158,7 @@ export function BadgesClient({
         {groupedBadges.map(({ group, badges: groupBadges }) => (
             <div key={group}>
               <p className="font-mono text-[10px] text-dim uppercase tracking-wider mb-2">
-                {GROUP_LABELS[group]}
+                {t(`groups.${group}`)}
               </p>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {groupBadges.map((badge) => {

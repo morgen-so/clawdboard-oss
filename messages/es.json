@@ -52,6 +52,7 @@
   },
   "footer": {
     "tagline": "clasificacion de codificacion IA",
+    "stats": "Estadisticas",
     "faq": "FAQ",
     "privacy": "Privacidad",
     "terms": "Terminos",
@@ -259,7 +260,18 @@
     "nextRank": "Siguiente: {title} ({xp} XP restantes)",
     "maxRank": "Rango maximo alcanzado!",
     "keepCooking": "Sigue cocinando para alcanzar {title}!",
-    "highestRank": "Has alcanzado el rango mas alto!"
+    "highestRank": "Has alcanzado el rango mas alto!",
+    "groups": {
+      "spend": "Gasto",
+      "streak": "Rachas",
+      "rank": "Rango en la clasificacion",
+      "days-active": "Dias activos",
+      "daily-spend": "Gasto diario",
+      "daily-tokens": "Tokens diarios",
+      "monthly-spend": "Gasto mensual",
+      "monthly-days": "Actividad mensual",
+      "perfect-month": "Mes perfecto"
+    }
   },
   "timeAgo": {
     "justNow": "ahora mismo",
@@ -646,5 +658,31 @@
     "ctaDescription": "Mira como se compara tu uso de {modelName}. Gratis, open-source, se configura en 30 segundos.",
     "ctaPrimaryLabel": "Ver clasificacion",
     "ctaSecondaryLabel": "Todas las estadisticas de modelos"
+  },
+  "feedback": {
+    "button": "Feedback",
+    "title": "feedback",
+    "intro": "El feedback llega directamente al propietario - normalmente se implementa en 48 horas.",
+    "messagePlaceholder": "Que tienes en mente? Reportes de bugs, ideas de funciones, o simplemente saluda...",
+    "emailPlaceholder": "tu@email.com (opcional, para seguimiento)",
+    "cancel": "Cancelar",
+    "send": "Enviar feedback",
+    "sending": "Enviando...",
+    "success": "Gracias! Tu feedback ha sido recibido."
+  },
+  "recaps": {
+    "weekly": "Resumen semanal",
+    "monthly": "Resumen mensual",
+    "bannerReady": "Tu <highlight>{label}</highlight> esta listo",
+    "hook": {
+      "dominated": "Dominaste.",
+      "podium": "Subiste al podio.",
+      "top10": "Entraste en el top 10.",
+      "climbed": "Subiste {count, plural, one {# puesto} other {# puestos}}.",
+      "reclaim": "Hora de recuperar tu puesto.",
+      "elite": "Top 10 %. Eres de la elite.",
+      "default": "Asi es como quedaste.",
+      "tapToContinue": "toca para continuar"
+    }
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useEffect, useMemo } from "react";
+import { useLocale } from "next-intl";
 import {
   startOfMonth,
   endOfMonth,
@@ -26,14 +27,25 @@ interface DatePickerProps {
   label?: string;
 }
 
-const DAYS_OF_WEEK = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
 export function DatePicker({ value, onChange, min, max, label }: DatePickerProps) {
+  const locale = useLocale();
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() =>
     value ? startOfMonth(parseISO(value)) : startOfMonth(new Date())
   );
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Localized 2-char weekday headers, Sunday-first to match the calendar grid
+  const daysOfWeek = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(locale, {
+      weekday: "short",
+      timeZone: "UTC",
+    });
+    // 2021-01-03 is a Sunday
+    return Array.from({ length: 7 }, (_, i) =>
+      formatter.format(new Date(Date.UTC(2021, 0, 3 + i))).slice(0, 2)
+    );
+  }, [locale]);
 
   const selectedDate = useMemo(() => (value ? parseISO(value) : null), [value]);
   const minDate = useMemo(() => (min ? parseISO(min) : null), [min]);
@@ -144,9 +156,9 @@ export function DatePicker({ value, onChange, min, max, label }: DatePickerProps
 
           {/* Day-of-week headers */}
           <div className="grid grid-cols-7 mb-1">
-            {DAYS_OF_WEEK.map((d) => (
+            {daysOfWeek.map((d, i) => (
               <div
-                key={d}
+                key={i}
                 className="text-center font-mono text-[10px] uppercase tracking-widest text-dim py-1"
               >
                 {d}

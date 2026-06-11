@@ -52,6 +52,7 @@
   },
   "footer": {
     "tagline": "KI-Coding Rangliste",
+    "stats": "Statistiken",
     "faq": "FAQ",
     "privacy": "Datenschutz",
     "terms": "Nutzungsbedingungen",
@@ -259,7 +260,18 @@
     "nextRank": "Nachster: {title} (noch {xp} XP)",
     "maxRank": "Hochster Rang erreicht!",
     "keepCooking": "Weiter kochen, um {title} zu erreichen!",
-    "highestRank": "Du hast den hochsten Rang erreicht!"
+    "highestRank": "Du hast den hochsten Rang erreicht!",
+    "groups": {
+      "spend": "Ausgaben",
+      "streak": "Serien",
+      "rank": "Ranglisten-Platz",
+      "days-active": "Aktive Tage",
+      "daily-spend": "Tagliche Ausgaben",
+      "daily-tokens": "Tagliche Tokens",
+      "monthly-spend": "Monatliche Ausgaben",
+      "monthly-days": "Monatliche Aktivitat",
+      "perfect-month": "Perfekter Monat"
+    }
   },
   "timeAgo": {
     "justNow": "gerade eben",
@@ -646,5 +658,31 @@
     "ctaDescription": "Sieh, wie deine {modelName}-Nutzung im Vergleich abschneidet. Kostenlos, Open-Source, in 30 Sekunden eingerichtet.",
     "ctaPrimaryLabel": "Rangliste ansehen",
     "ctaSecondaryLabel": "Alle Modell-Statistiken"
+  },
+  "feedback": {
+    "button": "Feedback",
+    "title": "feedback",
+    "intro": "Feedback geht direkt an den Betreiber - wird in der Regel innerhalb von 48 Stunden umgesetzt.",
+    "messagePlaceholder": "Was liegt dir auf dem Herzen? Bug-Reports, Feature-Wunsche oder einfach nur Hallo sagen...",
+    "emailPlaceholder": "deine@email.com (optional, fur Ruckfragen)",
+    "cancel": "Abbrechen",
+    "send": "Feedback senden",
+    "sending": "Wird gesendet...",
+    "success": "Danke! Dein Feedback ist angekommen."
+  },
+  "recaps": {
+    "weekly": "Wochenruckblick",
+    "monthly": "Monatsruckblick",
+    "bannerReady": "Dein <highlight>{label}</highlight> ist bereit",
+    "hook": {
+      "dominated": "Du hast dominiert.",
+      "podium": "Du hast es aufs Podium geschafft.",
+      "top10": "Du hast die Top 10 geknackt.",
+      "climbed": "Du bist {count, plural, one {# Platz} other {# Platze}} nach oben geklettert.",
+      "reclaim": "Zeit, dir deinen Platz zuruckzuholen.",
+      "elite": "Top 10 %. Du gehorst zur Elite.",
+      "default": "So hast du abgeschnitten.",
+      "tapToContinue": "tippen, um fortzufahren"
+    }
   }
 }

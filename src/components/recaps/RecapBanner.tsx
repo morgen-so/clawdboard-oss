@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 import { RecapStories } from "./RecapStories";
 import type { RecapRow } from "@/lib/db/recaps";
 
 export function RecapBanner() {
+  const t = useTranslations("recaps");
   const [recap, setRecap] = useState<RecapRow | null>(null);
   const [showStories, setShowStories] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -26,8 +28,7 @@ export function RecapBanner() {
 
   if (!recap || dismissed) return null;
 
-  const label =
-    recap.type === "weekly" ? "Weekly Recap" : "Monthly Recap";
+  const label = recap.type === "weekly" ? t("weekly") : t("monthly");
 
   return (
     <>
@@ -43,8 +44,12 @@ export function RecapBanner() {
           </span>
 
           <p className="font-mono text-xs text-foreground/80 group-hover:text-foreground transition-colors">
-            Your <span className="text-accent font-semibold">{label}</span> is
-            ready{" "}
+            {t.rich("bannerReady", {
+              label,
+              highlight: (chunks) => (
+                <span className="text-accent font-semibold">{chunks}</span>
+              ),
+            })}{" "}
             <span className="text-muted">
               ({recap.periodStart} &mdash; {recap.periodEnd})
             </span>

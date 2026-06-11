@@ -52,6 +52,7 @@
   },
   "footer": {
     "tagline": "classement codage IA",
+    "stats": "Statistiques",
     "faq": "FAQ",
     "privacy": "Confidentialite",
     "terms": "Conditions",
@@ -172,7 +173,18 @@
     "nextRank": "Suivant : {title} ({xp} XP restants)",
     "maxRank": "Rang maximum atteint !",
     "keepCooking": "Continuez a cuisiner pour atteindre {title} !",
-    "highestRank": "Vous avez atteint le rang le plus eleve !"
+    "highestRank": "Vous avez atteint le rang le plus eleve !",
+    "groups": {
+      "spend": "Depenses",
+      "streak": "Series",
+      "rank": "Rang au classement",
+      "days-active": "Jours actifs",
+      "daily-spend": "Depenses quotidiennes",
+      "daily-tokens": "Tokens quotidiens",
+      "monthly-spend": "Depenses mensuelles",
+      "monthly-days": "Activite mensuelle",
+      "perfect-month": "Mois parfait"
+    }
   },
   "timeAgo": {
     "justNow": "a l'instant",
@@ -646,5 +658,31 @@
     "ctaDescription": "Comparez votre utilisation de {modelName}. Gratuit, open-source, 30 secondes.",
     "ctaPrimaryLabel": "Voir le classement",
     "ctaSecondaryLabel": "Toutes les statistiques de modeles"
+  },
+  "feedback": {
+    "button": "Feedback",
+    "title": "feedback",
+    "intro": "Le feedback va directement au proprietaire - generalement implemente sous 48 heures.",
+    "messagePlaceholder": "Qu'avez-vous en tete ? Rapports de bugs, idees de fonctionnalites, ou juste un petit bonjour...",
+    "emailPlaceholder": "votre@email.com (optionnel, pour le suivi)",
+    "cancel": "Annuler",
+    "send": "Envoyer le feedback",
+    "sending": "Envoi...",
+    "success": "Merci ! Votre feedback a bien ete recu."
+  },
+  "recaps": {
+    "weekly": "Recap hebdomadaire",
+    "monthly": "Recap mensuel",
+    "bannerReady": "Votre <highlight>{label}</highlight> est pret",
+    "hook": {
+      "dominated": "Vous avez domine.",
+      "podium": "Vous etes monte sur le podium.",
+      "top10": "Vous etes entre dans le top 10.",
+      "climbed": "Vous avez gagne {count, plural, one {# place} other {# places}}.",
+      "reclaim": "Il est temps de reprendre votre place.",
+      "elite": "Top 10 %. Vous etes dans l'elite.",
+      "default": "Voici comment vous vous etes classe.",
+      "tapToContinue": "touchez pour continuer"
+    }
   }
 }

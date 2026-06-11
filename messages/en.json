@@ -173,7 +173,18 @@
     "nextRank": "Next: {title} ({xp} XP to go)",
     "maxRank": "Max rank achieved!",
     "keepCooking": "Keep cooking to reach {title}!",
-    "highestRank": "You've reached the highest rank!"
+    "highestRank": "You've reached the highest rank!",
+    "groups": {
+      "spend": "Spending",
+      "streak": "Streaks",
+      "rank": "Leaderboard Rank",
+      "days-active": "Days Active",
+      "daily-spend": "Daily Spending",
+      "daily-tokens": "Daily Tokens",
+      "monthly-spend": "Monthly Spending",
+      "monthly-days": "Monthly Activity",
+      "perfect-month": "Perfect Month"
+    }
   },
   "timeAgo": {
     "justNow": "just now",
@@ -647,5 +658,31 @@
     "ctaDescription": "See how your {modelName} usage compares. Free, open-source, takes 30 seconds.",
     "ctaPrimaryLabel": "View Leaderboard",
     "ctaSecondaryLabel": "All Model Statistics"
+  },
+  "feedback": {
+    "button": "Feedback",
+    "title": "feedback",
+    "intro": "Feedback goes directly to the owner — typically implemented within 48 hours.",
+    "messagePlaceholder": "What's on your mind? Bug reports, feature requests, or just say hi...",
+    "emailPlaceholder": "your@email.com (optional, for follow-up)",
+    "cancel": "Cancel",
+    "send": "Send feedback",
+    "sending": "Sending...",
+    "success": "Thanks! Your feedback has been received."
+  },
+  "recaps": {
+    "weekly": "Weekly Recap",
+    "monthly": "Monthly Recap",
+    "bannerReady": "Your <highlight>{label}</highlight> is ready",
+    "hook": {
+      "dominated": "You dominated.",
+      "podium": "You hit the podium.",
+      "top10": "You broke the top 10.",
+      "climbed": "You climbed {count, plural, one {# spot} other {# spots}}.",
+      "reclaim": "Time to reclaim your spot.",
+      "elite": "Top 10%. You're elite.",
+      "default": "Here's how you stacked up.",
+      "tapToContinue": "tap to continue"
+    }
   }
 }
