@@ -25,7 +25,7 @@ import {
   formatTokens,
   formatUsdCompact,
 } from "@/lib/format";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -88,6 +88,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function ToolsPage() {
   const t = await getTranslations("statsTools");
+  const locale = await getLocale();
   const breakdown = await getSourceBreakdown();
   const activeTools = getActiveTools(breakdown);
 
@@ -257,7 +258,7 @@ export default async function ToolsPage() {
                       : "";
                 return prefix + tool.name;
               }).join(""),
-              totalUsers: totalUsers.toLocaleString(),
+              totalUsers: totalUsers.toLocaleString(locale),
               strong: (chunks) => (
                 <strong className="text-foreground">{chunks}</strong>
               ),
@@ -271,7 +272,7 @@ export default async function ToolsPage() {
           {/* Data summary for LLM crawlers — visually hidden */}
           <span className="sr-only">
             As of {lastUpdated.split(",").slice(0, 2).join(",")},{" "}
-            {totalUsers.toLocaleString()} developers have tracked{" "}
+            {totalUsers.toLocaleString(locale)} developers have tracked{" "}
             {formatUsdCompact(totalCost)} in estimated AI coding spend and{" "}
             {formatTokens(totalTokens)} tokens across {toolCount} tool
             {toolCount !== 1 ? "s" : ""} on clawdboard.{" "}
@@ -450,12 +451,12 @@ export default async function ToolsPage() {
                       />
                       <StatCard
                         label={t("developers")}
-                        value={detail.userCount.toLocaleString()}
+                        value={detail.userCount.toLocaleString(locale)}
                         sub={t("developerStats", { avg: formatUsdCompact(avgCost), med: formatUsdCompact(medianCost) })}
                       />
                       <StatCard
                         label={t("activeDays")}
-                        value={detail.activeDays.toLocaleString()}
+                        value={detail.activeDays.toLocaleString(locale)}
                         sub={
                           detail.firstSeen
                             ? t("activeDaysSince", { date: formatDateLong(detail.firstSeen) })
@@ -469,7 +470,7 @@ export default async function ToolsPage() {
                       {tool.name} accounts for {detail.costShare}% of
                       community spend on clawdboard with{" "}
                       {formatUsdCompact(cost)} in estimated API cost across{" "}
-                      {detail.userCount.toLocaleString()} developer
+                      {detail.userCount.toLocaleString(locale)} developer
                       {detail.userCount !== 1 ? "s" : ""}.
                       The average {tool.name} user has spent an estimated{" "}
                       {formatUsdCompact(avgCost)} (median: {formatUsdCompact(medianCost)}),

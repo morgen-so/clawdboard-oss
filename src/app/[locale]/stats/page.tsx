@@ -26,7 +26,7 @@ import {
   formatTokens,
   formatUsdCompact,
 } from "@/lib/format";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -67,6 +67,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function StatsPage() {
   const t = await getTranslations("statsPage");
+  const locale = await getLocale();
   const { getSourceBreakdown } = await import("@/lib/db/stats");
   const [stats, trends, models, growth, sourceBreakdown] = await Promise.all([
     getCommunityStatsCached(),
@@ -85,7 +86,7 @@ export default async function StatsPage() {
     {
       q: t("faqQ1"),
       a: t("faqA1", {
-        totalUsers: stats.totalUsers.toLocaleString(),
+        totalUsers: stats.totalUsers.toLocaleString(locale),
         avgCost: formatUsdCompact(avgCost),
         medianCost: formatUsdCompact(medianCost),
       }),
@@ -207,7 +208,7 @@ export default async function StatsPage() {
           </h1>
           <p className="mt-2 font-mono text-sm leading-relaxed text-muted max-w-3xl">
             {t.rich("heroDescription", {
-              totalUsers: stats.totalUsers.toLocaleString(),
+              totalUsers: stats.totalUsers.toLocaleString(locale),
               strong: (chunks) => (
                 <strong className="text-foreground">{chunks}</strong>
               ),
@@ -221,7 +222,7 @@ export default async function StatsPage() {
           {/* Data summary for LLM crawlers — visually hidden */}
           <span className="sr-only">
             As of {lastUpdated.split(",").slice(0, 2).join(",")},{" "}
-            {stats.totalUsers.toLocaleString()} developers have tracked{" "}
+            {stats.totalUsers.toLocaleString(locale)} developers have tracked{" "}
             {formatUsdCompact(totalCost)} in estimated AI coding spend and{" "}
             {formatNumber(stats.totalTokens)} tokens on clawdboard.
             The average developer has spent an estimated{" "}
@@ -277,14 +278,14 @@ export default async function StatsPage() {
             {t("overviewHeading")}
           </h2>
           <p className="font-mono text-xs text-muted mb-4">
-            {t("overviewDescription", { totalUsers: stats.totalUsers.toLocaleString() })}
+            {t("overviewDescription", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
           </p>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3">
             <StatCard
               label={t("totalCommunitySpend")}
               value={formatUsdCompact(totalCost)}
-              sub={t("acrossDevelopers", { totalUsers: stats.totalUsers.toLocaleString() })}
+              sub={t("acrossDevelopers", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
               accent
             />
             <StatCard
@@ -311,7 +312,7 @@ export default async function StatsPage() {
           <div className="grid grid-cols-3 gap-3">
             <StatCard
               label={t("totalActiveDays")}
-              value={stats.totalActiveDays.toLocaleString()}
+              value={stats.totalActiveDays.toLocaleString(locale)}
               sub={t("activeDaysSub")}
             />
             <StatCard
@@ -409,7 +410,7 @@ export default async function StatsPage() {
           <div className="space-y-3 font-mono text-sm leading-relaxed text-muted">
             <p>
               {t.rich("costAnalysisP1", {
-                totalUsers: stats.totalUsers.toLocaleString(),
+                totalUsers: stats.totalUsers.toLocaleString(locale),
                 avgCost: formatUsdCompact(avgCost),
                 medianCost: formatUsdCompact(medianCost),
                 strong: (chunks) => (
@@ -422,7 +423,7 @@ export default async function StatsPage() {
             </p>
             <p>
               {t.rich("costAnalysisP3", {
-                totalActiveDays: stats.totalActiveDays.toLocaleString(),
+                totalActiveDays: stats.totalActiveDays.toLocaleString(locale),
                 longestStreak: stats.longestStreak,
                 biggestDay: formatUsdCompact(biggestDay),
                 strong: (chunks) => (
@@ -509,7 +510,7 @@ export default async function StatsPage() {
                 {t("methodologyLimitations")}
               </p>
               <p className="font-mono text-xs leading-relaxed text-muted">
-                {t("methodologyLimitationsText", { totalUsers: stats.totalUsers.toLocaleString() })}
+                {t("methodologyLimitationsText", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
               </p>
             </div>
           </div>
@@ -589,7 +590,7 @@ GET ${BASE_URL}/api/leaderboard?period=7d&sort=cost&limit=10`}</code>
         {/* ── CTA ─────────────────────────────────────────────────────── */}
         <StatsCta
           heading={t("ctaHeading")}
-          description={t("ctaDescription", { totalUsers: stats.totalUsers.toLocaleString() })}
+          description={t("ctaDescription", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
           primaryLabel={t("ctaPrimaryLabel")}
           primaryHref="/"
           secondaryLabel={t("ctaSecondaryLabel")}

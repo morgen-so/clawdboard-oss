@@ -25,25 +25,25 @@ export function formatTokens(n: number): string {
 }
 
 /** Intl compact notation: 1234567890 → "1.2B", 5678 → "5.7K" (uppercase K) */
-export function formatTokensCompact(count: number): string {
-  return new Intl.NumberFormat("en-US", {
+export function formatTokensCompact(count: number, locale = "en-US"): string {
+  return new Intl.NumberFormat(locale, {
     notation: "compact",
     maximumFractionDigits: 1,
   }).format(count);
 }
 
 /** 1234.56 → "$1,234.56" (accepts the numeric-string costs stored in the DB) */
-export function formatUsd(value: number | string): string {
+export function formatUsd(value: number | string, locale = "en-US"): string {
   const n = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
   }).format(n);
 }
 
 /** 1234.56 → "$1,235" — whole dollars */
-export function formatUsdWhole(value: number): string {
-  return new Intl.NumberFormat("en-US", {
+export function formatUsdWhole(value: number, locale = "en-US"): string {
+  return new Intl.NumberFormat(locale, {
     style: "currency",
     currency: "USD",
     minimumFractionDigits: 0,
@@ -71,9 +71,9 @@ export function formatUsdCompact(n: number): string {
 }
 
 /** "2026-01-05" → "January 5, 2026" (falls back to the raw string) */
-export function formatDateLong(dateStr: string): string {
+export function formatDateLong(dateStr: string, locale = "en-US"): string {
   try {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
+    return new Date(dateStr + "T00:00:00").toLocaleDateString(locale, {
       month: "long",
       day: "numeric",
       year: "numeric",
@@ -84,8 +84,8 @@ export function formatDateLong(dateStr: string): string {
 }
 
 /** Date → "January 5, 2026 at 3:42 PM GMT+1" — "last updated" stamps */
-export function formatDateTimeLong(date: Date): string {
-  return date.toLocaleDateString("en-US", {
+export function formatDateTimeLong(date: Date, locale = "en-US"): string {
+  return date.toLocaleDateString(locale, {
     month: "long",
     day: "numeric",
     year: "numeric",
@@ -96,9 +96,9 @@ export function formatDateTimeLong(date: Date): string {
 }
 
 /** Date → "Jan 2026", null → "Unknown" */
-export function formatMonthYear(date: Date | null): string {
+export function formatMonthYear(date: Date | null, locale = "en-US"): string {
   if (!date) return "Unknown";
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat(locale, {
     month: "short",
     year: "numeric",
   }).format(date);
@@ -114,7 +114,11 @@ export function formatChartDate(dateStr: string): string {
 }
 
 /** ("2026-01-05", "2026-02-01") → "Jan 5 – Feb 1, 2026" (UTC) */
-export function formatDateRange(start: string, end: string): string {
+export function formatDateRange(
+  start: string,
+  end: string,
+  locale = "en-US"
+): string {
   const s = new Date(start + "T12:00:00Z");
   const e = new Date(end + "T12:00:00Z");
   const opts: Intl.DateTimeFormatOptions = {
@@ -122,7 +126,7 @@ export function formatDateRange(start: string, end: string): string {
     day: "numeric",
     timeZone: "UTC",
   };
-  const startStr = s.toLocaleDateString("en-US", opts);
-  const endStr = e.toLocaleDateString("en-US", { ...opts, year: "numeric" });
+  const startStr = s.toLocaleDateString(locale, opts);
+  const endStr = e.toLocaleDateString(locale, { ...opts, year: "numeric" });
   return `${startStr} – ${endStr}`;
 }

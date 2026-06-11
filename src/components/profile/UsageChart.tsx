@@ -203,7 +203,7 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
               <YAxis
                 yAxisId={isDual ? "right" : "left"}
                 orientation={isDual ? "right" : "left"}
-                tickFormatter={formatTokensCompact}
+                tickFormatter={(v: number) => formatTokensCompact(v)}
                 {...AXIS_COMMON}
                 width={60}
               />
@@ -254,7 +254,7 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
               <YAxis
                 yAxisId={isDual ? "right" : "left"}
                 orientation={isDual ? "right" : "left"}
-                tickFormatter={formatTokensCompact}
+                tickFormatter={(v: number) => formatTokensCompact(v)}
                 {...AXIS_COMMON}
                 width={60}
               />
