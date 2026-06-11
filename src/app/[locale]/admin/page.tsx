@@ -21,8 +21,8 @@ async function verifyAdmin(): Promise<boolean> {
 
 function daysAgo(n: number): Date {
   const d = new Date();
-  d.setDate(d.getDate() - n);
-  d.setHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - n);
+  d.setUTCHours(0, 0, 0, 0);
   return d;
 }
 
