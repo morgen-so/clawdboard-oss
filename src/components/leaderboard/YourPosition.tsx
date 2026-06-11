@@ -1,6 +1,7 @@
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { type LeaderboardRow } from "@/lib/db/leaderboard";
+import { formatCostNumber } from "@/lib/format";
 import { StreakAura } from "@/components/ui/StreakAura";
 import { getStreakTier } from "@/lib/streak-tiers";
 import { buildProfileHref } from "@/lib/url";
@@ -64,7 +65,7 @@ export async function YourPosition({ myRow, unsyncedUser, period, rangeFrom, ran
 function SyncedStatBar({ row, period, rangeFrom, rangeTo, labels }: { row: LeaderboardRow; period?: string; rangeFrom?: string; rangeTo?: string; labels: TranslationLabels }) {
   const username = row.githubUsername ?? row.userId;
   const href = buildProfileHref(row.githubUsername ?? row.userId, period, rangeFrom, rangeTo);
-  const cost = `$${parseFloat(row.totalCost).toFixed(2)}`;
+  const cost = `$${formatCostNumber(row.totalCost)}`;
   const tokens = formatCompactTokens(row.totalTokens);
   const initials = username.slice(0, 2).toUpperCase();
 

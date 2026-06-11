@@ -6,6 +6,7 @@ import Image from "next/image";
 import { joinTeam } from "@/actions/teams";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { safeHostname } from "@/lib/url";
+import { formatCostNumber } from "@/lib/format";
 
 export type JoinState = "locked" | "locked-unauthenticated" | "already-member" | "unauthenticated" | "ready";
 
@@ -116,7 +117,7 @@ export function JoinCard({
       {/* Stats row */}
       <p className="mt-4 font-mono text-xs text-muted">
         {memberCount} member{memberCount !== 1 ? "s" : ""} · $
-        {Number(stats.totalCost).toFixed(2)} spent · {stats.activeDays} active
+        {formatCostNumber(stats.totalCost)} spent · {stats.activeDays} active
         day{stats.activeDays !== 1 ? "s" : ""}
       </p>
 

@@ -3,6 +3,7 @@
 import { Link } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import type { TeamLeaderboardRow } from "@/lib/db/teams";
+import { formatCostNumber } from "@/lib/format";
 
 interface YourTeamPositionProps {
   /** User's team (undefined = no team) */
@@ -70,7 +71,7 @@ function PublicTeamBar({ row }: { row: TeamLeaderboardRow }) {
       <span className="text-foreground/20 select-none">&middot;</span>
       <span className="font-mono text-sm tabular-nums text-foreground/70">
         <span className="text-muted">$</span>
-        {Number(row.totalCost).toFixed(2)}
+        {formatCostNumber(row.totalCost)}
       </span>
 
       <span className="text-foreground/20 select-none">&middot;</span>

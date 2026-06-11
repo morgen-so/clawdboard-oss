@@ -32,6 +32,15 @@ export function formatTokensCompact(count: number): string {
   }).format(count);
 }
 
+/** 12908.9 → "12,908.90" — grouped digits, no "$" (callers render the symbol separately) */
+export function formatCostNumber(value: number | string): string {
+  const n = typeof value === "string" ? parseFloat(value) : value;
+  return new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(n);
+}
+
 /** 1234.56 → "$1,234.56" (accepts the numeric-string costs stored in the DB) */
 export function formatUsd(value: number | string): string {
   const n = typeof value === "string" ? parseFloat(value) : value;
