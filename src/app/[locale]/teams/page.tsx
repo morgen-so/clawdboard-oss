@@ -18,7 +18,7 @@ import { rankColors, rankIcons, rankBorderClass } from "@/lib/rank";
 import { formatCostNumber } from "@/lib/format";
 import { cookies } from "next/headers";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = {
   title: "Team Leaderboard — Compare AI Coding Usage by Team",
@@ -45,10 +45,11 @@ export default async function TeamLeaderboardPage({
     ? parseDateRange(params.from ?? saved?.from, params.to ?? saved?.to)
     : undefined;
 
-  const [rows, session, t] = await Promise.all([
+  const [rows, session, t, locale] = await Promise.all([
     getPublicTeamLeaderboard(period, range),
     cachedAuth(),
     getTranslations("team"),
+    getLocale(),
   ]);
 
   // Get user's teams + find their position in the public leaderboard
@@ -175,7 +176,7 @@ export default async function TeamLeaderboardPage({
                       {/* Cost */}
                       <td className="px-3 py-3 sm:px-4 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
                         <span className="text-muted">$</span>
-                        {formatCostNumber(row.totalCost)}
+                        {formatCostNumber(row.totalCost, locale)}
                       </td>
 
                       {/* Tokens */}

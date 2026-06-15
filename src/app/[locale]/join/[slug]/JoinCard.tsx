@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { joinTeam } from "@/actions/teams";
@@ -56,6 +57,7 @@ export function JoinCard({
   signInSlot,
 }: JoinCardProps) {
   const [actionState, formAction] = useActionState(joinTeam, undefined);
+  const locale = useLocale();
 
   return (
     <div className="w-full rounded-lg border border-border bg-surface p-8 text-center">
@@ -117,7 +119,7 @@ export function JoinCard({
       {/* Stats row */}
       <p className="mt-4 font-mono text-xs text-muted">
         {memberCount} member{memberCount !== 1 ? "s" : ""} · $
-        {formatCostNumber(stats.totalCost)} spent · {stats.activeDays} active
+        {formatCostNumber(stats.totalCost, locale)} spent · {stats.activeDays} active
         day{stats.activeDays !== 1 ? "s" : ""}
       </p>
 

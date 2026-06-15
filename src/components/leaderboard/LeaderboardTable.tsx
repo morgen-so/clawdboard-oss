@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { type LeaderboardRow } from "@/lib/db/leaderboard";
@@ -166,6 +166,7 @@ function LeaderboardRowItem({
   rangeTo?: string;
 }) {
   const t = useTranslations("leaderboard");
+  const locale = useLocale();
   const initials = row.githubUsername
     ? row.githubUsername.slice(0, 2).toUpperCase()
     : "??";
@@ -240,7 +241,7 @@ function LeaderboardRowItem({
 
       {/* Cost */}
       <td className="px-3 py-3 sm:px-4 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
-        <span className="text-muted">$</span>{formatCostNumber(row.totalCost)}
+        <span className="text-muted">$</span>{formatCostNumber(row.totalCost, locale)}
       </td>
 
       {/* Tokens */}

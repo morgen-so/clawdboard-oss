@@ -33,9 +33,9 @@ export function formatTokensCompact(count: number): string {
 }
 
 /** 12908.9 → "12,908.90" — grouped digits, no "$" (callers render the symbol separately) */
-export function formatCostNumber(value: number | string): string {
+export function formatCostNumber(value: number | string, locale = "en-US"): string {
   const n = typeof value === "string" ? parseFloat(value) : value;
-  return new Intl.NumberFormat("en-US", {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(n);
