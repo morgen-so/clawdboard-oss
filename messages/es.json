@@ -366,6 +366,20 @@
     "noResults": "No se encontraron usuarios",
     "minChars": "Escribe al menos 2 caracteres"
   },
+  "join": {
+    "statsSpent": "gastado",
+    "statsActiveDays": "{count, plural, one {# dia activo} other {# dias activos}}",
+    "usernameAnd": "y",
+    "usernameOthers": "{count, plural, one {# mas} other {# mas}}",
+    "joinButton": "Unirse a {teamName}",
+    "joining": "Uniendose...",
+    "signInToJoin": "Inicia sesion con GitHub para unirte a este equipo.",
+    "alreadyMember": "Ya eres miembro de este equipo.",
+    "goToTeamPage": "Ir a la pagina del equipo",
+    "notAcceptingMembers": "Este equipo no acepta nuevos miembros en este momento.",
+    "alreadyMemberSignIn": "Ya eres miembro? Inicia sesion para comprobarlo.",
+    "backToLeaderboard": "Volver a la clasificacion"
+  },
   "notifications": {
     "title": "Notificaciones",
     "invitedYou": "te ha invitado a unirte a",

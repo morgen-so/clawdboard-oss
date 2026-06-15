@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { joinTeam } from "@/actions/teams";
@@ -31,20 +32,6 @@ interface JoinCardProps {
   signInSlot: React.ReactNode;
 }
 
-function usernameList(members: Member[], total: number): string {
-  const names = members
-    .map((m) => m.githubUsername)
-    .filter(Boolean) as string[];
-  if (names.length === 0) return "";
-  const overflow = total - names.length;
-  if (overflow <= 0) {
-    if (names.length === 1) return names[0];
-    if (names.length === 2) return `${names[0]} and ${names[1]}`;
-    return `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`;
-  }
-  return `${names.join(", ")} and ${overflow} other${overflow === 1 ? "" : "s"}`;
-}
-
 export function JoinCard({
   team,
   token,
@@ -55,6 +42,22 @@ export function JoinCard({
   signInSlot,
 }: JoinCardProps) {
   const [actionState, formAction] = useActionState(joinTeam, undefined);
+  const t = useTranslations("join");
+  const tTeam = useTranslations("team");
+
+  const usernameList = (): string => {
+    const names = members
+      .map((m) => m.githubUsername)
+      .filter(Boolean) as string[];
+    if (names.length === 0) return "";
+    const overflow = memberCount - names.length;
+    if (overflow <= 0) {
+      if (names.length === 1) return names[0];
+      if (names.length === 2) return `${names[0]} ${t("usernameAnd")} ${names[1]}`;
+      return `${names.slice(0, -1).join(", ")} ${t("usernameAnd")} ${names[names.length - 1]}`;
+    }
+    return `${names.join(", ")} ${t("usernameAnd")} ${t("usernameOthers", { count: overflow })}`;
+  };
 
   return (
     <div className="w-full rounded-lg border border-border bg-surface p-8 text-center">
@@ -108,16 +111,16 @@ export function JoinCard({
             )}
           </div>
           <p className="mt-2 font-mono text-xs text-muted">
-            {usernameList(members, memberCount)}
+            {usernameList()}
           </p>
         </div>
       )}
 
       {/* Stats row */}
       <p className="mt-4 font-mono text-xs text-muted">
-        {memberCount} member{memberCount !== 1 ? "s" : ""} · $
-        {Number(stats.totalCost).toFixed(2)} spent · {stats.activeDays} active
-        day{stats.activeDays !== 1 ? "s" : ""}
+        {tTeam("memberCount", { count: memberCount })} · $
+        {Number(stats.totalCost).toFixed(2)} {t("statsSpent")} ·{" "}
+        {t("statsActiveDays", { count: stats.activeDays })}
       </p>
 
       {/* CTA zone */}
@@ -132,10 +135,10 @@ export function JoinCard({
               </p>
             )}
             <SubmitButton
-              pendingText="Joining..."
+              pendingText={t("joining")}
               className="w-full rounded-md border border-accent bg-accent/10 px-4 py-2.5 font-mono text-sm font-medium text-accent transition-all hover:bg-accent/20 hover:shadow-[0_0_12px_rgba(249,166,21,0.15)]"
             >
-              Join {team.name}
+              {t("joinButton", { teamName: team.name })}
             </SubmitButton>
           </form>
         )}
@@ -143,7 +146,7 @@ export function JoinCard({
         {state === "unauthenticated" && (
           <div>
             <p className="mb-4 font-mono text-sm text-muted">
-              Sign in with GitHub to join this team.
+              {t("signInToJoin")}
             </p>
             {signInSlot}
           </div>
@@ -152,13 +155,13 @@ export function JoinCard({
         {state === "already-member" && (
           <div>
             <p className="mb-4 font-mono text-sm text-muted">
-              You&apos;re already a member of this team.
+              {t("alreadyMember")}
             </p>
             <Link
               href={`/team/${team.slug}`}
               className="inline-block rounded-md border border-accent bg-accent/10 px-4 py-2 font-mono text-xs font-medium text-accent transition-all hover:bg-accent/20"
             >
-              Go to Team Page
+              {t("goToTeamPage")}
             </Link>
           </div>
         )}
@@ -166,12 +169,12 @@ export function JoinCard({
         {(state === "locked" || state === "locked-unauthenticated") && (
           <div>
             <p className="font-mono text-sm text-muted">
-              This team is not accepting new members right now.
+              {t("notAcceptingMembers")}
             </p>
             {state === "locked-unauthenticated" && (
               <div className="mt-4">
                 <p className="mb-3 font-mono text-xs text-muted">
-                  Already a member? Sign in to check.
+                  {t("alreadyMemberSignIn")}
                 </p>
                 {signInSlot}
               </div>
@@ -186,7 +189,7 @@ export function JoinCard({
         href="/"
         className="mt-6 inline-block font-mono text-xs text-muted transition-colors hover:text-accent"
       >
-        Back to Leaderboard
+        {t("backToLeaderboard")}
       </Link>
     </div>
   );
