@@ -292,7 +292,12 @@ export async function generateAllRecaps(
   }
 
   // 8. Build RecapData for each user and upsert
-  const totalDays = type === "weekly" ? 7 : 30;
+  const periodStartDate = new Date(periodStart + "T00:00:00Z");
+  const periodEndDate = new Date(periodEnd + "T00:00:00Z");
+  const totalDays =
+    Math.floor(
+      (periodEndDate.getTime() - periodStartDate.getTime()) / (1000 * 60 * 60 * 24)
+    ) + 1;
   let count = 0;
 
   for (const [userId, stat] of statsMap) {
