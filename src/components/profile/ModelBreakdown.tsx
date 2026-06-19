@@ -80,6 +80,7 @@ export function ModelBreakdown({ data }: ModelBreakdownProps) {
             width={120}
           />
           <Tooltip
+            cursor={{ fill: "rgba(255,255,255,0.05)" }}
             contentStyle={{
               backgroundColor: "#111113",
               border: "1px solid #23232a",

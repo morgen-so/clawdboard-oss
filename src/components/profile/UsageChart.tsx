@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -207,6 +207,25 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
   const t = useTranslations("profile");
   const [metric, setMetric] = useState<Metric>("cost");
   const [aggregation, setAggregation] = useState<Aggregation>("daily");
+  const [viewOpen, setViewOpen] = useState(false);
+  const viewMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+        setViewOpen(false);
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setViewOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
 
   const filledData = useMemo(
     () => fillDateGaps(data, period, range),
@@ -242,6 +261,8 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
     { value: "weekly", label: t("weekly") },
     { value: "monthly", label: t("monthly") },
   ];
+  const currentAggLabel =
+    AGGREGATIONS.find((a) => a.value === effectiveAggregation)?.label ?? "";
 
   const title = getPeriodTitle(period, range, t);
   const showCost = metric === "cost" || metric === "both";
@@ -266,23 +287,59 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
         </h3>
         <div className="flex items-center gap-3 flex-wrap">
           {canAggregate && (
-            <label className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5">
               <span className="font-mono text-xs font-medium text-foreground/60">
                 {t("view")}
               </span>
-              <select
-                value={effectiveAggregation}
-                onChange={(e) => setAggregation(e.target.value as Aggregation)}
-                aria-label={t("view")}
-                className="rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-xs font-medium text-foreground transition-colors hover:bg-surface-hover focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-              >
-                {AGGREGATIONS.map((a) => (
-                  <option key={a.value} value={a.value}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div className="relative" ref={viewMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setViewOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={viewOpen}
+                  aria-label={t("view")}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-xs font-medium text-foreground transition-colors hover:bg-surface-hover focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  {currentAggLabel}
+                  <svg
+                    className={`h-3 w-3 text-foreground/50 transition-transform ${viewOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                {viewOpen && (
+                  <div
+                    role="listbox"
+                    className="absolute right-0 top-full z-50 mt-1 min-w-[8rem] overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+                  >
+                    {AGGREGATIONS.map((a) => (
+                      <button
+                        key={a.value}
+                        type="button"
+                        role="option"
+                        aria-selected={effectiveAggregation === a.value}
+                        onClick={() => {
+                          setAggregation(a.value);
+                          setViewOpen(false);
+                        }}
+                        className={`block w-full px-3 py-1.5 text-left font-mono text-xs transition-colors hover:bg-surface-hover ${
+                          effectiveAggregation === a.value
+                            ? "font-bold text-accent"
+                            : "text-foreground/70 hover:text-foreground"
+                        }`}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
           <div className="flex items-center rounded-lg border border-border bg-surface overflow-hidden">
             {METRICS.map((m) => (
