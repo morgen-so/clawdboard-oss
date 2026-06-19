@@ -12,6 +12,7 @@ import { StreakAura } from "@/components/ui/StreakAura";
 import { buildProfileHref, safeHostname } from "@/lib/url";
 import { loadMoreRows } from "@/actions/leaderboard";
 import { rankColors, rankIcons, rankBorderClass } from "@/lib/rank";
+import { formatCostNumber } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface LeaderboardTableProps {
@@ -240,7 +241,7 @@ function LeaderboardRowItem({
 
       {/* Cost */}
       <td className="px-3 py-3 sm:px-4 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
-        <span className="text-muted">$</span>{Number(row.totalCost).toFixed(2)}
+        <span className="text-muted">$</span>{formatCostNumber(row.totalCost, locale)}
       </td>
 
       {/* Tokens */}

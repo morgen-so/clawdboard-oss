@@ -36,6 +36,7 @@ import { UserNav } from "@/components/auth/UserNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Header } from "@/components/layout/Header";
 import { ShareLeaderboard } from "@/components/leaderboard/ShareLeaderboard";
+import { formatUsdWhole } from "@/lib/format";
 import { cookies } from "next/headers";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
 import { JsonLd } from "@/components/ui/JsonLd";
@@ -210,7 +211,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
             )}
             {!session?.user && rows.length > 0 && (
               <ShareLeaderboard
-                topCost={`$${Number(rows[0].totalCost).toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
+                topCost={formatUsdWhole(Number(rows[0].totalCost))}
                 leaderboardUrl={env.NEXT_PUBLIC_BASE_URL}
               />
             )}

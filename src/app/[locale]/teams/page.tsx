@@ -15,6 +15,7 @@ import { UserNav } from "@/components/auth/UserNav";
 import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { Header } from "@/components/layout/Header";
 import { rankColors, rankIcons, rankBorderClass } from "@/lib/rank";
+import { formatCostNumber } from "@/lib/format";
 import { cookies } from "next/headers";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
 import { getLocale, getTranslations } from "next-intl/server";
@@ -175,7 +176,7 @@ export default async function TeamLeaderboardPage({
                       {/* Cost */}
                       <td className="px-3 py-3 sm:px-4 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
                         <span className="text-muted">$</span>
-                        {Number(row.totalCost).toFixed(2)}
+                        {formatCostNumber(row.totalCost, locale)}
                       </td>
 
                       {/* Tokens */}
