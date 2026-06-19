@@ -298,7 +298,7 @@ export async function generateAllRecaps(
     Math.floor(
       (periodEndDate.getTime() - periodStartDate.getTime()) / (1000 * 60 * 60 * 24)
     ) + 1;
-  let count = 0;
+  const recapRows: Array<{ userId: string; data: RecapData }> = [];
 
   for (const [userId, stat] of statsMap) {
     const totalCost = parseFloat(stat.total_cost);
@@ -367,15 +367,30 @@ export async function generateAllRecaps(
       rivalRank: rival?.rival_rank ?? null,
     };
 
-    // Upsert — idempotent by (user_id, type, period_start)
+    recapRows.push({ userId, data });
+  }
+
+  // Upsert in chunked multi-row statements — idempotent by
+  // (user_id, type, period_start). One statement per chunk instead of one
+  // per user; statsMap keys are unique so a chunk never updates the same
+  // row twice.
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < recapRows.length; i += CHUNK_SIZE) {
+    const chunk = recapRows.slice(i, i + CHUNK_SIZE);
+    const values = sql.join(
+      chunk.map(
+        (row) =>
+          sql`(gen_random_uuid(), ${row.userId}, ${type}, ${periodStart}, ${periodEnd}, ${JSON.stringify(row.data)}::jsonb)`
+      ),
+      sql`, `
+    );
     await db.execute(sql`
       INSERT INTO recaps (id, user_id, type, period_start, period_end, data)
-      VALUES (gen_random_uuid(), ${userId}, ${type}, ${periodStart}, ${periodEnd}, ${JSON.stringify(data)}::jsonb)
+      VALUES ${values}
       ON CONFLICT (user_id, type, period_start)
       DO UPDATE SET data = EXCLUDED.data, period_end = EXCLUDED.period_end, created_at = NOW()
     `);
-    count++;
   }
 
-  return count;
+  return recapRows.length;
 }
