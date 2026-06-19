@@ -23,9 +23,11 @@ import {
 } from "date-fns";
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { CompareControl } from "@/components/profile/CompareControl";
 import type { Period, DateRange } from "@/lib/db/leaderboard";
 import {
   AXIS_COMMON,
+  COMPARE_COLOR,
   COST_COLOR,
   TOKENS_COLOR,
   TOOLTIP_STYLES,
@@ -34,6 +36,7 @@ import {
   formatChartDate,
   formatTokensCompact,
   formatUsdPlain,
+  formatUsdShort,
 } from "@/lib/format";
 
 interface UsageDataPoint {
@@ -52,6 +55,24 @@ interface UsageChartProps {
   data: UsageDataPoint[];
   period: Period;
   range?: DateRange;
+  /** Optional second user's daily data to overlay for comparison. */
+  compareData?: UsageDataPoint[];
+  /** Display label for the compare series (the compare user). */
+  compareLabel?: string;
+  /** Display label for the primary series (the profile owner). */
+  primaryLabel?: string;
+  /** GitHub username of the profile owner — drives the compare picker URL. */
+  primaryUsername?: string;
+  /** Active ?vs= username, or null when not comparing. */
+  currentVs?: string | null;
+  /** Whether the viewer can use the (auth-gated) user search. */
+  canSearch?: boolean;
+}
+
+/** A merged row carrying both the primary (cost/tokens) and compare (…B) series. */
+interface MergedDataPoint extends UsageDataPoint {
+  costB?: number;
+  tokensB?: number;
 }
 
 /**
@@ -163,11 +184,20 @@ function getPeriodTitle(period: Period, range: DateRange | undefined, t: (key: s
 }
 
 
-function tooltipFormatter(value: number | undefined, name: string | undefined) {
+/**
+ * Tooltip value formatter. Decides cost-vs-token formatting from the series
+ * dataKey (so the compare `…B` series format correctly) and shows the series'
+ * own `name` — the metric label normally, or the username in compare mode.
+ */
+function tooltipFormatter(
+  value: number | undefined,
+  name: string | undefined,
+  item: { dataKey?: unknown } | undefined
+) {
   const v = value ?? 0;
-  if (name === "cost") return [formatUsdPlain(v), "Cost"];
-  if (name === "tokens") return [formatTokensCompact(v), "Tokens"];
-  return [String(v), name ?? ""];
+  const key = String(item?.dataKey ?? "");
+  const isToken = key === "tokens" || key === "tokensB";
+  return [isToken ? formatTokensCompact(v) : formatUsdPlain(v), name ?? ""];
 }
 
 /** Axis tick label: month name for monthly buckets, "Mon d" otherwise. */
@@ -203,8 +233,19 @@ function makeTooltipLabelFormatter(
   };
 }
 
-export function UsageChart({ data, period, range }: UsageChartProps) {
+export function UsageChart({
+  data,
+  period,
+  range,
+  compareData,
+  compareLabel,
+  primaryLabel,
+  primaryUsername,
+  currentVs = null,
+  canSearch = false,
+}: UsageChartProps) {
   const t = useTranslations("profile");
+  const isCompare = !!compareData;
   const [metric, setMetric] = useState<Metric>("cost");
   const [aggregation, setAggregation] = useState<Aggregation>("daily");
   const [viewOpen, setViewOpen] = useState(false);
@@ -231,15 +272,35 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
     () => fillDateGaps(data, period, range),
     [data, period, range]
   );
+  const filledCompare = useMemo(
+    () => (compareData ? fillDateGaps(compareData, period, range) : null),
+    [compareData, period, range]
+  );
 
   // Weekly/monthly only make sense once there's more than a week of data.
   const canAggregate = filledData.length >= AGGREGATION_MIN_DAYS;
   const effectiveAggregation: Aggregation = canAggregate ? aggregation : "daily";
 
-  const chartData = useMemo(
+  const primaryChart = useMemo(
     () => aggregateData(filledData, effectiveAggregation),
     [filledData, effectiveAggregation]
   );
+  const compareChart = useMemo(
+    () =>
+      filledCompare ? aggregateData(filledCompare, effectiveAggregation) : null,
+    [filledCompare, effectiveAggregation]
+  );
+
+  // Merge both gap-filled+aggregated series onto a shared date axis. Both are
+  // filled over the same period/range, so dates line up; a Map keeps it robust.
+  const chartData = useMemo<MergedDataPoint[]>(() => {
+    if (!compareChart) return primaryChart;
+    const byDate = new Map(compareChart.map((d) => [d.date, d]));
+    return primaryChart.map((d) => {
+      const c = byDate.get(d.date);
+      return { ...d, costB: c?.cost ?? 0, tokensB: c?.tokens ?? 0 };
+    });
+  }, [primaryChart, compareChart]);
 
   const axisTickFormatter = useMemo(
     () => makeAxisTickFormatter(effectiveAggregation),
@@ -253,8 +314,12 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
   const METRICS: { value: Metric; label: string }[] = [
     { value: "cost", label: t("costMetric") },
     { value: "tokens", label: t("tokensMetric") },
-    { value: "both", label: t("bothMetric") },
+    // "Both" overlays two metrics for one user; in compare mode the two lines
+    // are the two users, so a single metric is the only sensible choice.
+    ...(isCompare ? [] : [{ value: "both" as Metric, label: t("bothMetric") }]),
   ];
+  // Coerce a stale "both" selection to a single metric when comparing.
+  const effectiveMetric: Metric = isCompare && metric === "both" ? "cost" : metric;
 
   const AGGREGATIONS: { value: Aggregation; label: string }[] = [
     { value: "daily", label: t("daily") },
@@ -265,11 +330,37 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
     AGGREGATIONS.find((a) => a.value === effectiveAggregation)?.label ?? "";
 
   const title = getPeriodTitle(period, range, t);
-  const showCost = metric === "cost" || metric === "both";
-  const showTokens = metric === "tokens" || metric === "both";
-  const isDual = metric === "both";
+  const showCost = effectiveMetric === "cost" || effectiveMetric === "both";
+  const showTokens = effectiveMetric === "tokens" || effectiveMetric === "both";
+  const isDual = effectiveMetric === "both";
   const isSinglePoint = chartData.length <= 1;
-  const hasData = chartData.some((d) => d.cost > 0 || d.tokens > 0);
+  const hasData = chartData.some(
+    (d) => d.cost > 0 || d.tokens > 0 || (d.costB ?? 0) > 0 || (d.tokensB ?? 0) > 0
+  );
+
+  // Compare-mode legend: per-user totals for the active metric + a gap factor.
+  const primaryColor = effectiveMetric === "tokens" ? TOKENS_COLOR : COST_COLOR;
+  const primaryName = isCompare
+    ? primaryLabel ?? t("costMetric")
+    : effectiveMetric === "tokens"
+      ? t("tokensMetric")
+      : t("costMetric");
+  const compareName = compareLabel ?? currentVs ?? "";
+  const primaryTotal = chartData.reduce(
+    (s, d) => s + (effectiveMetric === "tokens" ? d.tokens : d.cost),
+    0
+  );
+  const compareTotal = chartData.reduce(
+    (s, d) => s + (effectiveMetric === "tokens" ? d.tokensB ?? 0 : d.costB ?? 0),
+    0
+  );
+  const formatTotal = (v: number) =>
+    effectiveMetric === "tokens" ? formatTokensCompact(v) : formatUsdShort(v);
+  const gapFactor =
+    Math.min(primaryTotal, compareTotal) > 0
+      ? Math.max(primaryTotal, compareTotal) /
+        Math.min(primaryTotal, compareTotal)
+      : null;
 
   const toggleButtonClass = (active: boolean) =>
     `px-3 py-1.5 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
@@ -286,6 +377,14 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
           <InfoTooltip text="Estimated AI coding usage based on API token consumption and model pricing." />
         </h3>
         <div className="flex items-center gap-3 flex-wrap">
+          {primaryUsername && (
+            <CompareControl
+              primaryUsername={primaryUsername}
+              currentVs={currentVs}
+              compareLabel={compareLabel ?? null}
+              canSearch={canSearch}
+            />
+          )}
           {canAggregate && (
             <div className="flex items-center gap-1.5">
               <span className="font-mono text-xs font-medium text-foreground/60">
@@ -346,7 +445,7 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
               <button
                 key={m.value}
                 onClick={() => setMetric(m.value)}
-                className={toggleButtonClass(metric === m.value)}
+                className={toggleButtonClass(effectiveMetric === m.value)}
               >
                 {m.label}
               </button>
@@ -382,16 +481,23 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
             )}
             <Tooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} {...TOOLTIP_STYLES} formatter={tooltipFormatter} labelFormatter={labelFormatter} />
             {showCost && (
-              <Bar dataKey="cost" yAxisId="left" fill={COST_COLOR} radius={[4, 4, 0, 0]} maxBarSize={120} />
+              <Bar dataKey="cost" name={isCompare ? primaryName : t("costMetric")} yAxisId="left" fill={COST_COLOR} radius={[4, 4, 0, 0]} maxBarSize={120} />
             )}
             {showTokens && (
               <Bar
                 dataKey="tokens"
+                name={isCompare ? primaryName : t("tokensMetric")}
                 yAxisId={isDual ? "right" : "left"}
                 fill={TOKENS_COLOR}
                 radius={[4, 4, 0, 0]}
                 maxBarSize={120}
               />
+            )}
+            {isCompare && showCost && (
+              <Bar dataKey="costB" name={compareName} yAxisId="left" fill={COMPARE_COLOR} radius={[4, 4, 0, 0]} maxBarSize={120} />
+            )}
+            {isCompare && showTokens && (
+              <Bar dataKey="tokensB" name={compareName} yAxisId="left" fill={COMPARE_COLOR} radius={[4, 4, 0, 0]} maxBarSize={120} />
             )}
           </BarChart>
         </ResponsiveContainer>
@@ -409,6 +515,10 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
               <linearGradient id="tokensGradient" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={TOKENS_COLOR} stopOpacity={0.3} />
                 <stop offset="95%" stopColor={TOKENS_COLOR} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="compareGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={COMPARE_COLOR} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={COMPARE_COLOR} stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
@@ -436,6 +546,7 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
               <Area
                 type="monotone"
                 dataKey="cost"
+                name={isCompare ? primaryName : t("costMetric")}
                 yAxisId="left"
                 stroke={COST_COLOR}
                 strokeWidth={2}
@@ -446,14 +557,64 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
               <Area
                 type="monotone"
                 dataKey="tokens"
+                name={isCompare ? primaryName : t("tokensMetric")}
                 yAxisId={isDual ? "right" : "left"}
                 stroke={TOKENS_COLOR}
                 strokeWidth={2}
                 fill="url(#tokensGradient)"
               />
             )}
+            {isCompare && showCost && (
+              <Area
+                type="monotone"
+                dataKey="costB"
+                name={compareName}
+                yAxisId="left"
+                stroke={COMPARE_COLOR}
+                strokeWidth={2}
+                fill="url(#compareGradient)"
+              />
+            )}
+            {isCompare && showTokens && (
+              <Area
+                type="monotone"
+                dataKey="tokensB"
+                name={compareName}
+                yAxisId="left"
+                stroke={COMPARE_COLOR}
+                strokeWidth={2}
+                fill="url(#compareGradient)"
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
+      )}
+      {isCompare && (
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-1.5 border-t border-border pt-3 font-mono text-xs">
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: primaryColor }}
+              aria-hidden="true"
+            />
+            <span className="text-foreground">{primaryName}</span>
+            <span className="text-foreground/60">{formatTotal(primaryTotal)}</span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span
+              className="h-2.5 w-2.5 rounded-full"
+              style={{ backgroundColor: COMPARE_COLOR }}
+              aria-hidden="true"
+            />
+            <span className="text-foreground">{compareName}</span>
+            <span className="text-foreground/60">{formatTotal(compareTotal)}</span>
+          </span>
+          {gapFactor && gapFactor >= 1.05 && (
+            <span className="text-muted">
+              {t("vsGap", { factor: gapFactor.toFixed(1) })}
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

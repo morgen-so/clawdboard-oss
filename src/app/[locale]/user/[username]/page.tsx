@@ -98,7 +98,12 @@ const ModelBreakdown = nextDynamic(
 
 interface PageProps {
   params: Promise<{ username: string }>;
-  searchParams: Promise<{ period?: string; from?: string; to?: string }>;
+  searchParams: Promise<{
+    period?: string;
+    from?: string;
+    to?: string;
+    vs?: string;
+  }>;
 }
 
 export async function generateMetadata({
@@ -152,6 +157,10 @@ export default async function UserProfilePage({
     : saved?.period ?? "7d";
   const range = parseDateRange(sp.from ?? saved?.from, sp.to ?? saved?.to);
 
+  // Optional comparison overlay: ?vs=<github-username>
+  const vsParam =
+    typeof sp.vs === "string" ? decodeURIComponent(sp.vs).trim() : "";
+
   // Look up user by GitHub username (case-insensitive)
   const user = await getUserByUsername(username);
   if (!user) {
@@ -167,7 +176,7 @@ export default async function UserProfilePage({
   const getDaily = isToday ? getUncachedDailyData : getUserDailyData;
   const getModels = isToday ? getUncachedModelBreakdown : getUserModelBreakdown;
 
-  const [summary, filteredDailyData, allDailyData, modelData, rank, session, publicTeams, userRecaps] =
+  const [summary, filteredDailyData, allDailyData, modelData, rank, session, publicTeams, userRecaps, compareUser] =
     await Promise.all([
       getSummary(user.id, period, range),
       getDaily(user.id, period, range),
@@ -177,6 +186,7 @@ export default async function UserProfilePage({
       auth(),
       getUserPublicTeams(user.id),
       getAllRecaps(user.id),
+      vsParam ? getUserByUsername(vsParam) : Promise.resolve(null),
     ]);
 
   const currentStreak = computeCurrentStreak(allDailyData);
@@ -214,15 +224,29 @@ export default async function UserProfilePage({
   const profileUrl = `${baseUrl}/user/${encodeURIComponent(user.githubUsername ?? username)}`;
 
   // Transform data for chart components (server-side)
-  const usageChartData = filteredDailyData.map((row) => ({
-    date: row.date ?? "",
-    cost: Number(row.totalCost ?? 0),
-    tokens:
-      (row.inputTokens ?? 0) +
-      (row.outputTokens ?? 0) +
-      (row.cacheCreationTokens ?? 0) +
-      (row.cacheReadTokens ?? 0),
-  }));
+  const toUsagePoints = (rows: typeof filteredDailyData) =>
+    rows.map((row) => ({
+      date: row.date ?? "",
+      cost: Number(row.totalCost ?? 0),
+      tokens:
+        (row.inputTokens ?? 0) +
+        (row.outputTokens ?? 0) +
+        (row.cacheCreationTokens ?? 0) +
+        (row.cacheReadTokens ?? 0),
+    }));
+  const usageChartData = toUsagePoints(filteredDailyData);
+
+  // Comparison overlay: only for a valid, distinct user (same period/range).
+  const showCompare = !!compareUser && compareUser.id !== user.id;
+  const compareChartData = showCompare
+    ? toUsagePoints(await getDaily(compareUser!.id, period, range))
+    : undefined;
+  const compareLabel = showCompare
+    ? compareUser!.githubUsername ?? compareUser!.name ?? vsParam
+    : undefined;
+  const compareVs = showCompare
+    ? compareUser!.githubUsername ?? vsParam
+    : null;
 
   const modelBreakdownData = modelData.map((row) => ({
     modelName: row.model_name,
@@ -331,7 +355,17 @@ export default async function UserProfilePage({
             isOwner={isOwner}
           />
 
-          <UsageChart data={usageChartData} period={period} range={range} />
+          <UsageChart
+            data={usageChartData}
+            period={period}
+            range={range}
+            compareData={compareChartData}
+            compareLabel={compareLabel}
+            primaryLabel={displayUsername}
+            primaryUsername={user.githubUsername ?? username}
+            currentVs={compareVs}
+            canSearch={!!session?.user}
+          />
 
           <ModelBreakdown data={modelBreakdownData} />
         </main>
