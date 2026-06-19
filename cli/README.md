@@ -1,6 +1,6 @@
 # clawdboard
 
-Track and compare your AI coding agent usage across developers. Supports Claude Code, the Claude desktop app (Cowork / Dispatch), OpenCode (incl. Go and Zen tiers), Codex CLI, Gemini CLI, GitHub Copilot CLI, and Antigravity (opt-in). See who's spending the most, longest streaks, model breakdowns, and more.
+Track and compare your AI coding agent usage across developers. Supports Claude Code, the Claude desktop app (including its Cowork and Dispatch agent sessions), OpenCode (incl. Go and Zen tiers), Codex CLI, Gemini CLI, GitHub Copilot CLI, and Antigravity (opt-in). See who's spending the most, longest streaks, model breakdowns, and more.
 
 **[clawdboard.ai](https://clawdboard.ai)**
 

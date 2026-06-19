@@ -22,10 +22,11 @@ Add to your `opencode.json`:
 }
 ```
 
-Then install the package in your OpenCode config directory:
+Then install the package in your OpenCode config directory, using whichever package manager you have:
 
 ```bash
-cd ~/.config/opencode && bun add clawdboard-opencode
+cd ~/.config/opencode && npm install clawdboard-opencode
+# or: cd ~/.config/opencode && bun add clawdboard-opencode
 ```
 
 **Alternative:** Copy `src/index.ts` directly to `~/.config/opencode/plugins/clawdboard.ts`.
