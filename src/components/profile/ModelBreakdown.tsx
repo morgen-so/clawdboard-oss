@@ -11,6 +11,9 @@ import {
 } from "recharts";
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
+import { formatTokensCompact, formatUsdPlain } from "@/lib/format";
+import { MODEL_COLORS } from "@/lib/chart-utils";
+import { friendlyModelName } from "@/lib/models";
 
 interface ModelDataPoint {
   modelName: string;
@@ -23,53 +26,7 @@ interface ModelBreakdownProps {
   data: ModelDataPoint[];
 }
 
-const MODEL_COLORS = [
-  "#F9A615", // marigold (accent)
-  "#3b82f6", // blue
-  "#10b981", // emerald
-  "#8b5cf6", // violet
-  "#ec4899", // pink
-  "#06b6d4", // cyan
-  "#f97316", // orange
-  "#6366f1", // indigo
-];
 
-const MODEL_NAME_RE = /^claude-([a-z]+)-(\d+)(?:-(\d))?(?:-\d{6,})?$/;
-const MODEL_NAME_LEGACY_RE = /^claude-(\d+)(?:-(\d))?-([a-z]+)(?:-\d{6,})?$/;
-
-/**
- * Map raw API model IDs to friendly display names.
- * e.g., "claude-opus-4-5-20251101" -> "Opus 4.5"
- */
-function friendlyModelName(raw: string): string {
-  // New-style: claude-{family}-{major}-{minor}-{date} or claude-{family}-{major}-{date}
-  const m = raw.match(MODEL_NAME_RE);
-  if (m) {
-    const family = m[1].charAt(0).toUpperCase() + m[1].slice(1);
-    const version = m[3] ? `${m[2]}.${m[3]}` : m[2];
-    return `${family} ${version}`;
-  }
-  // Legacy: claude-{major}-{minor}-{family}-{date} or claude-{major}-{family}-{date}
-  const legacy = raw.match(MODEL_NAME_LEGACY_RE);
-  if (legacy) {
-    const version = legacy[2] ? `${legacy[1]}.${legacy[2]}` : legacy[1];
-    const family =
-      legacy[3].charAt(0).toUpperCase() + legacy[3].slice(1);
-    return `${family} ${version}`;
-  }
-  return raw;
-}
-
-function formatCurrency(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 export function ModelBreakdown({ data }: ModelBreakdownProps) {
   const t = useTranslations("profile");
@@ -107,7 +64,7 @@ export function ModelBreakdown({ data }: ModelBreakdownProps) {
         >
           <XAxis
             type="number"
-            tickFormatter={formatCurrency}
+            tickFormatter={formatUsdPlain}
             stroke="var(--muted)"
             fontSize={11}
             tickLine={false}
@@ -123,6 +80,7 @@ export function ModelBreakdown({ data }: ModelBreakdownProps) {
             width={120}
           />
           <Tooltip
+            cursor={{ fill: "rgba(255,255,255,0.05)" }}
             contentStyle={{
               backgroundColor: "#111113",
               border: "1px solid #23232a",
@@ -139,9 +97,9 @@ export function ModelBreakdown({ data }: ModelBreakdownProps) {
             ) => {
               const item = props?.payload;
               const v = value ?? 0;
-              if (!item) return [formatCurrency(v), ""];
+              if (!item) return [formatUsdPlain(v), ""];
               return [
-                `${formatCurrency(v)} (${formatTokens(item.inputTokens)} in / ${formatTokens(item.outputTokens)} out)`,
+                `${formatUsdPlain(v)} (${formatTokensCompact(item.inputTokens)} in / ${formatTokensCompact(item.outputTokens)} out)`,
                 item.displayName ?? item.modelName,
               ];
             }}

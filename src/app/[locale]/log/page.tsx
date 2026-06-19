@@ -3,10 +3,9 @@ import Image from "next/image";
 import { Link } from "@/i18n/navigation";
 import { Header } from "@/components/layout/Header";
 import { logEntries, type LogEntry } from "@/lib/log-entries";
-import { seoAlternates } from "@/lib/seo";
-import { env } from "@/lib/env";
+import { seoAlternates, breadcrumbLd } from "@/lib/seo";
+import { JsonLd } from "@/components/ui/JsonLd";
 
-const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
 export const metadata: Metadata = {
   title: "Changelog — What's New on clawdboard",
@@ -40,21 +39,9 @@ function groupByMonth(entries: LogEntry[]) {
 export default function LogPage() {
   const groups = groupByMonth(logEntries);
 
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      { "@type": "ListItem", position: 2, name: "Changelog" },
-    ],
-  };
-
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
+      <JsonLd data={breadcrumbLd([{ name: "Changelog" }])} />
 
       <Header
         subtitle="changelog"

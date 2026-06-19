@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import { useModalDismiss } from "@/components/ui/useModalDismiss";
 import { deleteAccount } from "@/actions/users";
 import { useTranslations } from "next-intl";
 
@@ -30,22 +31,7 @@ export function DeleteAccountDialog({
     inputRef.current?.focus();
   }, []);
 
-  // Lock body scroll while open
-  useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, []);
-
-  // Escape to close
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") stableClose();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [stableClose]);
+  useModalDismiss(true, stableClose);
 
   async function handleDelete() {
     if (!matches) return;

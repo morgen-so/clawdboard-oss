@@ -45,6 +45,9 @@
     "url": "https://github.com/morgen-so/clawdboard-oss.git",
     "directory": "cli"
   },
+  "overrides": {
+    "esbuild": "^0.28.1"
+  },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.0.0",

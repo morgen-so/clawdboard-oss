@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { ShareIcon } from "@/components/icons/CommonIcons";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 import {
   buildTwitterIntentUrl,
   buildLinkedInShareUrl,
@@ -12,30 +14,10 @@ interface ShareLeaderboardProps {
   leaderboardUrl: string;
 }
 
-function ShareIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-      <polyline points="16 6 12 2 8 6" />
-      <line x1="12" y1="2" x2="12" y2="15" />
-    </svg>
-  );
-}
-
 export function ShareLeaderboard({ topCost, leaderboardUrl }: ShareLeaderboardProps) {
   const t = useTranslations("leaderboard");
   const [open, setOpen] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
 
   const shareText = t("shareLeaderboardText", { topCost });
 
@@ -61,9 +43,7 @@ export function ShareLeaderboard({ topCost, leaderboardUrl }: ShareLeaderboardPr
 
   const handleCopy = async () => {
     window.plausible?.("ShareLeaderboard", { props: { method: "copy" } });
-    await navigator.clipboard.writeText(`${shareText}\n${leaderboardUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    await copy(`${shareText}\n${leaderboardUrl}`);
     setOpen(false);
   };
 

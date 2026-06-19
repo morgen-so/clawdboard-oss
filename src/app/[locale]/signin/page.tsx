@@ -13,11 +13,12 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
 }) {
   const session = await cachedAuth();
   const params = await searchParams;
   const callbackUrl = params.callbackUrl || "/";
+  const hasAuthError = !!params.error;
   const t = await getTranslations("auth");
 
   if (session?.user) {
@@ -95,6 +96,15 @@ export default async function SignInPage({
             {`// ${t("signInToContinue")}`}
           </p>
         </div>
+
+        {hasAuthError && (
+          <div
+            role="alert"
+            className="mt-6 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2 font-mono text-xs text-amber-200"
+          >
+            {t("signInInterrupted")}
+          </div>
+        )}
 
         <form
           action={async () => {

@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/lib/auth";
+import { actionUser } from "./guards";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -11,10 +11,10 @@ import { validatePublicUrl } from "@/lib/validate-url";
 import { BADGES, MAX_PINNED_BADGES } from "@/lib/badges";
 
 export async function deleteAccount(): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
-  await db.delete(users).where(eq(users.id, session.user.id));
+  await db.delete(users).where(eq(users.id, user.id));
 
   // User removal affects leaderboards, team stats, and all aggregate caches
   revalidateAllCaches();
@@ -26,8 +26,8 @@ export async function updateCookingUrl(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const rawUrl = (formData.get("cookingUrl") as string)?.trim() || null;
   const rawLabel = (formData.get("cookingLabel") as string)?.trim() || null;
@@ -48,12 +48,12 @@ export async function updateCookingUrl(
     await db
       .update(users)
       .set({ cookingUrl: null, cookingLabel: null })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
   } else {
     await db
       .update(users)
       .set({ cookingUrl, cookingLabel })
-      .where(eq(users.id, session.user.id));
+      .where(eq(users.id, user.id));
   }
 
   revalidatePath("/");
@@ -61,13 +61,13 @@ export async function updateCookingUrl(
 }
 
 export async function dismissBadgePrompt(): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   await db
     .update(users)
     .set({ badgePromptDismissedAt: new Date() })
-    .where(eq(users.id, session.user.id));
+    .where(eq(users.id, user.id));
 
   revalidatePath("/");
 }
@@ -75,8 +75,8 @@ export async function dismissBadgePrompt(): Promise<ActionResult> {
 export async function updatePinnedBadges(
   badgeIds: string[]
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const validIds = new Set(BADGES.map((b) => b.id));
   const filtered = badgeIds.filter((id) => validIds.has(id)).slice(0, MAX_PINNED_BADGES);
@@ -84,8 +84,8 @@ export async function updatePinnedBadges(
   await db
     .update(users)
     .set({ pinnedBadges: filtered })
-    .where(eq(users.id, session.user.id));
+    .where(eq(users.id, user.id));
 
-  revalidatePath(`/user/${session.user.githubUsername}`);
+  revalidatePath(`/user/${user.githubUsername}`);
   revalidatePath("/settings");
 }

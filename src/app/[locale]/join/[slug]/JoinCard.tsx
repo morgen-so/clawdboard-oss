@@ -1,11 +1,13 @@
 "use client";
 
 import { useActionState } from "react";
+import { useLocale } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { joinTeam } from "@/actions/teams";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { safeHostname } from "@/lib/url";
+import { formatCostNumber } from "@/lib/format";
 
 export type JoinState = "locked" | "locked-unauthenticated" | "already-member" | "unauthenticated" | "ready";
 
@@ -55,6 +57,7 @@ export function JoinCard({
   signInSlot,
 }: JoinCardProps) {
   const [actionState, formAction] = useActionState(joinTeam, undefined);
+  const locale = useLocale();
 
   return (
     <div className="w-full rounded-lg border border-border bg-surface p-8 text-center">
@@ -116,7 +119,7 @@ export function JoinCard({
       {/* Stats row */}
       <p className="mt-4 font-mono text-xs text-muted">
         {memberCount} member{memberCount !== 1 ? "s" : ""} · $
-        {Number(stats.totalCost).toFixed(2)} spent · {stats.activeDays} active
+        {formatCostNumber(stats.totalCost, locale)} spent · {stats.activeDays} active
         day{stats.activeDays !== 1 ? "s" : ""}
       </p>
 

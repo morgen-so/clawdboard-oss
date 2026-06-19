@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ShareModal } from "./ShareModal";
+import { ShareIcon } from "@/components/icons/CommonIcons";
 
 interface ShareButtonsProps {
   username: string;
@@ -17,26 +18,6 @@ interface ShareButtonsProps {
 }
 
 /** Share icon (box with arrow) */
-function ShareIcon() {
-  return (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
-      <polyline points="16 6 12 2 8 6" />
-      <line x1="12" y1="2" x2="12" y2="15" />
-    </svg>
-  );
-}
-
 export function ShareButtons({
   username,
   image,
@@ -57,7 +38,7 @@ export function ShareButtons({
         onClick={() => setOpen(true)}
         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded border border-border hover:border-border-bright text-muted hover:text-foreground transition-colors text-xs font-mono cursor-pointer"
       >
-        <ShareIcon />
+        <ShareIcon size={16} />
         {t("share")}
       </button>
       <ShareModal

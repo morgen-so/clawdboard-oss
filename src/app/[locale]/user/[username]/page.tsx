@@ -35,7 +35,7 @@ import { StreakCelebration } from "@/components/profile/StreakCelebration";
 import { TeamNudge } from "@/components/profile/TeamNudge";
 import { ProfileJoinCta } from "@/components/profile/ProfileJoinCta";
 import { env } from "@/lib/env";
-import { seoAlternates } from "@/lib/seo";
+import { seoAlternates, breadcrumbLd } from "@/lib/seo";
 import { auth } from "@/lib/auth";
 import { getUserTeams, getUserPublicTeams } from "@/lib/db/teams";
 import { getAllRecaps } from "@/lib/db/recaps";
@@ -43,6 +43,8 @@ import { RecapStrip } from "@/components/recaps/RecapStrip";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
+import { formatUsdShort } from "@/lib/format";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -99,13 +101,6 @@ interface PageProps {
   searchParams: Promise<{ period?: string; from?: string; to?: string }>;
 }
 
-function fmtCost(cost: string): string {
-  const n = parseFloat(cost);
-  return n >= 1000
-    ? `$${(n / 1000).toFixed(1)}k`
-    : `$${n.toFixed(0)}`;
-}
-
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -126,7 +121,7 @@ export async function generateMetadata({
   ]);
 
   const title = `${username}'s AI Coding Stats — Ranked #${rank.rank}`;
-  const description = `${username} has spent ${fmtCost(summary.totalCost)} on AI coding and ranks #${rank.rank} of ${rank.totalUsers} developers. View their activity heatmap, model breakdown, and streak on clawdboard.`;
+  const description = `${username} has spent ${formatUsdShort(summary.totalCost)} on AI coding and ranks #${rank.rank} of ${rank.totalUsers} developers. View their activity heatmap, model breakdown, and streak on clawdboard.`;
 
   return {
     title,
@@ -242,15 +237,6 @@ export default async function UserProfilePage({
   }));
 
   const displayUsername = user.githubUsername ?? username;
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      { "@type": "ListItem", position: 2, name: displayUsername },
-    ],
-  };
-
   const personLd = {
     "@context": "https://schema.org",
     "@type": "Person",
@@ -264,14 +250,8 @@ export default async function UserProfilePage({
 
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(personLd) }}
-      />
+      <JsonLd data={breadcrumbLd([{ name: displayUsername }])} />
+      <JsonLd data={personLd} />
 
       {/* Header */}
       <Header subtitle={user.githubUsername ?? "profile"} />

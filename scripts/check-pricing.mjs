@@ -3,17 +3,21 @@
 /**
  * Weekly pricing drift checker.
  *
- * Fetches pricing pages from Anthropic, OpenAI, and Google, extracts
- * model prices, and compares them against cli/src/pricing.ts.
- * If differences are found, updates the file in-place so the GitHub
- * Action can commit and open a PR.
+ * Fetches a pinned commit of BerriAI/litellm's model_prices_and_context_window.json
+ * — the de-facto community pricing source for LLM models — and compares it
+ * against cli/src/pricing.ts. Differences are written to the file in-place
+ * so the GitHub Action can commit and open a PR.
  *
- * Extraction strategies:
- *   - Anthropic: docs page at platform.claude.com is server-rendered,
- *     so plain fetch + regex works.
- *   - OpenAI & Google: client-rendered SPAs. Uses Playwright (headless
- *     Chromium) to render the page, then extracts from the DOM.
- *     Falls back gracefully if Playwright is not installed.
+ * Models in our table that aren't covered by litellm (OpenCode-Zen tier,
+ * gpt-oss, certain Gemini 3.x preview rates) are reported as "skipped —
+ * manual review" and included in the PR body's verification checklist, but
+ * do not fail the run.
+ *
+ * Why litellm: provider pricing pages are not a stable contract. The
+ * previous Playwright-based scraper had been silently failing for both
+ * OpenAI and Google since at least 2026-04-20. litellm is updated within
+ * hours of provider price changes and used in production by tools like
+ * Aider, Continue.dev, Helicone, OpenRouter.
  */
 
 import { readFileSync, writeFileSync } from "fs";
@@ -22,6 +26,44 @@ import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PRICING_FILE = resolve(__dirname, "../cli/src/pricing.ts");
+
+// Pinned litellm commit. Bump quarterly during PR review. The auto-PR
+// body includes a checklist item reminding reviewers to consider bumping.
+const LITELLM_SHA = "343e453c2a7c5351459ac72761fad3e25145e78e";
+const LITELLM_URL = `https://raw.githubusercontent.com/BerriAI/litellm/${LITELLM_SHA}/model_prices_and_context_window.json`;
+
+// Models that legitimately aren't in litellm and stay hand-maintained.
+// Listed here so the script reports them honestly instead of silently
+// skipping. Matches the keys exactly as they appear in cli/src/pricing.ts.
+const MANUALLY_MAINTAINED = new Set([
+  // OpenCode-Zen tier curated open-source models
+  "glm-5.1",
+  "mimo-v2.5-pro",
+  "deepseek-v4-pro",
+  "kimi-k2.6",
+  "qwen3",
+  "minimax",
+  // OpenAI gpt-oss (open-weight)
+  "gpt-oss-120b",
+  "gpt-oss-20b",
+  // Retired/legacy provider models — litellm only carries the dated SKU
+  // (e.g. claude-3-5-sonnet-20241022) under provider-prefixed namespaces.
+  // Rates are frozen post-retirement; hand-maintained is fine.
+  "claude-3-5-sonnet",
+  "claude-3-5-haiku",
+  "claude-3-sonnet",
+  "o1-mini",
+  // Gemini 3.x — currently flagged "VERIFY" in pricing.ts (rates not public).
+  // litellm has "gemini-3-pro-preview" / "gemini-3-flash-preview" but our
+  // table uses bare keys; treat as manual until Google publishes rates.
+  "gemini-3-pro",
+  "gemini-3-flash",
+]);
+
+// Sanity threshold: litellm's full pricing file has hundreds of entries.
+// If we get back fewer than this, we probably hit an HTML error page or a
+// stale empty file. Loud failure instead of silent partial verification.
+const LITELLM_MIN_ENTRIES = 100;
 
 // ---------------------------------------------------------------------------
 // Parse current pricing table from TypeScript source
@@ -44,236 +86,92 @@ function parsePricingTable(source) {
 }
 
 // ---------------------------------------------------------------------------
-// Fetch helpers
+// Fetch litellm pricing JSON
 // ---------------------------------------------------------------------------
 
-async function fetchText(url) {
+async function fetchJson(url) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
   try {
     const res = await fetch(url, {
       signal: controller.signal,
       headers: {
-        "User-Agent":
-          "Mozilla/5.0 (compatible; clawdboard-pricing-checker/1.0)",
-        Accept: "text/html,application/xhtml+xml,*/*",
+        "User-Agent": "clawdboard-pricing-checker/2.0",
+        Accept: "application/json",
       },
       redirect: "follow",
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.text();
+    if (!res.ok) throw new Error(`HTTP ${res.status} from ${url}`);
+    return res.json();
   } finally {
     clearTimeout(timeout);
   }
 }
 
 /**
- * Render a page with Playwright and return the full rendered HTML.
- * Returns null if Playwright is not installed.
+ * Convert a litellm entry (cost-per-token) into our pricing-table format
+ * (cost per 1M tokens). Returns null if input/output are missing — we
+ * don't want to overwrite a real rate with a partial entry.
  */
-async function fetchRenderedHtml(url) {
-  let playwright;
-  try {
-    playwright = await import("playwright");
-  } catch {
-    return null; // Playwright not installed
+function litellmToTable(entry) {
+  if (
+    entry == null ||
+    typeof entry.input_cost_per_token !== "number" ||
+    typeof entry.output_cost_per_token !== "number"
+  ) {
+    return null;
   }
-
-  const browser = await playwright.chromium.launch({ headless: true });
-  try {
-    const page = await browser.newPage();
-    await page.goto(url, { waitUntil: "networkidle", timeout: 30_000 });
-    // Wait a bit extra for any lazy-rendered pricing tables
-    await page.waitForTimeout(2_000);
-    return await page.content();
-  } finally {
-    await browser.close();
-  }
+  // Round to 6 decimal places to avoid floating-point noise like
+  // 0.024999999999999998 when converting cost-per-token to per-1M.
+  const toPer1M = (v) => Math.round((v ?? 0) * 1_000_000 * 1e6) / 1e6;
+  return {
+    input: toPer1M(entry.input_cost_per_token),
+    output: toPer1M(entry.output_cost_per_token),
+    cacheWrite: toPer1M(entry.cache_creation_input_token_cost),
+    cacheRead: toPer1M(entry.cache_read_input_token_cost),
+  };
 }
-
-// ---------------------------------------------------------------------------
-// Provider: Anthropic (server-rendered — plain fetch)
-// ---------------------------------------------------------------------------
 
 /**
- * Ordered most-specific first to avoid substring collisions.
- * "Claude Opus 4.6" must be checked before "Claude Opus 4".
+ * Find the litellm entry for one of our table keys. We prefer the bare
+ * key (e.g. "claude-opus-4-6") but fall back to a date-suffixed variant
+ * (e.g. "claude-opus-4-6-20260205") if the bare key isn't present.
  */
-const ANTHROPIC_MODELS = [
-  { docName: "Claude Opus 4.6", key: "claude-opus-4-6" },
-  { docName: "Claude Opus 4.5", key: "claude-opus-4-5" },
-  { docName: "Claude Opus 4.1", key: "claude-opus-4-1" },
-  { docName: "Claude Opus 4", key: "claude-opus-4" },
-  { docName: "Claude Sonnet 4.6", key: "claude-sonnet-4-6" },
-  { docName: "Claude Sonnet 4.5", key: "claude-sonnet-4-5" },
-  { docName: "Claude Sonnet 4", key: "claude-sonnet-4" },
-  { docName: "Claude Haiku 4.5", key: "claude-haiku-4-5" },
-  { docName: "Claude Haiku 3.5", key: "claude-3-5-haiku" },
-  { docName: "Claude Opus 3", key: "claude-3-opus" },
-  { docName: "Claude Haiku 3", key: "claude-3-haiku" },
-];
+function findLitellmEntry(litellm, key) {
+  if (litellm[key]) return litellm[key];
 
-async function fetchAnthropicPricing() {
-  const prices = {};
-
-  const urls = [
-    "https://platform.claude.com/docs/en/about-claude/pricing",
-    "https://docs.anthropic.com/en/docs/about-claude/pricing",
-  ];
-
-  for (const url of urls) {
-    try {
-      const html = await fetchText(url);
-
-      // Process models most-specific first. After matching, remove the
-      // matched region so "Claude Opus 4" can't accidentally match
-      // inside the "Claude Opus 4.6" row.
-      let remaining = html;
-
-      for (const { docName, key } of ANTHROPIC_MODELS) {
-        const escaped = docName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-        // The pricing table has columns:
-        // Model | Base Input | 5m Cache Write | 1h Cache Write | Cache Hits | Output
-        const rowRe = new RegExp(
-          escaped +
-            "(?=[^\\w.])" + // word boundary: not followed by word char or dot
-            "[^$]*?" +
-            "\\$(\\d+(?:\\.\\d+)?)" + // base input
-            "[^$]*?" +
-            "\\$(\\d+(?:\\.\\d+)?)" + // 5m cache write
-            "[^$]*?" +
-            "\\$(\\d+(?:\\.\\d+)?)" + // 1h cache write (skip)
-            "[^$]*?" +
-            "\\$(\\d+(?:\\.\\d+)?)" + // cache hits/read
-            "[^$]*?" +
-            "\\$(\\d+(?:\\.\\d+)?)", // output
-          "s"
-        );
-
-        const match = remaining.match(rowRe);
-        if (match) {
-          prices[key] = {
-            input: parseFloat(match[1]),
-            output: parseFloat(match[5]),
-            cacheWrite: parseFloat(match[2]),
-            cacheRead: parseFloat(match[4]),
-          };
-          remaining =
-            remaining.slice(0, match.index) +
-            remaining.slice(match.index + match[0].length);
-        }
-      }
-
-      if (Object.keys(prices).length > 0) break;
-    } catch (err) {
-      console.warn(`  [anthropic] Failed to fetch ${url}: ${err.message}`);
-    }
-  }
-
-  return prices;
+  // Match dated variants: <key>-YYYY-MM-DD or <key>-YYYYMMDD
+  const datedRe = new RegExp(
+    `^${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}-\\d{4}-?\\d{2}-?\\d{2}$`
+  );
+  const candidates = Object.keys(litellm).filter((k) => datedRe.test(k));
+  if (candidates.length === 0) return null;
+  // Sort lexicographically; latest date wins.
+  candidates.sort();
+  return litellm[candidates[candidates.length - 1]];
 }
 
-// ---------------------------------------------------------------------------
-// Provider: OpenAI (client-rendered — needs Playwright)
-// ---------------------------------------------------------------------------
-
-const OPENAI_MODELS = [
-  { key: "gpt-4o-mini", names: ["gpt-4o-mini", "GPT-4o mini"] },
-  { key: "gpt-4o", names: ["gpt-4o", "GPT-4o"] },
-  { key: "o1-mini", names: ["o1-mini"] },
-  { key: "o1", names: ["o1"] },
-  { key: "o3-mini", names: ["o3-mini"] },
-  { key: "o3", names: ["o3"] },
-  { key: "o4-mini", names: ["o4-mini"] },
-];
-
-async function fetchOpenAIPricing() {
-  const prices = {};
-
-  const html = await fetchRenderedHtml(
-    "https://platform.openai.com/docs/pricing"
-  );
-  if (!html) return prices; // Playwright not available
-
-  // Process most-specific first (e.g., "gpt-4o-mini" before "gpt-4o")
-  let remaining = html;
-
-  for (const { key, names } of OPENAI_MODELS) {
-    for (const name of names) {
-      const idx = remaining.indexOf(name);
-      if (idx === -1) continue;
-
-      // Grab a window after the model name
-      const window = remaining.slice(idx, idx + 600);
-
-      // Look for price patterns like "$2.50 / 1M" or "$2.50/M"
-      const pricePattern = /\$(\d+(?:\.\d+)?)\s*(?:\/\s*(?:1M|M))?/g;
-      const priceMatches = [...window.matchAll(pricePattern)]
-        .map((m) => parseFloat(m[1]))
-        .filter((p) => p > 0);
-
-      if (priceMatches.length >= 2) {
-        prices[key] = {
-          input: priceMatches[0],
-          output: priceMatches[1],
-          cacheWrite: 0,
-          cacheRead: priceMatches.length >= 3 ? priceMatches[2] : 0,
-        };
-        // Remove matched region
-        remaining =
-          remaining.slice(0, idx) + remaining.slice(idx + 600);
-        break;
-      }
-    }
+async function fetchLitellmPricing(tableKeys) {
+  const json = await fetchJson(LITELLM_URL);
+  if (typeof json !== "object" || json === null) {
+    throw new Error("litellm response is not a JSON object");
+  }
+  const totalKeys = Object.keys(json).length;
+  if (totalKeys < LITELLM_MIN_ENTRIES) {
+    throw new Error(
+      `litellm JSON has only ${totalKeys} entries (< ${LITELLM_MIN_ENTRIES}); refusing to trust it`
+    );
   }
 
-  return prices;
-}
-
-// ---------------------------------------------------------------------------
-// Provider: Google (client-rendered — needs Playwright)
-// ---------------------------------------------------------------------------
-
-const GOOGLE_MODELS = [
-  { key: "gemini-2.5-pro", names: ["Gemini 2.5 Pro"] },
-  { key: "gemini-2.5-flash", names: ["Gemini 2.5 Flash"] },
-  { key: "gemini-2.0-flash", names: ["Gemini 2.0 Flash"] },
-];
-
-async function fetchGooglePricing() {
   const prices = {};
-
-  const html = await fetchRenderedHtml(
-    "https://ai.google.dev/gemini-api/docs/pricing"
-  );
-  if (!html) return prices; // Playwright not available
-
-  for (const { key, names } of GOOGLE_MODELS) {
-    for (const name of names) {
-      // Find the model name in the rendered HTML
-      const idx = html.indexOf(name);
-      if (idx === -1) continue;
-
-      // Look in a window for price patterns
-      const window = html.slice(idx, idx + 1500);
-      const priceMatches = [...window.matchAll(/\$(\d+(?:\.\d+)?)/g)]
-        .map((m) => parseFloat(m[1]))
-        .filter((p) => p > 0);
-
-      if (priceMatches.length >= 2) {
-        prices[key] = {
-          input: priceMatches[0],
-          output: priceMatches[1],
-          cacheWrite: 0,
-          cacheRead: 0,
-        };
-        break;
-      }
-    }
+  for (const key of tableKeys) {
+    if (MANUALLY_MAINTAINED.has(key)) continue;
+    const entry = findLitellmEntry(json, key);
+    if (!entry) continue;
+    const converted = litellmToTable(entry);
+    if (converted) prices[key] = converted;
   }
-
-  return prices;
+  return { prices, totalKeys };
 }
 
 // ---------------------------------------------------------------------------
@@ -340,132 +238,83 @@ function updatePricingFile(source, diffs) {
 async function main() {
   const source = readFileSync(PRICING_FILE, "utf-8");
   const current = parsePricingTable(source);
+  const tableKeys = Object.keys(current);
+  const tableSize = tableKeys.length;
 
-  console.log(
-    `Loaded ${Object.keys(current).length} models from pricing table.\n`
-  );
+  console.log(`Loaded ${tableSize} models from pricing table.`);
+  console.log(`Fetching litellm pricing @ ${LITELLM_SHA.slice(0, 7)}...`);
 
-  // Check if Playwright is available
-  let hasPlaywright = false;
+  let fetched, totalKeys;
   try {
-    await import("playwright");
-    hasPlaywright = true;
-  } catch {
-    // not installed
+    ({ prices: fetched, totalKeys } = await fetchLitellmPricing(tableKeys));
+  } catch (err) {
+    console.error(`\n❌ Failed to fetch litellm pricing: ${err.message}`);
+    console.error(`   URL: ${LITELLM_URL}`);
+    process.exit(1);
   }
 
-  // ── Anthropic (server-rendered — always works) ──
-  console.log("Checking Anthropic pricing...");
-  const anthropic = await fetchAnthropicPricing();
-  const anthropicCount = Object.keys(anthropic).length;
-  console.log(
-    `  Extracted ${anthropicCount}/${ANTHROPIC_MODELS.length} models` +
-      (anthropicCount === 0
-        ? " — page format may have changed, manual review needed"
-        : `: ${Object.keys(anthropic).join(", ")}`)
+  const verifiedKeys = Object.keys(fetched);
+  const manualKeys = tableKeys.filter((k) => MANUALLY_MAINTAINED.has(k));
+  const unknownKeys = tableKeys.filter(
+    (k) => !MANUALLY_MAINTAINED.has(k) && !fetched[k]
   );
 
-  // ── OpenAI (client-rendered — needs Playwright) ──
-  console.log("Checking OpenAI pricing...");
-  let openai = {};
-  if (hasPlaywright) {
-    try {
-      openai = await fetchOpenAIPricing();
-      const openaiCount = Object.keys(openai).length;
-      console.log(
-        `  Extracted ${openaiCount}/${OPENAI_MODELS.length} models` +
-          (openaiCount === 0
-            ? " — page format may have changed, manual review needed"
-            : `: ${Object.keys(openai).join(", ")}`)
-      );
-    } catch (err) {
-      console.warn(`  Failed: ${err.message}`);
-      console.log(
-        "  Manual review: https://platform.openai.com/docs/pricing"
-      );
-    }
-  } else {
+  console.log(`  litellm has ${totalKeys} total entries.`);
+  console.log(
+    `  ${verifiedKeys.length} auto-verified, ${manualKeys.length} manually maintained, ${unknownKeys.length} expected-but-missing.`
+  );
+
+  if (unknownKeys.length > 0) {
     console.log(
-      "  Playwright not installed, skipping. Manual review: https://platform.openai.com/docs/pricing"
+      `\n⚠️  ${unknownKeys.length} model(s) expected in litellm but not found:`
     );
-  }
-
-  // ── Google (client-rendered — needs Playwright) ──
-  console.log("Checking Google pricing...");
-  let google = {};
-  if (hasPlaywright) {
-    try {
-      google = await fetchGooglePricing();
-      const googleCount = Object.keys(google).length;
-      console.log(
-        `  Extracted ${googleCount}/${GOOGLE_MODELS.length} models` +
-          (googleCount === 0
-            ? " — page format may have changed, manual review needed"
-            : `: ${Object.keys(google).join(", ")}`)
-      );
-    } catch (err) {
-      console.warn(`  Failed: ${err.message}`);
-      console.log(
-        "  Manual review: https://ai.google.dev/gemini-api/docs/pricing"
-      );
-    }
-  } else {
+    for (const k of unknownKeys) console.log(`    - ${k}`);
     console.log(
-      "  Playwright not installed, skipping. Manual review: https://ai.google.dev/gemini-api/docs/pricing"
+      `   They may have been renamed upstream, or our key doesn't match litellm's. Manual review needed.`
     );
   }
 
-  const allFetched = { ...anthropic, ...openai, ...google };
-  const fetchedCount = Object.keys(allFetched).length;
-
-  if (fetchedCount === 0) {
-    console.error(
-      "\n⚠️  Could not extract pricing from any provider page."
-    );
-    console.error(
-      "   The page formats may have changed. Manual review needed."
-    );
-    return;
-  }
-
-  const diffs = comparePricing(current, allFetched);
+  const diffs = comparePricing(current, fetched);
 
   if (diffs.length === 0) {
     console.log(
-      `\n✅ All ${fetchedCount} extracted prices match the current pricing table.`
+      `\n✅ ${verifiedKeys.length}/${tableSize} prices match litellm. ${manualKeys.length} manually maintained.`
     );
-    return;
-  }
+  } else {
+    console.log(`\n🔄 Found ${diffs.length} pricing difference(s):\n`);
+    for (const diff of diffs) {
+      if (diff.type === "new_model") {
+        console.log(
+          `  NEW: ${diff.model} — input: $${diff.fetched.input}, output: $${diff.fetched.output}`
+        );
+      } else {
+        console.log(
+          `  ${diff.model}.${diff.field}: $${diff.current} → $${diff.fetched}`
+        );
+      }
+    }
 
-  console.log(`\n🔄 Found ${diffs.length} pricing difference(s):\n`);
-  for (const diff of diffs) {
-    if (diff.type === "new_model") {
-      console.log(
-        `  NEW: ${diff.model} — input: $${diff.fetched.input}, output: $${diff.fetched.output}`
-      );
-    } else {
-      console.log(
-        `  ${diff.model}.${diff.field}: $${diff.current} → $${diff.fetched}`
-      );
+    const fieldDiffs = diffs.filter((d) => d.type !== "new_model");
+    if (fieldDiffs.length > 0) {
+      const updated = updatePricingFile(source, fieldDiffs);
+      writeFileSync(PRICING_FILE, updated);
+      console.log("\n📝 Updated cli/src/pricing.ts with new prices.");
     }
   }
 
-  const fieldDiffs = diffs.filter((d) => d.type !== "new_model");
-  if (fieldDiffs.length > 0) {
-    const updated = updatePricingFile(source, fieldDiffs);
-    writeFileSync(PRICING_FILE, updated);
-    console.log("\n📝 Updated cli/src/pricing.ts with new prices.");
-  }
-
-  const newModels = diffs.filter((d) => d.type === "new_model");
-  if (newModels.length > 0) {
-    console.log(
-      "\n⚠️  New models detected but NOT auto-added (needs manual review):"
-    );
-    for (const m of newModels) {
-      console.log(`  ${m.model}: ${JSON.stringify(m.fetched)}`);
-    }
-  }
+  // Machine-readable summary consumed by the GitHub Action to populate
+  // the PR description with a manual-review checklist.
+  const summary = {
+    litellmSha: LITELLM_SHA,
+    tableSize,
+    verified: verifiedKeys.length,
+    manual: manualKeys,
+    unknown: unknownKeys,
+    diffs: diffs.length,
+  };
+  console.log("\n=== PRICING_CHECK_SUMMARY ===");
+  console.log(JSON.stringify(summary, null, 2));
+  console.log("=== END_PRICING_CHECK_SUMMARY ===");
 }
 
 main().catch((err) => {

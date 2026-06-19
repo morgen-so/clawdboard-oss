@@ -1,6 +1,7 @@
 import { signIn } from "@/lib/auth";
 import { CopyIconButton } from "./CopyIconButton";
 import { getTranslations } from "next-intl/server";
+import { formatUsdCompact, formatTokensCompact } from "@/lib/format";
 
 interface HeroSectionProps {
   vibeCoderCount: number;
@@ -8,19 +9,6 @@ interface HeroSectionProps {
   totalTokens: number;
   topWeeklyCost: number;
   longestStreak: number;
-}
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toFixed(0)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(0)}K`;
-  return n.toFixed(0);
 }
 
 export async function HeroSection({
@@ -35,7 +23,7 @@ export async function HeroSection({
     <div className="mb-6 rounded-lg border border-accent/20 bg-accent/[0.03] p-6 sm:p-8">
       {/* Headline — data-driven, surfaces extremes */}
       <h1 className="font-display text-xl font-bold text-foreground text-balance tracking-tight sm:text-2xl md:text-3xl lg:text-4xl mb-2">
-        {t("heroHeadline", { topCost: formatCurrency(topWeeklyCost) })}
+        {t("heroHeadline", { topCost: formatUsdCompact(topWeeklyCost) })}
       </h1>
       <p className="font-mono text-sm text-muted mb-5 max-w-2xl">
         {t("heroDescription")}
@@ -45,7 +33,7 @@ export async function HeroSection({
       <div className="grid grid-cols-3 gap-3 mb-5">
         <div className="rounded-lg bg-background/60 border border-border/50 p-3 text-center">
           <p className="font-mono text-lg font-bold text-accent sm:text-xl">
-            {formatCurrency(parseFloat(totalCost))}
+            {formatUsdCompact(parseFloat(totalCost))}
           </p>
           <p className="font-mono text-[10px] text-muted uppercase tracking-wider mt-0.5">
             {t("heroTotalSpent")}
@@ -53,7 +41,7 @@ export async function HeroSection({
         </div>
         <div className="rounded-lg bg-background/60 border border-border/50 p-3 text-center">
           <p className="font-mono text-lg font-bold text-foreground sm:text-xl">
-            {formatTokens(totalTokens)}
+            {formatTokensCompact(totalTokens)}
           </p>
           <p className="font-mono text-[10px] text-muted uppercase tracking-wider mt-0.5">
             {t("heroTokens")}

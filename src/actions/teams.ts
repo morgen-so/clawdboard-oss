@@ -1,6 +1,6 @@
 "use server";
 
-import { auth } from "@/lib/auth";
+import { actionUser, requireTeamOwner } from "./guards";
 import { db } from "@/lib/db";
 import { teams, teamMembers, users } from "@/lib/db/schema";
 import {
@@ -24,8 +24,8 @@ export async function createTeam(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const name = (formData.get("name") as string)?.trim();
   if (!name || name.length < 2 || name.length > 50) {
@@ -35,7 +35,7 @@ export async function createTeam(
   const slug = await generateUniqueSlug(name);
   const inviteToken = crypto.randomBytes(24).toString("base64url");
   const teamId = crypto.randomUUID();
-  const userId = session.user.id;
+  const userId = user.id;
 
   // Single-statement atomicity via modifying CTE — Postgres guarantees both
   // INSERTs succeed or fail together, compensating for Neon HTTP's lack of
@@ -60,8 +60,8 @@ export async function joinTeam(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   const token = formData.get("token") as string;
@@ -84,7 +84,7 @@ export async function joinTeam(
   }
 
   // Atomic insert: skips if already a member
-  const userId = session.user.id;
+  const userId = user.id;
   const result = await db.execute(sql`
     INSERT INTO team_members (id, team_id, user_id, role)
     VALUES (gen_random_uuid(), ${teamId}, ${userId}, 'member')
@@ -107,13 +107,13 @@ export async function leaveTeam(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   if (!teamId) return { error: "Missing teamId" };
 
-  const membership = await getTeamMembership(teamId, session.user.id);
+  const membership = await getTeamMembership(teamId, user.id);
   if (!membership) return { error: "Not a member of this team" };
 
   // If owner, check they're not the last owner
@@ -133,7 +133,7 @@ export async function leaveTeam(
     .where(
       and(
         eq(teamMembers.teamId, teamId),
-        eq(teamMembers.userId, session.user.id),
+        eq(teamMembers.userId, user.id),
         isNull(teamMembers.leftAt)
       )
     );
@@ -158,18 +158,19 @@ export async function removeMember(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   const memberId = formData.get("memberId") as string;
   if (!teamId || !memberId) return { error: "Missing teamId or memberId" };
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can remove members" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can remove members"
+  );
+  if (notOwner) return notOwner;
 
   // Verify target is active member
   const targetMembership = await getTeamMembership(teamId, memberId);
@@ -197,19 +198,20 @@ export async function transferOwnership(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   const newOwnerId = formData.get("newOwnerId") as string;
   if (!teamId || !newOwnerId)
     return { error: "Missing teamId or newOwnerId" };
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can transfer ownership" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can transfer ownership"
+  );
+  if (notOwner) return notOwner;
 
   // Verify target is active member
   const targetMembership = await getTeamMembership(teamId, newOwnerId);
@@ -236,17 +238,18 @@ export async function rotateInviteToken(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   if (!teamId) return { error: "Missing teamId" };
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can rotate invite token" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can rotate invite token"
+  );
+  if (notOwner) return notOwner;
 
   const newToken = crypto.randomBytes(24).toString("base64url");
   await db
@@ -263,17 +266,18 @@ export async function toggleTeamLock(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   if (!teamId) return { error: "Missing teamId" };
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can toggle team lock" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can toggle team lock"
+  );
+  if (notOwner) return notOwner;
 
   await db.execute(
     sql`UPDATE teams SET is_locked = NOT is_locked WHERE id = ${teamId}`
@@ -288,17 +292,18 @@ export async function toggleTeamPublic(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   if (!teamId) return { error: "Missing teamId" };
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can toggle public visibility" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can toggle public visibility"
+  );
+  if (notOwner) return notOwner;
 
   await db.execute(
     sql`UPDATE teams SET is_public = NOT is_public WHERE id = ${teamId}`
@@ -314,17 +319,18 @@ export async function updateTeamCookingUrl(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   if (!teamId) return { error: "Missing teamId" };
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can update the cooking link" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can update the cooking link"
+  );
+  if (notOwner) return notOwner;
 
   const rawUrl = (formData.get("cookingUrl") as string)?.trim() || null;
   const rawLabel = (formData.get("cookingLabel") as string)?.trim() || null;
@@ -361,17 +367,18 @@ export async function clearTeamCookingUrl(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   if (!teamId) return { error: "Missing teamId" };
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can update the cooking link" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can update the cooking link"
+  );
+  if (notOwner) return notOwner;
 
   await db
     .update(teams)
@@ -388,8 +395,8 @@ export async function renameTeam(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   const name = (formData.get("name") as string)?.trim();
@@ -398,11 +405,12 @@ export async function renameTeam(
     return { error: "Team name must be between 2 and 50 characters" };
   }
 
-  // Verify caller is owner
-  const callerMembership = await getTeamMembership(teamId, session.user.id);
-  if (!callerMembership || callerMembership.role !== "owner") {
-    return { error: "Only owners can rename the team" };
-  }
+  const notOwner = await requireTeamOwner(
+    teamId,
+    user.id,
+    "Only owners can rename the team"
+  );
+  if (notOwner) return notOwner;
 
   const newSlug = await generateUniqueSlug(name);
   await db
@@ -420,8 +428,8 @@ export async function inviteToTeam(
   _prev: ActionResult,
   formData: FormData
 ): Promise<ActionResult> {
-  const session = await auth();
-  if (!session?.user?.id) return { error: "Unauthorized" };
+  const user = await actionUser();
+  if (!user) return { error: "Unauthorized" };
 
   const teamId = formData.get("teamId") as string;
   const targetUserId = formData.get("targetUserId") as string;
@@ -430,7 +438,7 @@ export async function inviteToTeam(
   // Verify caller, team, target user, and existing membership in parallel
   const [callerMembership, [team], [targetUser], existingMembership] =
     await Promise.all([
-      getTeamMembership(teamId, session.user.id),
+      getTeamMembership(teamId, user.id),
       db
         .select()
         .from(teams)
@@ -477,8 +485,8 @@ export async function inviteToTeam(
       teamId: team.id,
       teamName: team.name,
       teamSlug: team.slug,
-      invitedBy: session.user.githubUsername ?? session.user.name ?? "Someone",
-      invitedByImage: session.user.image ?? null,
+      invitedBy: user.githubUsername ?? user.name ?? "Someone",
+      invitedByImage: user.image ?? null,
     }),
   ]);
 

@@ -1,8 +1,9 @@
 "use client";
 
 import { Link } from "@/i18n/navigation";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import type { TeamLeaderboardRow } from "@/lib/db/teams";
+import { formatCostNumber } from "@/lib/format";
 
 interface YourTeamPositionProps {
   /** User's team (undefined = no team) */
@@ -12,8 +13,6 @@ interface YourTeamPositionProps {
 }
 
 export function YourTeamPosition({ team, publicRow }: YourTeamPositionProps) {
-  const t = useTranslations("team");
-
   return (
     <div className="mb-4 rounded-lg border border-accent/20 bg-accent/[0.03]">
       <div className="px-4 pt-3 pb-1">
@@ -54,6 +53,7 @@ function NoTeamBar() {
 
 function PublicTeamBar({ row }: { row: TeamLeaderboardRow }) {
   const t = useTranslations("team");
+  const locale = useLocale();
 
   return (
     <Link
@@ -72,7 +72,7 @@ function PublicTeamBar({ row }: { row: TeamLeaderboardRow }) {
       <span className="text-foreground/20 select-none">&middot;</span>
       <span className="font-mono text-sm tabular-nums text-foreground/70">
         <span className="text-muted">$</span>
-        {Number(row.totalCost).toFixed(2)}
+        {formatCostNumber(row.totalCost, locale)}
       </span>
 
       <span className="text-foreground/20 select-none">&middot;</span>

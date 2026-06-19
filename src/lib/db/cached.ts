@@ -35,7 +35,7 @@ import {
 // keyParts and options.tags, so adding a new cached function forces you to add
 // a tag here — keeping revalidateAllCaches() automatically in sync.
 
-export const TAG = {
+const TAG = {
   leaderboard: "leaderboard",
   userLeaderboardRow: "user-leaderboard-row",
   teamLeaderboard: "team-leaderboard",

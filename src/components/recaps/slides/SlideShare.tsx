@@ -6,6 +6,13 @@ import {
   buildTwitterIntentUrl,
   buildLinkedInShareUrl,
 } from "@/lib/share";
+import {
+  formatDateRange,
+  formatTokensCompact,
+  formatUsdWhole,
+} from "@/lib/format";
+import { CheckIcon, DownloadIcon, LinkedInIcon, XIcon } from "@/components/icons/CommonIcons";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 
 interface SlideShareProps {
   recapId: string;
@@ -15,22 +22,6 @@ interface SlideShareProps {
   periodEnd: string;
 }
 
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
-
 function getMedalEmoji(rank: number): string {
   if (rank === 1) return "\uD83E\uDD47";
   if (rank === 2) return "\uD83E\uDD48";
@@ -38,54 +29,18 @@ function getMedalEmoji(rank: number): string {
   return "";
 }
 
-function XIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-    </svg>
-  );
-}
-
-function LinkedInIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
-    </svg>
-  );
-}
-
-function DownloadIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 10 12 15 17 10" />
-      <line x1="12" y1="15" x2="12" y2="3" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
-
 const actionBtn =
   "inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/10 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white transition-colors text-xs font-mono cursor-pointer";
 
 export function SlideShare({ recapId, data, type, periodStart, periodEnd }: SlideShareProps) {
   const [downloading, setDownloading] = useState(false);
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useCopyToClipboard();
   const cardRef = useRef<HTMLDivElement>(null);
 
   const periodLabel = type === "weekly" ? "Weekly" : "Monthly";
-  const s = new Date(periodStart + "T12:00:00Z");
-  const e = new Date(periodEnd + "T12:00:00Z");
-  const dateRange = `${s.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" })} \u2013 ${e.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", timeZone: "UTC" })}`;
+  const dateRange = formatDateRange(periodStart, periodEnd);
 
-  const shareText = `${periodLabel} recap: Rank #${data.rank} | ${formatCurrency(data.totalCost)} spent vibecoding`;
+  const shareText = `${periodLabel} recap: Rank #${data.rank} | ${formatUsdWhole(data.totalCost)} spent vibecoding`;
   const shareUrl = `https://clawdboard.ai/recap/${recapId}`;
 
   const handleDownload = async () => {
@@ -134,9 +89,7 @@ export function SlideShare({ recapId, data, type, periodStart, periodEnd }: Slid
 
   const handleCopy = async () => {
     window.plausible?.("RecapShare", { props: { method: "copy" } });
-    await navigator.clipboard.writeText(`${shareText}\n${shareUrl}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    await copy(`${shareText}\n${shareUrl}`);
   };
 
   const modelBars = data.modelBreakdown.slice(0, 3);
@@ -194,13 +147,13 @@ export function SlideShare({ recapId, data, type, periodStart, periodEnd }: Slid
                 <div>
                   <p className="font-mono text-xs text-white/30">Spent</p>
                   <p className="font-display text-xl font-bold text-white">
-                    {formatCurrency(data.totalCost)}
+                    {formatUsdWhole(data.totalCost)}
                   </p>
                 </div>
                 <div>
                   <p className="font-mono text-xs text-white/30">Tokens</p>
                   <p className="font-display text-xl font-bold text-white">
-                    {formatTokens(data.totalTokens)}
+                    {formatTokensCompact(data.totalTokens)}
                   </p>
                 </div>
                 <div>

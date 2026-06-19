@@ -1,22 +1,36 @@
 /**
- * Model slug utilities for programmatic SEO pages.
+ * Model display names and per-family SEO metadata.
  *
- * Raw model IDs (e.g., "claude-opus-4-5-20251101") are stored in JSONB.
- * URL slugs strip the date suffix: "claude-opus-4-5".
- * Pages match all raw IDs that produce the same slug.
+ * Raw model IDs (e.g., "claude-opus-4-5-20251101") are stored in JSONB;
+ * URL slugs strip the date suffix ("claude-opus-4-5", done in SQL via
+ * regexp_replace when slugs are generated).
  */
 
-// Strip trailing date suffix (6–8 digits) from model IDs
-const DATE_SUFFIX_RE = /-\d{6,8}$/;
+// ─── Friendly display names ─────────────────────────────────────────────────
 
-/** Convert a raw model ID to a URL-safe slug. */
-export function modelSlug(rawModelName: string): string {
-  return rawModelName.replace(DATE_SUFFIX_RE, "");
-}
+const MODEL_NAME_RE = /^claude-([a-z]+)-(\d+)(?:-(\d))?(?:-\d{6,})?$/;
+const MODEL_NAME_LEGACY_RE = /^claude-(\d+)(?:-(\d))?-([a-z]+)(?:-\d{6,})?$/;
 
-/** Check if a raw model name matches a given slug. */
-export function matchesSlug(rawModelName: string, slug: string): boolean {
-  return modelSlug(rawModelName) === slug;
+/**
+ * Map raw API model IDs to friendly display names.
+ * e.g., "claude-opus-4-5-20251101" -> "Opus 4.5"
+ */
+export function friendlyModelName(raw: string): string {
+  // New-style: claude-{family}-{major}-{minor}-{date} or claude-{family}-{major}-{date}
+  const m = raw.match(MODEL_NAME_RE);
+  if (m) {
+    const family = m[1].charAt(0).toUpperCase() + m[1].slice(1);
+    const version = m[3] ? `${m[2]}.${m[3]}` : m[2];
+    return `${family} ${version}`;
+  }
+  // Legacy: claude-{major}-{minor}-{family}-{date} or claude-{major}-{family}-{date}
+  const legacy = raw.match(MODEL_NAME_LEGACY_RE);
+  if (legacy) {
+    const version = legacy[2] ? `${legacy[1]}.${legacy[2]}` : legacy[1];
+    const family = legacy[3].charAt(0).toUpperCase() + legacy[3].slice(1);
+    return `${family} ${version}`;
+  }
+  return raw;
 }
 
 // ─── SEO metadata per model family ──────────────────────────────────────────

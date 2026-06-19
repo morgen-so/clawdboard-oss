@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Link } from "@/i18n/navigation";
 import { env } from "@/lib/env";
-import { seoAlternates } from "@/lib/seo";
+import { seoAlternates, breadcrumbLd, faqPageLd } from "@/lib/seo";
 import { Header } from "@/components/layout/Header";
 import {
   getCommunityStatsCached,
@@ -18,8 +18,16 @@ import { ChartCard } from "@/components/stats/ChartCard";
 import { StatsFaq } from "@/components/stats/StatsFaq";
 import { StatsCta } from "@/components/stats/StatsCta";
 import { StatsNav } from "@/components/stats/StatsNav";
-import { friendlyModelName } from "@/lib/chart-utils";
-import { getTranslations } from "next-intl/server";
+import { friendlyModelName } from "@/lib/models";
+import {
+  formatDateLong,
+  formatDateTimeLong,
+  formatNumber,
+  formatTokens,
+  formatUsdCompact,
+} from "@/lib/format";
+import { getLocale, getTranslations } from "next-intl/server";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -57,40 +65,9 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-function formatNumber(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 100_000) return `$${(n / 1_000).toFixed(0)}k`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
-}
-
 export default async function StatsPage() {
   const t = await getTranslations("statsPage");
+  const locale = await getLocale();
   const { getSourceBreakdown } = await import("@/lib/db/stats");
   const [stats, trends, models, growth, sourceBreakdown] = await Promise.all([
     getCommunityStatsCached(),
@@ -109,9 +86,9 @@ export default async function StatsPage() {
     {
       q: t("faqQ1"),
       a: t("faqA1", {
-        totalUsers: stats.totalUsers.toLocaleString(),
-        avgCost: formatCurrency(avgCost),
-        medianCost: formatCurrency(medianCost),
+        totalUsers: stats.totalUsers.toLocaleString(locale),
+        avgCost: formatUsdCompact(avgCost),
+        medianCost: formatUsdCompact(medianCost),
       }),
     },
     {
@@ -156,15 +133,6 @@ export default async function StatsPage() {
 
   // ─── JSON-LD schemas ────────────────────────────────────────────────────────
 
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      { "@type": "ListItem", position: 2, name: "Usage Statistics" },
-    ],
-  };
-
   const datasetLd = {
     "@context": "https://schema.org",
     "@type": "Dataset",
@@ -192,43 +160,13 @@ export default async function StatsPage() {
     ],
   };
 
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: faq.a,
-      },
-    })),
-  };
-
-  const now = new Date();
-  const lastUpdated = now.toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  const lastUpdated = formatDateTimeLong(new Date());
 
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
-      />
+      <JsonLd data={breadcrumbLd([{ name: "Usage Statistics" }])} />
+      <JsonLd data={datasetLd} />
+      <JsonLd data={faqPageLd(faqs)} />
 
       <Header
         subtitle={t("subtitle")}
@@ -270,7 +208,7 @@ export default async function StatsPage() {
           </h1>
           <p className="mt-2 font-mono text-sm leading-relaxed text-muted max-w-3xl">
             {t.rich("heroDescription", {
-              totalUsers: stats.totalUsers.toLocaleString(),
+              totalUsers: stats.totalUsers.toLocaleString(locale),
               strong: (chunks) => (
                 <strong className="text-foreground">{chunks}</strong>
               ),
@@ -284,11 +222,11 @@ export default async function StatsPage() {
           {/* Data summary for LLM crawlers — visually hidden */}
           <span className="sr-only">
             As of {lastUpdated.split(",").slice(0, 2).join(",")},{" "}
-            {stats.totalUsers.toLocaleString()} developers have tracked{" "}
-            {formatCurrency(totalCost)} in estimated AI coding spend and{" "}
+            {stats.totalUsers.toLocaleString(locale)} developers have tracked{" "}
+            {formatUsdCompact(totalCost)} in estimated AI coding spend and{" "}
             {formatNumber(stats.totalTokens)} tokens on clawdboard.
             The average developer has spent an estimated{" "}
-            {formatCurrency(avgCost)} (median: {formatCurrency(medianCost)}).
+            {formatUsdCompact(avgCost)} (median: {formatUsdCompact(medianCost)}).
             {topModel && (
               <> The most-used model by cost share is{" "}
               {topModelName} at {topModel.costShare}% of total spend.{" "}
@@ -341,14 +279,14 @@ export default async function StatsPage() {
             {t("overviewHeading")}
           </h2>
           <p className="font-mono text-xs text-muted mb-4">
-            {t("overviewDescription", { totalUsers: stats.totalUsers.toLocaleString() })}
+            {t("overviewDescription", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
           </p>
 
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3">
             <StatCard
               label={t("totalCommunitySpend")}
-              value={formatCurrency(totalCost)}
-              sub={t("acrossDevelopers", { totalUsers: stats.totalUsers.toLocaleString() })}
+              value={formatUsdCompact(totalCost)}
+              sub={t("acrossDevelopers", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
               accent
             />
             <StatCard
@@ -358,15 +296,15 @@ export default async function StatsPage() {
             />
             <StatCard
               label={t("avgCostPerDeveloper")}
-              value={formatCurrency(avgCost)}
-              sub={t("medianSub", { medianCost: formatCurrency(medianCost) })}
+              value={formatUsdCompact(avgCost)}
+              sub={t("medianSub", { medianCost: formatUsdCompact(medianCost) })}
             />
             <StatCard
               label={t("busiestCommunityDay")}
-              value={formatCurrency(biggestDay)}
+              value={formatUsdCompact(biggestDay)}
               sub={
                 stats.biggestSingleDayDate
-                  ? formatDate(stats.biggestSingleDayDate)
+                  ? formatDateLong(stats.biggestSingleDayDate)
                   : "—"
               }
             />
@@ -375,7 +313,7 @@ export default async function StatsPage() {
           <div className="grid grid-cols-3 gap-3">
             <StatCard
               label={t("totalActiveDays")}
-              value={stats.totalActiveDays.toLocaleString()}
+              value={stats.totalActiveDays.toLocaleString(locale)}
               sub={t("activeDaysSub")}
             />
             <StatCard
@@ -473,9 +411,9 @@ export default async function StatsPage() {
           <div className="space-y-3 font-mono text-sm leading-relaxed text-muted">
             <p>
               {t.rich("costAnalysisP1", {
-                totalUsers: stats.totalUsers.toLocaleString(),
-                avgCost: formatCurrency(avgCost),
-                medianCost: formatCurrency(medianCost),
+                totalUsers: stats.totalUsers.toLocaleString(locale),
+                avgCost: formatUsdCompact(avgCost),
+                medianCost: formatUsdCompact(medianCost),
                 strong: (chunks) => (
                   <strong className="text-foreground">{chunks}</strong>
                 ),
@@ -486,14 +424,14 @@ export default async function StatsPage() {
             </p>
             <p>
               {t.rich("costAnalysisP3", {
-                totalActiveDays: stats.totalActiveDays.toLocaleString(),
+                totalActiveDays: stats.totalActiveDays.toLocaleString(locale),
                 longestStreak: stats.longestStreak,
-                biggestDay: formatCurrency(biggestDay),
+                biggestDay: formatUsdCompact(biggestDay),
                 strong: (chunks) => (
                   <strong className="text-foreground">{chunks}</strong>
                 ),
               })}
-              {stats.biggestSingleDayDate && t("costAnalysisP3Date", { date: formatDate(stats.biggestSingleDayDate) })}
+              {stats.biggestSingleDayDate && t("costAnalysisP3Date", { date: formatDateLong(stats.biggestSingleDayDate) })}
               .
             </p>
             <p>
@@ -573,7 +511,7 @@ export default async function StatsPage() {
                 {t("methodologyLimitations")}
               </p>
               <p className="font-mono text-xs leading-relaxed text-muted">
-                {t("methodologyLimitationsText", { totalUsers: stats.totalUsers.toLocaleString() })}
+                {t("methodologyLimitationsText", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
               </p>
             </div>
           </div>
@@ -653,7 +591,7 @@ GET ${BASE_URL}/api/leaderboard?period=7d&sort=cost&limit=10`}</code>
         {/* ── CTA ─────────────────────────────────────────────────────── */}
         <StatsCta
           heading={t("ctaHeading")}
-          description={t("ctaDescription", { totalUsers: stats.totalUsers.toLocaleString() })}
+          description={t("ctaDescription", { totalUsers: stats.totalUsers.toLocaleString(locale) })}
           primaryLabel={t("ctaPrimaryLabel")}
           primaryHref="/"
           secondaryLabel={t("ctaSecondaryLabel")}

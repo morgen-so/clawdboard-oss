@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { type LeaderboardRow } from "@/lib/db/leaderboard";
@@ -12,6 +12,7 @@ import { StreakAura } from "@/components/ui/StreakAura";
 import { buildProfileHref, safeHostname } from "@/lib/url";
 import { loadMoreRows } from "@/actions/leaderboard";
 import { rankColors, rankIcons, rankBorderClass } from "@/lib/rank";
+import { formatCostNumber } from "@/lib/format";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 
 interface LeaderboardTableProps {
@@ -149,7 +150,7 @@ export function LeaderboardTable({
   );
 }
 
-export function LeaderboardRowItem({
+function LeaderboardRowItem({
   row,
   index,
   isCurrentUser,
@@ -165,6 +166,7 @@ export function LeaderboardRowItem({
   rangeTo?: string;
 }) {
   const t = useTranslations("leaderboard");
+  const locale = useLocale();
   const initials = row.githubUsername
     ? row.githubUsername.slice(0, 2).toUpperCase()
     : "??";
@@ -239,12 +241,12 @@ export function LeaderboardRowItem({
 
       {/* Cost */}
       <td className="px-3 py-3 sm:px-4 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
-        <span className="text-muted">$</span>{Number(row.totalCost).toFixed(2)}
+        <span className="text-muted">$</span>{formatCostNumber(row.totalCost, locale)}
       </td>
 
       {/* Tokens */}
       <td className="hidden sm:table-cell px-4 py-3 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
-        {Number(row.totalTokens).toLocaleString()}
+        {Number(row.totalTokens).toLocaleString(locale)}
       </td>
 
       {/* Days */}

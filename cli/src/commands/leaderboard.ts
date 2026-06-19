@@ -4,11 +4,29 @@ import ora from "ora";
 import { loadConfig, getServerUrl } from "../config.js";
 import { ApiClient } from "../api-client.js";
 
+const VALID_PERIODS = ["today", "7d", "30d", "this-month", "ytd"];
+
 export const leaderboardCommand = new Command("leaderboard")
   .description("Show the top users on the leaderboard")
-  .option("-n, --limit <number>", "Number of users to show", "10")
-  .option("-p, --period <period>", "Time period: 7d, 30d, this-month, ytd", "7d")
+  .option("-n, --limit <number>", "Number of users to show (1-50)", "10")
+  .option(
+    "-p, --period <period>",
+    `Time period: ${VALID_PERIODS.join(", ")}`,
+    "7d"
+  )
   .action(async (opts: { limit: string; period: string }) => {
+    const limit = parseInt(opts.limit, 10);
+    if (isNaN(limit) || limit < 1 || limit > 50) {
+      console.error(chalk.red("--limit must be a number between 1 and 50"));
+      process.exit(1);
+    }
+    if (!VALID_PERIODS.includes(opts.period)) {
+      console.error(
+        chalk.red(`--period must be one of: ${VALID_PERIODS.join(", ")}`)
+      );
+      process.exit(1);
+    }
+
     const config = await loadConfig();
     const serverUrl = getServerUrl(config);
     const client = new ApiClient(serverUrl, config.apiToken);
@@ -17,7 +35,7 @@ export const leaderboardCommand = new Command("leaderboard")
 
     try {
       const data = await client.getLeaderboard({
-        limit: parseInt(opts.limit, 10) || 10,
+        limit,
         period: opts.period,
       });
 

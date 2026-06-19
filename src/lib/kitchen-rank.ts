@@ -17,7 +17,7 @@ export type XpProgress = {
   percent: number;
 };
 
-export const KITCHEN_RANKS: KitchenRank[] = [
+const KITCHEN_RANKS: KitchenRank[] = [
   { tier: 1, title: "Dishwasher", minXp: 0, color: "text-muted" },
   { tier: 2, title: "Prep Cook", minXp: 20, color: "text-zinc-400" },
   { tier: 3, title: "Line Cook", minXp: 60, color: "text-amber-400" },

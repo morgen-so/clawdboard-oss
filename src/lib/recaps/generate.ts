@@ -3,6 +3,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import type { RecapData } from "@/lib/db/schema";
+import { friendlyModelName } from "@/lib/models";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -31,27 +32,6 @@ interface RawRivalRow {
   rival_image: string | null;
   rival_cost: string;
   rival_rank: number;
-}
-
-// ─── Friendly model names ───────────────────────────────────────────────────
-
-const MODEL_NAME_RE = /^claude-([a-z]+)-(\d+)(?:-(\d))?(?:-\d{6,})?$/;
-const MODEL_NAME_LEGACY_RE = /^claude-(\d+)(?:-(\d))?-([a-z]+)(?:-\d{6,})?$/;
-
-function friendlyModelName(raw: string): string {
-  const m = raw.match(MODEL_NAME_RE);
-  if (m) {
-    const family = m[1].charAt(0).toUpperCase() + m[1].slice(1);
-    const version = m[3] ? `${m[2]}.${m[3]}` : m[2];
-    return `${family} ${version}`;
-  }
-  const legacy = raw.match(MODEL_NAME_LEGACY_RE);
-  if (legacy) {
-    const version = legacy[2] ? `${legacy[1]}.${legacy[2]}` : legacy[1];
-    const family = legacy[3].charAt(0).toUpperCase() + legacy[3].slice(1);
-    return `${family} ${version}`;
-  }
-  return raw;
 }
 
 // ─── Day of week helper ─────────────────────────────────────────────────────
@@ -312,8 +292,13 @@ export async function generateAllRecaps(
   }
 
   // 8. Build RecapData for each user and upsert
-  const totalDays = type === "weekly" ? 7 : 30;
-  let count = 0;
+  const periodStartDate = new Date(periodStart + "T00:00:00Z");
+  const periodEndDate = new Date(periodEnd + "T00:00:00Z");
+  const totalDays =
+    Math.floor(
+      (periodEndDate.getTime() - periodStartDate.getTime()) / (1000 * 60 * 60 * 24)
+    ) + 1;
+  const recapRows: Array<{ userId: string; data: RecapData }> = [];
 
   for (const [userId, stat] of statsMap) {
     const totalCost = parseFloat(stat.total_cost);
@@ -382,15 +367,30 @@ export async function generateAllRecaps(
       rivalRank: rival?.rival_rank ?? null,
     };
 
-    // Upsert — idempotent by (user_id, type, period_start)
+    recapRows.push({ userId, data });
+  }
+
+  // Upsert in chunked multi-row statements — idempotent by
+  // (user_id, type, period_start). One statement per chunk instead of one
+  // per user; statsMap keys are unique so a chunk never updates the same
+  // row twice.
+  const CHUNK_SIZE = 50;
+  for (let i = 0; i < recapRows.length; i += CHUNK_SIZE) {
+    const chunk = recapRows.slice(i, i + CHUNK_SIZE);
+    const values = sql.join(
+      chunk.map(
+        (row) =>
+          sql`(gen_random_uuid(), ${row.userId}, ${type}, ${periodStart}, ${periodEnd}, ${JSON.stringify(row.data)}::jsonb)`
+      ),
+      sql`, `
+    );
     await db.execute(sql`
       INSERT INTO recaps (id, user_id, type, period_start, period_end, data)
-      VALUES (gen_random_uuid(), ${userId}, ${type}, ${periodStart}, ${periodEnd}, ${JSON.stringify(data)}::jsonb)
+      VALUES ${values}
       ON CONFLICT (user_id, type, period_start)
       DO UPDATE SET data = EXCLUDED.data, period_end = EXCLUDED.period_end, created_at = NOW()
     `);
-    count++;
   }
 
-  return count;
+  return recapRows.length;
 }

@@ -5,6 +5,7 @@ import type { ProfileUser, UserSummary, UserRank } from "@/lib/db/profile";
 import { safeHostname } from "@/lib/url";
 import { StreakAura } from "@/components/ui/StreakAura";
 import { getStreakTier } from "@/lib/streak-tiers";
+import { formatMonthYear, formatTokensCompact, formatUsd } from "@/lib/format";
 
 interface ProfileHeaderProps {
   user: ProfileUser;
@@ -13,31 +14,6 @@ interface ProfileHeaderProps {
   currentStreak: number;
   teams?: Array<{ teamName: string; teamSlug: string }>;
   children?: React.ReactNode;
-}
-
-function formatCost(cost: string): string {
-  const num = parseFloat(cost);
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
-
-function formatDate(date: Date | null): string {
-  if (!date) return "Unknown";
-  return new Intl.DateTimeFormat("en-US", {
-    month: "short",
-    year: "numeric",
-  }).format(date);
 }
 
 function getInitials(name: string | null, username: string | null): string {
@@ -92,7 +68,7 @@ export async function ProfileHeader({
               {user.githubUsername ?? user.name ?? "Anonymous"}
             </h1>
             <p className="text-sm text-muted">
-              {t("memberSince", { date: formatDate(user.createdAt) })}
+              {t("memberSince", { date: formatMonthYear(user.createdAt) })}
             </p>
             {user.cookingUrl && (
               <p className="mt-1 text-sm">
@@ -134,7 +110,7 @@ export async function ProfileHeader({
         <div className="rounded-lg bg-background p-4">
           <p className="text-xs font-medium text-muted mb-1">{t("cost")}</p>
           <p className="font-mono text-lg font-semibold text-accent">
-            {formatCost(summary.totalCost)}
+            {formatUsd(summary.totalCost)}
           </p>
         </div>
 
@@ -142,7 +118,7 @@ export async function ProfileHeader({
         <div className="rounded-lg bg-background p-4">
           <p className="text-xs font-medium text-muted mb-1">{t("tokens")}</p>
           <p className="font-mono text-lg font-semibold text-foreground">
-            {formatTokens(totalTokens)}
+            {formatTokensCompact(totalTokens)}
           </p>
         </div>
 

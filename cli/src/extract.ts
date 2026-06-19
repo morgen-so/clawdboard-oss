@@ -6,6 +6,7 @@ import { extractDesktopData, hasDesktopData } from "./desktop.js";
 import { extractGeminiCliData, hasGeminiCliData } from "./gemini-cli.js";
 import { extractCopilotCliData, hasCopilotCliData } from "./copilot-cli.js";
 import { extractAntigravityData, hasAntigravityData } from "./antigravity.js";
+import { loadLivePricing } from "./litellm-pricing.js";
 import type { Source } from "./accumulator.js";
 
 /**
@@ -92,6 +93,11 @@ export function sanitizeDailyData(
 export async function extractAndSanitize(
   since?: string
 ): Promise<SyncPayload> {
+  // Load live model pricing before extraction so sources that compute cost
+  // locally (OpenCode, Codex, desktop, ...) price new models correctly.
+  // Never throws — on failure getModelPricing falls back to the static table.
+  await loadLivePricing();
+
   // Run all extractions concurrently — they read from independent directories
   const [
     claudeResult,

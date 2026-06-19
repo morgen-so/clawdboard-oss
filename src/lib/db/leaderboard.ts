@@ -1,6 +1,7 @@
-import { db } from "@/lib/db";
+import { db, executeRows } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { MIN_DATE, NEW_USER_WINDOW_MS, VALID_PERIODS, type Period } from "@/lib/constants";
+import { periodFilter } from "./date-filter";
 export type { Period };
 export { VALID_PERIODS };
 
@@ -75,24 +76,7 @@ export function getDateFilter(
   period: Period,
   range?: DateRange
 ): ReturnType<typeof sql> {
-  switch (period) {
-    case "today":
-      return sql`da.date::date = CURRENT_DATE`;
-    case "7d":
-      return sql`da.date::date >= CURRENT_DATE - 6`;
-    case "30d":
-      return sql`da.date::date >= CURRENT_DATE - 29`;
-    case "this-month":
-      return sql`da.date::date >= date_trunc('month', CURRENT_DATE)::date`;
-    case "ytd":
-      return sql`da.date::date >= date_trunc('year', CURRENT_DATE)::date`;
-    case "custom":
-      if (range) {
-        return sql`da.date::date >= ${range.from}::date AND da.date::date <= ${range.to}::date`;
-      }
-      // Fallback to 30d if no valid range
-      return sql`da.date::date >= CURRENT_DATE - 29`;
-  }
+  return periodFilter(sql`da.date`, period, range);
 }
 
 // ─── Shared SQL CTEs ────────────────────────────────────────────────────────
@@ -116,6 +100,7 @@ function buildLeaderboardCTEs(dateFilter: ReturnType<typeof sql>) {
         COUNT(DISTINCT da.date)::int AS active_days
       FROM users u
       LEFT JOIN daily_aggregates da ON da.user_id = u.id AND ${dateFilter}
+      WHERE u.banned_at IS NULL
       GROUP BY u.id, u.github_username, u.image, u.cooking_url, u.cooking_label, u.created_at
     ),
     streak_days AS (
@@ -154,15 +139,15 @@ export async function getPreviousRanks(): Promise<Map<string, number>> {
   const today = new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
 
   try {
-    const result = await db.execute(sql`
+    const rows = await executeRows<{ user_id: string; rank: number | string }>(sql`
       SELECT user_id, rank FROM rank_snapshots
       WHERE snapshot_date = (
         SELECT MAX(snapshot_date) FROM rank_snapshots WHERE snapshot_date < ${today}
       )
     `);
     const map = new Map<string, number>();
-    for (const row of result.rows) {
-      map.set(row.user_id as string, Number(row.rank));
+    for (const row of rows) {
+      map.set(row.user_id, Number(row.rank));
     }
     return map;
   } catch {
@@ -191,8 +176,8 @@ export async function getLeaderboardData(
   const dateFilter = getDateFilter(period, range);
   const ctes = buildLeaderboardCTEs(dateFilter);
 
-  const [result, previousRanks] = await Promise.all([
-    db.execute(sql`
+  const [rawRows, previousRanks] = await Promise.all([
+    executeRows<RawRowWithCount>(sql`
       ${ctes}
       SELECT
         f.user_id,
@@ -208,13 +193,12 @@ export async function getLeaderboardData(
         COUNT(*) OVER() AS total_count
       FROM filtered f
       LEFT JOIN current_streaks cs ON cs.user_id = f.user_id
-      ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}
+      ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, f.user_id ASC
       LIMIT ${limit} OFFSET ${offset}
     `),
     getPreviousRanks(),
   ]);
 
-  const rawRows = result.rows as unknown as RawRowWithCount[];
   const totalCount = rawRows.length > 0 ? Number(rawRows[0].total_count) : 0;
 
   return {
@@ -242,8 +226,8 @@ export async function getUserLeaderboardRow(
   const dateFilter = getDateFilter(period, range);
   const ctes = buildLeaderboardCTEs(dateFilter);
 
-  const [result, previousRanks] = await Promise.all([
-    db.execute(sql`
+  const [rows, previousRanks] = await Promise.all([
+    executeRows<RawRowWithRank>(sql`
       ${ctes},
       ranked AS (
         SELECT
@@ -257,7 +241,7 @@ export async function getUserLeaderboardRow(
           f.total_tokens,
           f.active_days::int,
           COALESCE(cs.current_streak, 0)::int AS current_streak,
-          ROW_NUMBER() OVER (ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}) AS rank
+          ROW_NUMBER() OVER (ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, f.user_id ASC) AS rank
         FROM filtered f
         LEFT JOIN current_streaks cs ON cs.user_id = f.user_id
       )
@@ -266,9 +250,9 @@ export async function getUserLeaderboardRow(
     getPreviousRanks(),
   ]);
 
-  if (result.rows.length === 0) return null;
+  if (rows.length === 0) return null;
 
-  const raw = result.rows[0] as unknown as RawRowWithRank;
+  const raw = rows[0];
   const rank = Number(raw.rank);
 
   return mapSingleRow(raw, rank, previousRanks);
@@ -295,7 +279,7 @@ interface RawRowWithRank extends RawRow {
   rank: string | number;
 }
 
-export function mapSingleRow(
+function mapSingleRow(
   row: RawRow,
   rank: number,
   previousRanks?: Map<string, number>

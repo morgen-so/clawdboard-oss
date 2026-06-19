@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { dailyAggregates, users } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import { rateLimit } from "@/lib/rate-limit";
+import { authenticateApiToken } from "@/lib/api-auth";
 
 export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { key: "rank", limit: 15 });
@@ -10,26 +11,12 @@ export async function GET(req: NextRequest) {
 
   try {
     // 1. Authenticate via Bearer token (same pattern as POST /api/sync)
-    const authHeader = req.headers.get("authorization");
-    const token = authHeader?.startsWith("Bearer ")
-      ? authHeader.slice(7)
-      : null;
+    const tokenAuth = await authenticateApiToken(req);
+    if (tokenAuth.response) return tokenAuth.response;
+    const { user } = tokenAuth;
 
-    if (!token) {
-      return NextResponse.json(
-        { error: "Missing authorization token" },
-        { status: 401 }
-      );
-    }
-
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.apiToken, token))
-      .limit(1);
-
-    if (!user) {
-      return NextResponse.json({ error: "Invalid token" }, { status: 401 });
+    if (user.bannedAt) {
+      return NextResponse.json({ error: "Account suspended" }, { status: 403 });
     }
 
     // 2. Get the authenticated user's total cost
@@ -42,13 +29,16 @@ export async function GET(req: NextRequest) {
 
     const userTotalCost = parseFloat(userCostRow?.totalCost ?? "0");
 
-    // 3. Count users with higher total cost
+    // 3. Count users with higher total cost (banned users are excluded from
+    //    all leaderboards, so they don't affect rank either)
     const userTotals = db
       .select({
         userId: dailyAggregates.userId,
         total: sql<number>`SUM(${dailyAggregates.totalCost}::numeric)`.as("total"),
       })
       .from(dailyAggregates)
+      .innerJoin(users, eq(users.id, dailyAggregates.userId))
+      .where(isNull(users.bannedAt))
       .groupBy(dailyAggregates.userId)
       .as("user_totals");
 
@@ -66,7 +56,9 @@ export async function GET(req: NextRequest) {
       .select({
         count: sql<number>`count(DISTINCT ${dailyAggregates.userId})::int`,
       })
-      .from(dailyAggregates);
+      .from(dailyAggregates)
+      .innerJoin(users, eq(users.id, dailyAggregates.userId))
+      .where(isNull(users.bannedAt));
 
     const totalUsers = totalUsersRow?.count ?? 0;
 

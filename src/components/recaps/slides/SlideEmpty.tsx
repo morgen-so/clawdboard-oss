@@ -1,23 +1,13 @@
 "use client";
 
 import type { RecapData } from "@/lib/db/schema";
+import { formatDateRange } from "@/lib/format";
 
 interface SlideEmptyProps {
   data: RecapData;
   periodLabel: string;
   periodStart: string;
   periodEnd: string;
-}
-
-function formatDateRange(start: string, end: string): string {
-  const s = new Date(start + "T12:00:00Z");
-  const e = new Date(end + "T12:00:00Z");
-  const opts: Intl.DateTimeFormatOptions = {
-    month: "short",
-    day: "numeric",
-    timeZone: "UTC",
-  };
-  return `${s.toLocaleDateString("en-US", opts)} \u2013 ${e.toLocaleDateString("en-US", { ...opts, year: "numeric" })}`;
 }
 
 export function SlideEmpty({

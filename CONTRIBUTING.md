@@ -45,8 +45,8 @@ src/
   components/   # React components
   lib/          # Shared utilities (db, auth, env, sync)
   actions/      # Server actions
-cli/            # CLI package (npm: clawdboard)
-plugin/         # Claude Code plugin
+cli/              # CLI package (npm: clawdboard)
+opencode-plugin/  # OpenCode plugin (npm: clawdboard-opencode)
 ```
 
 ## Making Changes

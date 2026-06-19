@@ -10,20 +10,10 @@ import {
   Cell,
 } from "recharts";
 import type { ModelStats } from "@/lib/db/stats";
-import { MODEL_COLORS, friendlyModelName } from "@/lib/chart-utils";
+import { MODEL_COLORS } from "@/lib/chart-utils";
+import { friendlyModelName } from "@/lib/models";
 import { Link } from "@/i18n/navigation";
-
-function formatCurrency(value: number): string {
-  if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
-  return `$${value.toFixed(2)}`;
-}
-
-function formatTokensCompact(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
+import { formatTokensCompact, formatUsdCompact } from "@/lib/format";
 
 export function ModelShareChart({
   data,
@@ -70,7 +60,7 @@ export function ModelShareChart({
         >
           <XAxis
             type="number"
-            tickFormatter={formatCurrency}
+            tickFormatter={formatUsdCompact}
             stroke="var(--muted)"
             fontSize={11}
             tickLine={false}
@@ -102,9 +92,9 @@ export function ModelShareChart({
             ) => {
               const item = props?.payload;
               const v = value ?? 0;
-              if (!item) return [formatCurrency(v), ""];
+              if (!item) return [formatUsdCompact(v), ""];
               return [
-                `${formatCurrency(v)} — ${item.costShare}% of total (${formatTokensCompact(item.totalTokens)} tokens, ${item.userCount} users)`,
+                `${formatUsdCompact(v)} — ${item.costShare}% of total (${formatTokensCompact(item.totalTokens)} tokens, ${item.userCount} users)`,
                 item.displayName,
               ];
             }}
@@ -138,7 +128,7 @@ export function ModelShareChart({
                   {model.displayName}
                 </p>
                 <p className="font-mono text-xs text-muted">
-                  {formatCurrency(model.cost)} &middot;{" "}
+                  {formatUsdCompact(model.cost)} &middot;{" "}
                   {model.costShare}% of spend &middot;{" "}
                   {model.userCount} {model.userCount === 1 ? "user" : "users"}
                 </p>

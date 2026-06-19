@@ -57,7 +57,7 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
     usersTable: users,
     accountsTable: accounts,
   }),
-  pages: { signIn: "/signin" },
+  pages: { signIn: "/signin", error: "/signin" },
   providers: getProviders(),
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   callbacks: {

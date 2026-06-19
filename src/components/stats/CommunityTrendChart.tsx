@@ -10,26 +10,13 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
-import { format, parseISO } from "date-fns";
 import type { DailyTrendPoint } from "@/lib/db/stats";
 import { COST_COLOR, TOOLTIP_STYLES } from "@/lib/chart-utils";
+import { formatChartDate, formatUsd, formatUsdShort } from "@/lib/format";
 
 type Metric = "cost" | "users";
 
 const USERS_COLOR = "#3b82f6";
-
-function formatCurrency(value: number): string {
-  if (value >= 1000) return `$${(value / 1000).toFixed(1)}k`;
-  return `$${value.toFixed(0)}`;
-}
-
-function formatXAxisDate(dateStr: string): string {
-  try {
-    return format(parseISO(dateStr), "MMM d");
-  } catch {
-    return dateStr;
-  }
-}
 
 export function CommunityTrendChart({ data }: { data: DailyTrendPoint[] }) {
   const [metric, setMetric] = useState<Metric>("cost");
@@ -104,7 +91,7 @@ export function CommunityTrendChart({ data }: { data: DailyTrendPoint[] }) {
           />
           <XAxis
             dataKey="date"
-            tickFormatter={formatXAxisDate}
+            tickFormatter={formatChartDate}
             stroke="var(--muted)"
             fontSize={11}
             tickLine={false}
@@ -114,7 +101,7 @@ export function CommunityTrendChart({ data }: { data: DailyTrendPoint[] }) {
           />
           {metric === "cost" && (
             <YAxis
-              tickFormatter={formatCurrency}
+              tickFormatter={formatUsdShort}
               stroke="var(--muted)"
               fontSize={11}
               tickLine={false}
@@ -136,11 +123,11 @@ export function CommunityTrendChart({ data }: { data: DailyTrendPoint[] }) {
             {...TOOLTIP_STYLES}
             formatter={(value: number | undefined, name: string | undefined) => {
               const v = value ?? 0;
-              if (name === "smoothCost") return [`$${v.toFixed(2)}`, "Avg Daily Cost"];
+              if (name === "smoothCost") return [formatUsd(v), "Avg Daily Cost"];
               if (name === "smoothUsers") return [v.toFixed(1), "Avg Active Users"];
               return [String(v), name ?? ""];
             }}
-            labelFormatter={(label) => formatXAxisDate(String(label))}
+            labelFormatter={(label) => formatChartDate(String(label))}
           />
           {metric === "cost" && (
             <Area

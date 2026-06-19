@@ -17,7 +17,7 @@ const ModelBreakdownSchema = z.object({
 /**
  * Allowed source slugs. Mirrors cli/src/schemas.ts SOURCE_VALUES.
  */
-export const SOURCE_VALUES = [
+const SOURCE_VALUES = [
   "claude-code",
   "claude-code-desktop",
   "opencode",
@@ -30,7 +30,6 @@ export const SOURCE_VALUES = [
   "copilot-cli",
 ] as const;
 
-export type SourceValue = (typeof SOURCE_VALUES)[number];
 
 /**
  * Subset of {@link SOURCE_VALUES} accepted by `reassignFromOpencode`. Only
@@ -39,12 +38,12 @@ export type SourceValue = (typeof SOURCE_VALUES)[number];
  * The bare `"opencode"` slug is intentionally excluded: it's the slug being
  * cleared *from*, not a target.
  */
-export const OPEN_CODE_SOURCE_VALUES = [
+const OPEN_CODE_SOURCE_VALUES = [
   "opencode-go",
   "opencode-zen",
 ] as const;
 
-export const SyncDaySchema = z.object({
+const SyncDaySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   source: z.enum(SOURCE_VALUES).nullable().optional(),
   inputTokens: z.number().int().nonnegative(),
@@ -84,5 +83,3 @@ export const SyncPayloadSchema = z.object({
   force: z.boolean().optional(),
 });
 
-export type SyncDay = z.infer<typeof SyncDaySchema>;
-export type SyncPayload = z.infer<typeof SyncPayloadSchema>;

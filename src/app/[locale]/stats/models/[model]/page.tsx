@@ -15,10 +15,16 @@ import { ChartCard } from "@/components/stats/ChartCard";
 import { StatsFaq } from "@/components/stats/StatsFaq";
 import { StatsCta } from "@/components/stats/StatsCta";
 import { StatsNav } from "@/components/stats/StatsNav";
-import { friendlyModelName } from "@/lib/chart-utils";
-import { getModelSeoMeta } from "@/lib/models";
-import { seoAlternates } from "@/lib/seo";
-import { getTranslations } from "next-intl/server";
+import { friendlyModelName, getModelSeoMeta } from "@/lib/models";
+import { seoAlternates, breadcrumbLd, faqPageLd } from "@/lib/seo";
+import {
+  formatDateLong,
+  formatDateTimeLong,
+  formatTokens,
+  formatUsdCompact,
+} from "@/lib/format";
+import { getLocale, getTranslations } from "next-intl/server";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -33,34 +39,6 @@ interface PageProps {
 export async function generateStaticParams() {
   const slugs = await getDistinctModelSlugsCached();
   return slugs.map((model) => ({ model }));
-}
-
-// ─── Formatting helpers ─────────────────────────────────────────────────────
-
-function formatCurrency(n: number): string {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 100_000) return `$${(n / 1_000).toFixed(0)}k`;
-  if (n >= 1_000) return `$${(n / 1_000).toFixed(1)}k`;
-  return `$${n.toFixed(2)}`;
-}
-
-function formatTokens(n: number): string {
-  if (n >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(1)}B`;
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return n.toFixed(0);
-}
-
-function formatDate(dateStr: string): string {
-  try {
-    return new Date(dateStr + "T00:00:00").toLocaleDateString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-    });
-  } catch {
-    return dateStr;
-  }
 }
 
 function tokenRatio(input: number, output: number): string {
@@ -81,7 +59,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const displayName = friendlyModelName(detail.rawModelIds[0] ?? slug);
   const seo = getModelSeoMeta(slug);
-  const cost = formatCurrency(parseFloat(detail.totalCost));
+  const cost = formatUsdCompact(parseFloat(detail.totalCost));
   const users = detail.userCount;
 
   const title = `${displayName} Usage & Cost Statistics — Real Data from ${users} Developers`;
@@ -111,6 +89,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ModelPage({ params }: PageProps) {
   const t = await getTranslations("statsModel");
+  const locale = await getLocale();
   const { model: slug } = await params;
 
   const [detail, trends, allModels] = await Promise.all([
@@ -159,8 +138,8 @@ export default async function ModelPage({ params }: PageProps) {
       a: t("faqA1", {
         userCount: detail.userCount,
         modelName: displayName,
-        avgCost: formatCurrency(avgCost),
-        medianCost: formatCurrency(medianCost),
+        avgCost: formatUsdCompact(avgCost),
+        medianCost: formatUsdCompact(medianCost),
         provider: seo.provider,
       }),
     },
@@ -189,33 +168,18 @@ export default async function ModelPage({ params }: PageProps) {
     {
       q: t("faqQ5", { modelName: displayName }),
       a: detail.firstSeen
-        ? t("faqA5", { modelName: displayName, trackedSince: formatDate(detail.firstSeen) })
+        ? t("faqA5", { modelName: displayName, trackedSince: formatDateLong(detail.firstSeen) })
         : t("faqA5NoDate", { modelName: displayName }),
     },
   ];
 
   // ─── JSON-LD ────────────────────────────────────────────────────────────────
 
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: "Usage Statistics",
-        item: `${BASE_URL}/stats`,
-      },
-      { "@type": "ListItem", position: 3, name: `${displayName} Statistics` },
-    ],
-  };
-
   const datasetLd = {
     "@context": "https://schema.org",
     "@type": "Dataset",
     name: `${displayName} Coding Usage Statistics`,
-    description: `Usage statistics for ${displayName} across ${detail.userCount} developers — estimated cost ${formatCurrency(totalCost)}+, ${formatTokens(detail.totalTokens)}+ tokens consumed. Updated hourly from opt-in developer usage logs.`,
+    description: `Usage statistics for ${displayName} across ${detail.userCount} developers — estimated cost ${formatUsdCompact(totalCost)}+, ${formatTokens(detail.totalTokens)}+ tokens consumed. Updated hourly from opt-in developer usage logs.`,
     url: `${BASE_URL}/stats/models/${slug}`,
     dateModified: new Date().toISOString(),
     temporalCoverage: detail.firstSeen
@@ -234,24 +198,7 @@ export default async function ModelPage({ params }: PageProps) {
     ],
   };
 
-  const faqLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqs.map((faq) => ({
-      "@type": "Question",
-      name: faq.q,
-      acceptedAnswer: { "@type": "Answer", text: faq.a },
-    })),
-  };
-
-  const lastUpdated = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
+  const lastUpdated = formatDateTimeLong(new Date());
 
   // Tier badge colors
   const tierColors: Record<string, string> = {
@@ -262,18 +209,14 @@ export default async function ModelPage({ params }: PageProps) {
 
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      <JsonLd
+        data={breadcrumbLd([
+          { name: "Usage Statistics", item: `${BASE_URL}/stats` },
+          { name: `${displayName} Statistics` },
+        ])}
       />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
-      />
+      <JsonLd data={datasetLd} />
+      <JsonLd data={faqPageLd(faqs)} />
 
       <Header
         subtitle={t("subtitle", { modelName: displayName.toLowerCase() })}
@@ -328,7 +271,7 @@ export default async function ModelPage({ params }: PageProps) {
           <p className="mt-2 font-mono text-sm leading-relaxed text-muted max-w-3xl">
             {t.rich("heroDescription", {
               modelName: displayName,
-              userCount: detail.userCount.toLocaleString(),
+              userCount: detail.userCount.toLocaleString(locale),
               modelDescription: seo.description,
               provider: seo.provider,
               strong: (chunks) => (
@@ -346,24 +289,24 @@ export default async function ModelPage({ params }: PageProps) {
             As of {lastUpdated.split(",").slice(0, 2).join(",")},{" "}
             {displayName} ranks #{rank} out of {totalModels} tracked AI coding
             models on clawdboard, accounting for {detail.costShare}% of total
-            community spend. {detail.userCount.toLocaleString()} developer
+            community spend. {detail.userCount.toLocaleString(locale)} developer
             {detail.userCount !== 1 ? "s have" : " has"} used {displayName},{" "}
-            generating {formatCurrency(totalCost)} in estimated API cost and{" "}
+            generating {formatUsdCompact(totalCost)} in estimated API cost and{" "}
             {formatTokens(detail.totalTokens)} tokens
             ({formatTokens(detail.inputTokens)} input,{" "}
             {formatTokens(detail.outputTokens)} output).
             The average estimated cost per developer is{" "}
-            {formatCurrency(avgCost)} (median: {formatCurrency(medianCost)}).
+            {formatUsdCompact(avgCost)} (median: {formatUsdCompact(medianCost)}).
             {detail.firstSeen && (
               <> {displayName} has been tracked on clawdboard since{" "}
-              {formatDate(detail.firstSeen)}.</>
+              {formatDateLong(detail.firstSeen)}.</>
             )}{" "}
             Data is updated hourly from opt-in developer usage logs.
           </span>
           <p className="mt-2 font-mono text-[11px] text-dim">
             {t("lastUpdated", { lastUpdated })} &middot; {t("refreshedHourly")}
             {detail.firstSeen && (
-              <> &middot; {t("trackedSince", { date: formatDate(detail.firstSeen) })}</>
+              <> &middot; {t("trackedSince", { date: formatDateLong(detail.firstSeen) })}</>
             )}
           </p>
         </div>
@@ -384,7 +327,7 @@ export default async function ModelPage({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 mb-3">
             <StatCard
               label={t("totalEstimatedCost")}
-              value={formatCurrency(totalCost)}
+              value={formatUsdCompact(totalCost)}
               sub={t("costShareSub", { costShare: detail.costShare })}
               accent
             />
@@ -395,7 +338,7 @@ export default async function ModelPage({ params }: PageProps) {
             />
             <StatCard
               label={t("developersLabel")}
-              value={detail.userCount.toLocaleString()}
+              value={detail.userCount.toLocaleString(locale)}
               sub={t("developersSub", { modelName: displayName })}
             />
             <StatCard
@@ -412,8 +355,8 @@ export default async function ModelPage({ params }: PageProps) {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <StatCard
               label={t("avgCostPerDeveloper")}
-              value={formatCurrency(avgCost)}
-              sub={t("medianSub", { medianCost: formatCurrency(medianCost) })}
+              value={formatUsdCompact(avgCost)}
+              sub={t("medianSub", { medianCost: formatUsdCompact(medianCost) })}
             />
             <StatCard
               label={t("inputTokens")}
@@ -553,8 +496,8 @@ export default async function ModelPage({ params }: PageProps) {
               {t.rich("costAnalysisP1", {
                 userCount: detail.userCount,
                 modelName: displayName,
-                avgCost: formatCurrency(avgCost),
-                medianCost: formatCurrency(medianCost),
+                avgCost: formatUsdCompact(avgCost),
+                medianCost: formatUsdCompact(medianCost),
                 strong: (chunks) => (
                   <strong className="text-foreground">{chunks}</strong>
                 ),
@@ -618,7 +561,7 @@ export default async function ModelPage({ params }: PageProps) {
                         )}
                       </div>
                       <p className="font-mono text-xs text-muted">
-                        {formatCurrency(mCost)} &middot; {t("relatedModelSpend", { costShare: m.costShare })} &middot; {t("relatedModelUser", { count: m.userCount })}
+                        {formatUsdCompact(mCost)} &middot; {t("relatedModelSpend", { costShare: m.costShare })} &middot; {t("relatedModelUser", { count: m.userCount })}
                       </p>
                     </div>
                     <span className="text-muted text-xs">&rarr;</span>

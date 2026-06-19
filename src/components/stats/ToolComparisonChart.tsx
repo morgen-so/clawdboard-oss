@@ -11,6 +11,7 @@ import {
   Legend,
 } from "recharts";
 import { TOOLTIP_STYLES, AXIS_COMMON } from "@/lib/chart-utils";
+import { formatUsd } from "@/lib/format";
 
 interface ToolComparisonPoint {
   date: string;
@@ -106,7 +107,7 @@ export function ToolComparisonChart({ data }: ToolComparisonChartProps) {
             {...TOOLTIP_STYLES}
             labelFormatter={(label) => formatDate(String(label))}
             formatter={(value, name) => [
-              `$${(Number(value) || 0).toFixed(2)}`,
+              formatUsd(Number(value) || 0),
               String(name),
             ]}
           />

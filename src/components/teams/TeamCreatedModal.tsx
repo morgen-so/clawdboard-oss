@@ -1,65 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useTranslations } from "next-intl";
+import { CheckIcon, CloseIcon, CopyIcon } from "@/components/icons/CommonIcons";
+import { useModalDismiss } from "@/components/ui/useModalDismiss";
+import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 
 /* ── Icons ───────────────────────────────────────────── */
-
-function CloseIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </svg>
-  );
-}
-
-function CopyIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <polyline points="20 6 9 17 4 12" />
-    </svg>
-  );
-}
 
 function MailIcon() {
   return (
@@ -177,11 +124,9 @@ export function TeamCreatedModal({
   inviteUrl,
 }: TeamCreatedModalProps) {
   const [visible, setVisible] = useState(true);
-  const [copiedLink, setCopiedLink] = useState(false);
-  const [copiedSlack, setCopiedSlack] = useState(false);
+  const { copied: copiedLink, copy: copyLink } = useCopyToClipboard();
+  const { copied: copiedSlack, copy: copySlack } = useCopyToClipboard();
   const t = useTranslations("team");
-  const linkTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
-  const slackTimerRef = useRef<ReturnType<typeof setTimeout>>(null);
 
   const handleClose = useCallback(() => {
     setVisible(false);
@@ -190,41 +135,14 @@ export function TeamCreatedModal({
     window.history.replaceState({}, "", window.location.pathname);
   }, []);
 
-  // Escape key + body scroll lock
-  useEffect(() => {
-    if (!visible) return;
-    function handleKey(e: KeyboardEvent) {
-      if (e.key === "Escape") handleClose();
-    }
-    document.addEventListener("keydown", handleKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", handleKey);
-      document.body.style.overflow = "";
-    };
-  }, [visible, handleClose]);
-
-  // Cleanup timers
-  useEffect(() => {
-    return () => {
-      if (linkTimerRef.current) clearTimeout(linkTimerRef.current);
-      if (slackTimerRef.current) clearTimeout(slackTimerRef.current);
-    };
-  }, []);
+  useModalDismiss(visible, handleClose);
 
   const handleCopyLink = async () => {
-    await navigator.clipboard.writeText(inviteUrl);
-    setCopiedLink(true);
-    if (linkTimerRef.current) clearTimeout(linkTimerRef.current);
-    linkTimerRef.current = setTimeout(() => setCopiedLink(false), 2000);
+    await copyLink(inviteUrl);
   };
 
   const handleCopySlack = async () => {
-    const msg = t("slackMessage", { url: inviteUrl });
-    await navigator.clipboard.writeText(msg);
-    setCopiedSlack(true);
-    if (slackTimerRef.current) clearTimeout(slackTimerRef.current);
-    slackTimerRef.current = setTimeout(() => setCopiedSlack(false), 2000);
+    await copySlack(t("slackMessage", { url: inviteUrl }));
   };
 
   const handleEmail = () => {

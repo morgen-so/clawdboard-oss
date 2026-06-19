@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -17,12 +17,24 @@ import {
   format,
   subDays,
   parseISO,
+  startOfWeek,
   startOfMonth,
   startOfYear,
 } from "date-fns";
 import { useTranslations } from "next-intl";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
 import type { Period, DateRange } from "@/lib/db/leaderboard";
+import {
+  AXIS_COMMON,
+  COST_COLOR,
+  TOKENS_COLOR,
+  TOOLTIP_STYLES,
+} from "@/lib/chart-utils";
+import {
+  formatChartDate,
+  formatTokensCompact,
+  formatUsdPlain,
+} from "@/lib/format";
 
 interface UsageDataPoint {
   date: string;
@@ -31,6 +43,10 @@ interface UsageDataPoint {
 }
 
 type Metric = "cost" | "tokens" | "both";
+type Aggregation = "daily" | "weekly" | "monthly";
+
+/** Below this many days of data the weekly/monthly toggle isn't worth showing. */
+const AGGREGATION_MIN_DAYS = 8;
 
 interface UsageChartProps {
   data: UsageDataPoint[];
@@ -90,6 +106,37 @@ function fillDateGaps(
   });
 }
 
+/**
+ * Roll gap-filled daily points up into weekly or monthly buckets by summing
+ * cost and tokens. Each bucket's `date` is its period start (week start = Monday,
+ * month start = the 1st) so the existing date formatters keep working. Input is
+ * sorted ascending and Map preserves insertion order, so output stays ordered.
+ */
+function aggregateData(
+  daily: UsageDataPoint[],
+  aggregation: Aggregation
+): UsageDataPoint[] {
+  if (aggregation === "daily") return daily;
+
+  const buckets = new Map<string, UsageDataPoint>();
+  for (const point of daily) {
+    const d = parseISO(point.date);
+    const bucketStart =
+      aggregation === "weekly"
+        ? startOfWeek(d, { weekStartsOn: 1 })
+        : startOfMonth(d);
+    const key = format(bucketStart, "yyyy-MM-dd");
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.cost += point.cost;
+      existing.tokens += point.tokens;
+    } else {
+      buckets.set(key, { date: key, cost: point.cost, tokens: point.tokens });
+    }
+  }
+  return Array.from(buckets.values());
+}
+
 function getPeriodTitle(period: Period, range: DateRange | undefined, t: (key: string, values?: Record<string, string>) => string): string {
   switch (period) {
     case "today":
@@ -109,70 +156,98 @@ function getPeriodTitle(period: Period, range: DateRange | undefined, t: (key: s
             month: "short",
             day: "numeric",
           });
-        return t("usageCustom", { range: `${fmt(range.from)} \u2013 ${fmt(range.to)}` });
+        return t("usageCustom", { range: `${fmt(range.from)} – ${fmt(range.to)}` });
       }
       return t("usage");
   }
 }
 
-function formatXAxisDate(dateStr: string): string {
-  try {
-    return format(parseISO(dateStr), "MMM d");
-  } catch {
-    return dateStr;
-  }
-}
-
-function formatCurrency(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
-
-function formatTokensCompact(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(value);
-}
-
-const COST_COLOR = "#F9A615";
-const TOKENS_COLOR = "#06b6d4";
-
-const TOOLTIP_STYLES = {
-  contentStyle: {
-    backgroundColor: "#111113",
-    border: "1px solid #23232a",
-    borderRadius: "8px",
-    fontSize: "12px",
-    color: "#fafafa",
-  },
-  itemStyle: { color: "#fafafa" } as const,
-  labelStyle: { color: "#a1a1aa" } as const,
-};
-
-const AXIS_COMMON = {
-  stroke: "var(--muted)",
-  fontSize: 11,
-  tickLine: false,
-  axisLine: false,
-} as const;
 
 function tooltipFormatter(value: number | undefined, name: string | undefined) {
   const v = value ?? 0;
-  if (name === "cost") return [formatCurrency(v), "Cost"];
+  if (name === "cost") return [formatUsdPlain(v), "Cost"];
   if (name === "tokens") return [formatTokensCompact(v), "Tokens"];
   return [String(v), name ?? ""];
 }
 
-function tooltipLabelFormatter(label: unknown) {
-  return formatXAxisDate(String(label ?? ""));
+/** Axis tick label: month name for monthly buckets, "Mon d" otherwise. */
+function makeAxisTickFormatter(aggregation: Aggregation) {
+  if (aggregation !== "monthly") return formatChartDate;
+  return (dateStr: string) => {
+    try {
+      return format(parseISO(dateStr), "MMM");
+    } catch {
+      return dateStr;
+    }
+  };
+}
+
+/** Tooltip header: matches the bucket granularity. */
+function makeTooltipLabelFormatter(
+  aggregation: Aggregation,
+  t: (key: string, values?: Record<string, string>) => string
+) {
+  return (label: unknown) => {
+    const dateStr = String(label ?? "");
+    if (aggregation === "monthly") {
+      try {
+        return format(parseISO(dateStr), "MMMM yyyy");
+      } catch {
+        return dateStr;
+      }
+    }
+    if (aggregation === "weekly") {
+      return t("weekOf", { date: formatChartDate(dateStr) });
+    }
+    return formatChartDate(dateStr);
+  };
 }
 
 export function UsageChart({ data, period, range }: UsageChartProps) {
   const t = useTranslations("profile");
   const [metric, setMetric] = useState<Metric>("cost");
+  const [aggregation, setAggregation] = useState<Aggregation>("daily");
+  const [viewOpen, setViewOpen] = useState(false);
+  const viewMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (viewMenuRef.current && !viewMenuRef.current.contains(e.target as Node)) {
+        setViewOpen(false);
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setViewOpen(false);
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleEscape);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, []);
+
   const filledData = useMemo(
     () => fillDateGaps(data, period, range),
     [data, period, range]
+  );
+
+  // Weekly/monthly only make sense once there's more than a week of data.
+  const canAggregate = filledData.length >= AGGREGATION_MIN_DAYS;
+  const effectiveAggregation: Aggregation = canAggregate ? aggregation : "daily";
+
+  const chartData = useMemo(
+    () => aggregateData(filledData, effectiveAggregation),
+    [filledData, effectiveAggregation]
+  );
+
+  const axisTickFormatter = useMemo(
+    () => makeAxisTickFormatter(effectiveAggregation),
+    [effectiveAggregation]
+  );
+  const labelFormatter = useMemo(
+    () => makeTooltipLabelFormatter(effectiveAggregation, t),
+    [effectiveAggregation, t]
   );
 
   const METRICS: { value: Metric; label: string }[] = [
@@ -181,63 +256,131 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
     { value: "both", label: t("bothMetric") },
   ];
 
+  const AGGREGATIONS: { value: Aggregation; label: string }[] = [
+    { value: "daily", label: t("daily") },
+    { value: "weekly", label: t("weekly") },
+    { value: "monthly", label: t("monthly") },
+  ];
+  const currentAggLabel =
+    AGGREGATIONS.find((a) => a.value === effectiveAggregation)?.label ?? "";
+
   const title = getPeriodTitle(period, range, t);
   const showCost = metric === "cost" || metric === "both";
   const showTokens = metric === "tokens" || metric === "both";
   const isDual = metric === "both";
-  const isSingleDay = filledData.length <= 1;
-  const hasData = filledData.some((d) => d.cost > 0 || d.tokens > 0);
+  const isSinglePoint = chartData.length <= 1;
+  const hasData = chartData.some((d) => d.cost > 0 || d.tokens > 0);
+
+  const toggleButtonClass = (active: boolean) =>
+    `px-3 py-1.5 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
+      active
+        ? "bg-accent text-background"
+        : "text-foreground/60 hover:text-foreground hover:bg-surface-hover"
+    }`;
 
   return (
     <div className="rounded-lg border border-border bg-surface p-6">
       <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
         <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
           {title}
-          <InfoTooltip text="Estimated daily AI coding usage based on API token consumption and model pricing." />
+          <InfoTooltip text="Estimated AI coding usage based on API token consumption and model pricing." />
         </h3>
-        <div className="flex items-center rounded-lg border border-border bg-surface overflow-hidden">
-          {METRICS.map((m) => (
-            <button
-              key={m.value}
-              onClick={() => setMetric(m.value)}
-              className={`px-3 py-1.5 font-mono text-xs font-medium transition-colors whitespace-nowrap ${
-                metric === m.value
-                  ? "bg-accent text-background"
-                  : "text-foreground/60 hover:text-foreground hover:bg-surface-hover"
-              }`}
-            >
-              {m.label}
-            </button>
-          ))}
+        <div className="flex items-center gap-3 flex-wrap">
+          {canAggregate && (
+            <div className="flex items-center gap-1.5">
+              <span className="font-mono text-xs font-medium text-foreground/60">
+                {t("view")}
+              </span>
+              <div className="relative" ref={viewMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setViewOpen((v) => !v)}
+                  aria-haspopup="listbox"
+                  aria-expanded={viewOpen}
+                  aria-label={t("view")}
+                  className="flex items-center gap-1.5 rounded-lg border border-border bg-surface px-2.5 py-1.5 font-mono text-xs font-medium text-foreground transition-colors hover:bg-surface-hover focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  {currentAggLabel}
+                  <svg
+                    className={`h-3 w-3 text-foreground/50 transition-transform ${viewOpen ? "rotate-180" : ""}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={2.5}
+                    aria-hidden="true"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="m6 9 6 6 6-6" />
+                  </svg>
+                </button>
+                {viewOpen && (
+                  <div
+                    role="listbox"
+                    className="absolute right-0 top-full z-50 mt-1 min-w-[8rem] overflow-hidden rounded-lg border border-border bg-surface shadow-lg"
+                  >
+                    {AGGREGATIONS.map((a) => (
+                      <button
+                        key={a.value}
+                        type="button"
+                        role="option"
+                        aria-selected={effectiveAggregation === a.value}
+                        onClick={() => {
+                          setAggregation(a.value);
+                          setViewOpen(false);
+                        }}
+                        className={`block w-full px-3 py-1.5 text-left font-mono text-xs transition-colors hover:bg-surface-hover ${
+                          effectiveAggregation === a.value
+                            ? "font-bold text-accent"
+                            : "text-foreground/70 hover:text-foreground"
+                        }`}
+                      >
+                        {a.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <div className="flex items-center rounded-lg border border-border bg-surface overflow-hidden">
+            {METRICS.map((m) => (
+              <button
+                key={m.value}
+                onClick={() => setMetric(m.value)}
+                className={toggleButtonClass(metric === m.value)}
+              >
+                {m.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-      {isSingleDay && !hasData ? (
+      {isSinglePoint && !hasData ? (
         <div className="flex flex-col items-center justify-center h-[300px] text-center">
           <p className="text-muted text-sm font-medium">{t("noActivity")}</p>
           <p className="text-muted/60 text-xs mt-1">{t("noActivityHint")}</p>
         </div>
-      ) : isSingleDay ? (
+      ) : isSinglePoint ? (
         <ResponsiveContainer width="100%" height={300}>
           <BarChart
-            data={filledData}
+            data={chartData}
             margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
             barCategoryGap="60%"
           >
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
-            <XAxis dataKey="date" tickFormatter={formatXAxisDate} {...AXIS_COMMON} />
+            <XAxis dataKey="date" tickFormatter={axisTickFormatter} {...AXIS_COMMON} />
             {showCost && (
-              <YAxis yAxisId="left" tickFormatter={formatCurrency} {...AXIS_COMMON} width={60} />
+              <YAxis yAxisId="left" tickFormatter={formatUsdPlain} {...AXIS_COMMON} width={60} />
             )}
             {showTokens && (
               <YAxis
                 yAxisId={isDual ? "right" : "left"}
                 orientation={isDual ? "right" : "left"}
-                tickFormatter={formatTokensCompact}
+                tickFormatter={(v: number) => formatTokensCompact(v)}
                 {...AXIS_COMMON}
                 width={60}
               />
             )}
-            <Tooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} {...TOOLTIP_STYLES} formatter={tooltipFormatter} labelFormatter={tooltipLabelFormatter} />
+            <Tooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} {...TOOLTIP_STYLES} formatter={tooltipFormatter} labelFormatter={labelFormatter} />
             {showCost && (
               <Bar dataKey="cost" yAxisId="left" fill={COST_COLOR} radius={[4, 4, 0, 0]} maxBarSize={120} />
             )}
@@ -255,7 +398,7 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
       ) : (
         <ResponsiveContainer width="100%" height={300}>
           <AreaChart
-            data={filledData}
+            data={chartData}
             margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
           >
             <defs>
@@ -271,24 +414,24 @@ export function UsageChart({ data, period, range }: UsageChartProps) {
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border-color)" vertical={false} />
             <XAxis
               dataKey="date"
-              tickFormatter={formatXAxisDate}
+              tickFormatter={axisTickFormatter}
               {...AXIS_COMMON}
               interval="preserveStartEnd"
               minTickGap={40}
             />
             {showCost && (
-              <YAxis yAxisId="left" tickFormatter={formatCurrency} {...AXIS_COMMON} width={60} />
+              <YAxis yAxisId="left" tickFormatter={formatUsdPlain} {...AXIS_COMMON} width={60} />
             )}
             {showTokens && (
               <YAxis
                 yAxisId={isDual ? "right" : "left"}
                 orientation={isDual ? "right" : "left"}
-                tickFormatter={formatTokensCompact}
+                tickFormatter={(v: number) => formatTokensCompact(v)}
                 {...AXIS_COMMON}
                 width={60}
               />
             )}
-            <Tooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} {...TOOLTIP_STYLES} formatter={tooltipFormatter} labelFormatter={tooltipLabelFormatter} />
+            <Tooltip cursor={{ fill: "rgba(255,255,255,0.05)" }} {...TOOLTIP_STYLES} formatter={tooltipFormatter} labelFormatter={labelFormatter} />
             {showCost && (
               <Area
                 type="monotone"

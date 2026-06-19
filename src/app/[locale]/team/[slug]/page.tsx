@@ -36,8 +36,10 @@ import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { safeHostname, buildInviteUrl } from "@/lib/url";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
 import { InfoTooltip } from "@/components/ui/InfoTooltip";
-import { seoAlternates } from "@/lib/seo";
+import { seoAlternates, breadcrumbLd } from "@/lib/seo";
+import { formatTokensCompact, formatUsd, formatUsdShort } from "@/lib/format";
 import { getTranslations } from "next-intl/server";
+import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -53,13 +55,6 @@ interface PageProps {
   }>;
 }
 
-function fmtCost(cost: string): string {
-  const n = parseFloat(cost);
-  return n >= 1000
-    ? `$${(n / 1000).toFixed(1)}k`
-    : `$${n.toFixed(0)}`;
-}
-
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
@@ -69,7 +64,7 @@ export async function generateMetadata({
 
   const stats = await getTeamStats(team.id);
   const title = `${team.name} — Team AI Coding Usage & Stats`;
-  const description = `See ${team.name}'s AI coding usage — ${stats.memberCount} members, ${fmtCost(stats.totalCost)} total spend, ${stats.activeDays} active days. View the full breakdown on clawdboard.`;
+  const description = `See ${team.name}'s AI coding usage — ${stats.memberCount} members, ${formatUsdShort(stats.totalCost)} total spend, ${stats.activeDays} active days. View the full breakdown on clawdboard.`;
 
   return {
     title,
@@ -83,22 +78,6 @@ export async function generateMetadata({
   };
 }
 
-function formatCost(cost: string): string {
-  const num = parseFloat(cost);
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(num);
-}
-
-function formatTokens(count: number): string {
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(count);
-}
 
 export default async function TeamProfilePage({ params, searchParams }: PageProps) {
   const { slug } = await params;
@@ -160,21 +139,13 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
   const pendingMembers = members.filter((m) => !m.leftAt && m.status === "pending");
   const formerMembers = members.filter((m) => m.leftAt !== null);
 
-  const breadcrumbLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: BASE_URL },
-      { "@type": "ListItem", position: 2, name: "Teams", item: `${BASE_URL}/teams` },
-      { "@type": "ListItem", position: 3, name: team.name },
-    ],
-  };
-
   return (
     <div className="relative min-h-screen bg-background">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbLd) }}
+      <JsonLd
+        data={breadcrumbLd([
+          { name: "Teams", item: `${BASE_URL}/teams` },
+          { name: team.name },
+        ])}
       />
 
       {/* Post-creation invite modal (owner only, on first redirect) */}
@@ -284,7 +255,7 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
             <div className="rounded-lg bg-background p-4">
               <p className="text-xs font-medium text-muted mb-1">{t("totalCost")}</p>
               <p className="font-mono text-lg font-semibold text-accent">
-                {formatCost(stats.totalCost)}
+                {formatUsd(stats.totalCost)}
               </p>
             </div>
 
@@ -293,7 +264,7 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
                 {t("totalTokens")}
               </p>
               <p className="font-mono text-lg font-semibold text-foreground">
-                {formatTokens(stats.totalTokens)}
+                {formatTokensCompact(stats.totalTokens)}
               </p>
             </div>
 
