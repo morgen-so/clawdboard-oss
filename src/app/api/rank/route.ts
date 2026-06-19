@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
-import { dailyAggregates } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { dailyAggregates, users } from "@/lib/db/schema";
+import { eq, isNull, sql } from "drizzle-orm";
 import { rateLimit } from "@/lib/rate-limit";
 import { authenticateApiToken } from "@/lib/api-auth";
 
@@ -15,6 +15,10 @@ export async function GET(req: NextRequest) {
     if (tokenAuth.response) return tokenAuth.response;
     const { user } = tokenAuth;
 
+    if (user.bannedAt) {
+      return NextResponse.json({ error: "Account suspended" }, { status: 403 });
+    }
+
     // 2. Get the authenticated user's total cost
     const [userCostRow] = await db
       .select({
@@ -25,13 +29,16 @@ export async function GET(req: NextRequest) {
 
     const userTotalCost = parseFloat(userCostRow?.totalCost ?? "0");
 
-    // 3. Count users with higher total cost
+    // 3. Count users with higher total cost (banned users are excluded from
+    //    all leaderboards, so they don't affect rank either)
     const userTotals = db
       .select({
         userId: dailyAggregates.userId,
         total: sql<number>`SUM(${dailyAggregates.totalCost}::numeric)`.as("total"),
       })
       .from(dailyAggregates)
+      .innerJoin(users, eq(users.id, dailyAggregates.userId))
+      .where(isNull(users.bannedAt))
       .groupBy(dailyAggregates.userId)
       .as("user_totals");
 
@@ -49,7 +56,9 @@ export async function GET(req: NextRequest) {
       .select({
         count: sql<number>`count(DISTINCT ${dailyAggregates.userId})::int`,
       })
-      .from(dailyAggregates);
+      .from(dailyAggregates)
+      .innerJoin(users, eq(users.id, dailyAggregates.userId))
+      .where(isNull(users.bannedAt));
 
     const totalUsers = totalUsersRow?.count ?? 0;
 
