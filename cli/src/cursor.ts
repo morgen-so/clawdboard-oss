@@ -30,7 +30,7 @@
  * Prompts, code, file paths, and conversation content are never read.
  */
 
-import Database from "better-sqlite3";
+import type Database from "better-sqlite3";
 import { randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, unlinkSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -134,7 +134,12 @@ export async function extractCursorData(since?: string): Promise<SyncDay[]> {
 
   let db: Database.Database;
   try {
-    db = new Database(tmpPath, { readonly: true, fileMustExist: true });
+    // Lazy-load the native module so it is never required unless this machine
+    // actually has Cursor data. If the optional native binary is missing or
+    // failed to build (e.g. unsupported Node ABI, no build tools), skip Cursor
+    // extraction gracefully instead of crashing the whole CLI.
+    const { default: BetterSqlite3 } = await import("better-sqlite3");
+    db = new BetterSqlite3(tmpPath, { readonly: true, fileMustExist: true });
   } catch {
     cleanupTempFile(tmpPath);
     return [];
