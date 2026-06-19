@@ -17,7 +17,7 @@ import { Header } from "@/components/layout/Header";
 import { rankColors, rankIcons, rankBorderClass } from "@/lib/rank";
 import { cookies } from "next/headers";
 import { PERIOD_COOKIE, parsePeriodCookie } from "@/lib/period-cookie";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = {
   title: "Team Leaderboard — Compare AI Coding Usage by Team",
@@ -44,10 +44,11 @@ export default async function TeamLeaderboardPage({
     ? parseDateRange(params.from ?? saved?.from, params.to ?? saved?.to)
     : undefined;
 
-  const [rows, session, t] = await Promise.all([
+  const [rows, session, t, locale] = await Promise.all([
     getPublicTeamLeaderboard(period, range),
     cachedAuth(),
     getTranslations("team"),
+    getLocale(),
   ]);
 
   // Get user's teams + find their position in the public leaderboard
@@ -179,7 +180,7 @@ export default async function TeamLeaderboardPage({
 
                       {/* Tokens */}
                       <td className="hidden sm:table-cell px-4 py-3 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
-                        {Number(row.totalTokens).toLocaleString()}
+                        {Number(row.totalTokens).toLocaleString(locale)}
                       </td>
 
                       {/* Cooking */}

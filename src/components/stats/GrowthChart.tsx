@@ -9,12 +9,14 @@ import {
   ResponsiveContainer,
   CartesianGrid,
 } from "recharts";
+import { useLocale } from "next-intl";
 import type { GrowthPoint } from "@/lib/db/stats";
 import { TOOLTIP_STYLES } from "@/lib/chart-utils";
 
 const COLOR = "#10b981";
 
 export function GrowthChart({ data }: { data: GrowthPoint[] }) {
+  const locale = useLocale();
   if (data.length === 0) return null;
 
   return (
@@ -66,7 +68,7 @@ export function GrowthChart({ data }: { data: GrowthPoint[] }) {
             formatter={(value: number | undefined, name: string | undefined) => {
               const v = value ?? 0;
               if (name === "cumulativeUsers")
-                return [v.toLocaleString(), "Total Users"];
+                return [v.toLocaleString(locale), "Total Users"];
               return [String(v), name ?? ""];
             }}
             labelFormatter={(label) => `Week of ${label}`}

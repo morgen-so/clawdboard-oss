@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import Image from "next/image";
 import { type LeaderboardRow } from "@/lib/db/leaderboard";
@@ -165,6 +165,7 @@ function LeaderboardRowItem({
   rangeTo?: string;
 }) {
   const t = useTranslations("leaderboard");
+  const locale = useLocale();
   const initials = row.githubUsername
     ? row.githubUsername.slice(0, 2).toUpperCase()
     : "??";
@@ -244,7 +245,7 @@ function LeaderboardRowItem({
 
       {/* Tokens */}
       <td className="hidden sm:table-cell px-4 py-3 text-right tabular-nums text-foreground/70 transition-colors group-hover:text-foreground">
-        {Number(row.totalTokens).toLocaleString()}
+        {Number(row.totalTokens).toLocaleString(locale)}
       </td>
 
       {/* Days */}

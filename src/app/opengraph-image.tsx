@@ -228,7 +228,7 @@ export default async function Image() {
                   color: "#fafafa",
                 }}
               >
-                {vibeCoderCount.toLocaleString()}+
+                {vibeCoderCount.toLocaleString("en-US")}+
               </div>
               <div
                 style={{

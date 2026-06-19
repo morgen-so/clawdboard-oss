@@ -23,7 +23,7 @@ import {
   formatTokens,
   formatUsdCompact,
 } from "@/lib/format";
-import { getTranslations } from "next-intl/server";
+import { getLocale, getTranslations } from "next-intl/server";
 import { JsonLd } from "@/components/ui/JsonLd";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
@@ -89,6 +89,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ModelPage({ params }: PageProps) {
   const t = await getTranslations("statsModel");
+  const locale = await getLocale();
   const { model: slug } = await params;
 
   const [detail, trends, allModels] = await Promise.all([
@@ -270,7 +271,7 @@ export default async function ModelPage({ params }: PageProps) {
           <p className="mt-2 font-mono text-sm leading-relaxed text-muted max-w-3xl">
             {t.rich("heroDescription", {
               modelName: displayName,
-              userCount: detail.userCount.toLocaleString(),
+              userCount: detail.userCount.toLocaleString(locale),
               modelDescription: seo.description,
               provider: seo.provider,
               strong: (chunks) => (
@@ -288,7 +289,7 @@ export default async function ModelPage({ params }: PageProps) {
             As of {lastUpdated.split(",").slice(0, 2).join(",")},{" "}
             {displayName} ranks #{rank} out of {totalModels} tracked AI coding
             models on clawdboard, accounting for {detail.costShare}% of total
-            community spend. {detail.userCount.toLocaleString()} developer
+            community spend. {detail.userCount.toLocaleString(locale)} developer
             {detail.userCount !== 1 ? "s have" : " has"} used {displayName},{" "}
             generating {formatUsdCompact(totalCost)} in estimated API cost and{" "}
             {formatTokens(detail.totalTokens)} tokens
@@ -337,7 +338,7 @@ export default async function ModelPage({ params }: PageProps) {
             />
             <StatCard
               label={t("developersLabel")}
-              value={detail.userCount.toLocaleString()}
+              value={detail.userCount.toLocaleString(locale)}
               sub={t("developersSub", { modelName: displayName })}
             />
             <StatCard
