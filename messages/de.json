@@ -582,6 +582,7 @@
       "opencode-go": "OpenCodes Go-Abonnementstufe — ein kuratierter Satz leistungsstarker open-source Modelle (GLM, MiMo, DeepSeek, Kimi, Qwen, MiniMax), zugänglich über das OpenCode TUI.",
       "opencode-zen": "OpenCodes pay-as-you-go Anbieterstufe, die kuratierte open-source Modelle ohne Abonnement bietet, nach Nutzung über das OpenCode TUI abgerechnet.",
       "codex": "OpenAIs Kommandozeilen-Coding-Agent, der GPT-4o und o-Serien-Modelle verwendet. Bringt OpenAIs Modelle ins Terminal für Code-Generierung und -Bearbeitung.",
+      "cursor": "KI-orientierter Code-Editor, der als VS-Code-Fork entwickelt wurde. Bietet ein integriertes Chat-Panel und einen Agentenmodus, die in der gesamten Codebasis funktionieren, mit Nutzungserfassung aus dem lokalen SQLite-Speicher.",
       "gemini-cli": "Googles offizieller Kommandozeilen-Coding-Agent, betrieben von der Gemini-Modellfamilie. Open Source, mit eingebauten multimodalen und Tool-Nutzungs-Fähigkeiten.",
       "antigravity": "Googles agent-first IDE — ein VS-Code-Fork mit tief integrierten agentischen Workflows, betrieben von Gemini 3 und anderen Spitzenmodellen.",
       "copilot-cli": "GitHubs agentischer Kommandozeilen-Coding-Assistent. Multi-Modell-Unterstützung (Claude, GPT usw.) abgerechnet in Premium-Request-Einheiten neben Token-Level-Metriken.",

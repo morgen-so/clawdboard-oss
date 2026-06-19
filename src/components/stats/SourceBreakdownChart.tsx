@@ -29,7 +29,8 @@ const SOURCE_COLORS: Record<string, string> = {
   "opencode-go": "#facc15", // yellow
   "opencode-zen": "#a78bfa", // lavender
   codex: "#10b981", // emerald
-  "gemini-cli": "#8b5cf6", // purple
+  cursor: "#a855f7", // purple
+  "gemini-cli": "#8b5cf6", // violet
   antigravity: "#06b6d4", // cyan
   "copilot-cli": "#94a3b8", // slate
 };
@@ -41,6 +42,7 @@ const SOURCE_LABELS: Record<string, string> = {
   "opencode-go": "OpenCode Go",
   "opencode-zen": "OpenCode Zen",
   codex: "Codex CLI",
+  cursor: "Cursor",
   "gemini-cli": "Gemini CLI",
   antigravity: "Antigravity",
   "copilot-cli": "Copilot CLI",

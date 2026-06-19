@@ -21,6 +21,7 @@ interface ToolComparisonPoint {
   opencodeGo: number;
   opencodeZen: number;
   codex: number;
+  cursor: number;
   geminiCli: number;
   antigravity: number;
   copilotCli: number;
@@ -37,6 +38,7 @@ const TOOL_CONFIG = [
   { key: "opencodeGo", label: "OpenCode Go", color: "#facc15" },
   { key: "opencodeZen", label: "OpenCode Zen", color: "#a78bfa" },
   { key: "codex", label: "Codex CLI", color: "#10b981" },
+  { key: "cursor", label: "Cursor", color: "#a855f7" },
   { key: "geminiCli", label: "Gemini CLI", color: "#8b5cf6" },
   { key: "antigravity", label: "Antigravity", color: "#06b6d4" },
   { key: "copilotCli", label: "Copilot CLI", color: "#94a3b8" },
@@ -64,6 +66,7 @@ function movingAverage(
       opencodeGo: slice.reduce((s, p) => s + p.opencodeGo, 0) / n,
       opencodeZen: slice.reduce((s, p) => s + p.opencodeZen, 0) / n,
       codex: slice.reduce((s, p) => s + p.codex, 0) / n,
+      cursor: slice.reduce((s, p) => s + p.cursor, 0) / n,
       geminiCli: slice.reduce((s, p) => s + p.geminiCli, 0) / n,
       antigravity: slice.reduce((s, p) => s + p.antigravity, 0) / n,
       copilotCli: slice.reduce((s, p) => s + p.copilotCli, 0) / n,
