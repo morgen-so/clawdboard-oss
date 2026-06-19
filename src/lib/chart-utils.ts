@@ -13,6 +13,8 @@ export const MODEL_COLORS = [
 
 export const COST_COLOR = "#F9A615";
 export const TOKENS_COLOR = "#06b6d4";
+/** Second series when overlaying another user's usage for comparison. */
+export const COMPARE_COLOR = "#8b5cf6"; // violet
 
 export const TOOLTIP_STYLES = {
   contentStyle: {
