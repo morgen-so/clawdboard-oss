@@ -253,6 +253,22 @@ body {
   animation-delay: calc(min(var(--row-index, 0), 10) * 50ms);
 }
 
+/* ── Recharts: no focus outline or text-selection on charts ─────── */
+
+.recharts-wrapper,
+.recharts-surface,
+.recharts-wrapper:focus,
+.recharts-wrapper:focus-visible,
+.recharts-surface:focus,
+.recharts-surface:focus-visible {
+  outline: none;
+}
+
+.recharts-wrapper {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .row-stagger {
     animation: none;
