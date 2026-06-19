@@ -262,7 +262,7 @@ export async function getTeamLeaderboardData(
         COALESCE(cs.current_streak, 0)::int AS current_streak
       FROM team_contributions tc
       LEFT JOIN current_streaks cs ON cs.user_id = tc.user_id
-      ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}
+      ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, tc.user_id ASC
     `),
     getPreviousRanks(),
   ]);
@@ -329,7 +329,7 @@ export async function getPublicTeamLeaderboard(
       GROUP BY t.id, t.name, t.slug, t.cooking_url, t.cooking_label, mc.cnt
     )
     SELECT * FROM team_stats
-    ORDER BY total_cost::numeric DESC
+    ORDER BY total_cost::numeric DESC, team_id ASC
   `);
 
   return rows.map((row, i) => ({

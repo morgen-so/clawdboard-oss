@@ -193,7 +193,7 @@ export async function getLeaderboardData(
         COUNT(*) OVER() AS total_count
       FROM filtered f
       LEFT JOIN current_streaks cs ON cs.user_id = f.user_id
-      ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}
+      ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, f.user_id ASC
       LIMIT ${limit} OFFSET ${offset}
     `),
     getPreviousRanks(),
@@ -241,7 +241,7 @@ export async function getUserLeaderboardRow(
           f.total_tokens,
           f.active_days::int,
           COALESCE(cs.current_streak, 0)::int AS current_streak,
-          ROW_NUMBER() OVER (ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}) AS rank
+          ROW_NUMBER() OVER (ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, f.user_id ASC) AS rank
         FROM filtered f
         LEFT JOIN current_streaks cs ON cs.user_id = f.user_id
       )
