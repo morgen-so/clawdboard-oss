@@ -16,6 +16,9 @@ interface BadgeUnlockModalProps {
   /** When true, silently mark all earned badges as seen without showing the modal.
    *  Used on first visit so retroactive badges don't trigger a celebration. */
   suppressModal?: boolean;
+  /** Badge ids whose celebration is owned by another surface (e.g. the
+   *  Carcinization takeover for streak-200). Marked as seen, never shown here. */
+  suppressBadgeIds?: string[];
 }
 
 // ─── localStorage helpers ────────────────────────────────────────────────────
@@ -53,6 +56,7 @@ export function BadgeUnlockModal({
   totalXp,
   xpProgress,
   suppressModal = false,
+  suppressBadgeIds,
 }: BadgeUnlockModalProps) {
   const [newBadges, setNewBadges] = useState<EarnedBadge[]>([]);
   const [animatedXp, setAnimatedXp] = useState(totalXp);
@@ -69,6 +73,13 @@ export function BadgeUnlockModal({
       // First visit — silently mark all earned badges as seen
       markBadgesSeen(username, earnedIds);
       return;
+    }
+
+    // Mark suppressed-but-earned badges as seen so they never pop later
+    const suppressed = new Set(suppressBadgeIds ?? []);
+    const suppressedEarned = earnedIds.filter((id) => suppressed.has(id));
+    if (suppressedEarned.length > 0) {
+      markBadgesSeen(username, suppressedEarned);
     }
 
     const seen = getSeenBadges(username);

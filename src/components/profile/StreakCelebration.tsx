@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { getStreakTier } from "@/lib/streak-tiers";
+import { getStreakTier, TRANSCENDENT_TIER } from "@/lib/streak-tiers";
 import {
   buildStreakShareText,
   buildTwitterIntentUrl,
@@ -107,6 +107,15 @@ export function StreakCelebration({
 
     const currentTier = getStreakTier(currentStreak);
     const lastSeenTierNum = getLastSeenTier(username);
+
+    // Tier 7+ is owned by the Carcinization takeover — persist but never
+    // show the generic modal.
+    if (currentTier.tier >= TRANSCENDENT_TIER) {
+      if (currentTier.tier > lastSeenTierNum) {
+        setLastSeenTier(username, currentTier.tier);
+      }
+      return;
+    }
 
     // No celebration for tier 0 or if tier hasn't increased
     if (currentTier.tier === 0) return;

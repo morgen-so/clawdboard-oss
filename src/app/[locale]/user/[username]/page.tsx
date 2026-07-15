@@ -28,6 +28,7 @@ import { ShareButtons } from "@/components/profile/ShareButtons";
 import { BadgeSnippet } from "@/components/profile/BadgeSnippet";
 import { TimeFilter } from "@/components/leaderboard/TimeFilter";
 import { computeCurrentStreak } from "@/lib/streak";
+import { TRANSCENDENT_MIN_DAYS } from "@/lib/streak-tiers";
 import { computeFullBadgeState } from "@/lib/badges";
 import { PinnedBadges } from "@/components/profile/PinnedBadges";
 import { BadgeUnlockModal } from "@/components/profile/BadgeUnlockModal";
@@ -96,6 +97,14 @@ const ModelBreakdown = nextDynamic(
   }
 );
 
+// Loaded on demand — mounts for a vanishingly small share of page views
+// (owners with a 200+ day streak), so keep it out of everyone else's payload.
+const CarcinizationEvent = nextDynamic(() =>
+  import("@/components/profile/CarcinizationEvent").then((m) => ({
+    default: m.CarcinizationEvent,
+  }))
+);
+
 interface PageProps {
   params: Promise<{ username: string }>;
   searchParams: Promise<{
@@ -103,6 +112,7 @@ interface PageProps {
     from?: string;
     to?: string;
     vs?: string;
+    carcinize?: string;
   }>;
 }
 
@@ -193,6 +203,12 @@ export default async function UserProfilePage({
   const isOwner =
     session?.user?.githubUsername?.toLowerCase() ===
     (user.githubUsername ?? "").toLowerCase();
+
+  // The Carcinization Event — dev preview via ?carcinize=1 (never in prod)
+  const forceCarcinize =
+    process.env.NODE_ENV === "development" && sp.carcinize === "1";
+  const showCarcinization =
+    isOwner && (currentStreak >= TRANSCENDENT_MIN_DAYS || forceCarcinize);
 
   // Fetch team data for streak celebration invite CTA (owner only)
   const userTeams = isOwner && session?.user?.id
@@ -288,6 +304,22 @@ export default async function UserProfilePage({
         team={celebrationTeam}
       />
 
+      {/* The Carcinization Event — 200-day streak takeover (owner only) */}
+      {showCarcinization && (
+        <CarcinizationEvent
+          username={user.githubUsername ?? username}
+          image={user.image}
+          currentStreak={currentStreak}
+          stats={{
+            totalTokens,
+            totalCost: summary.totalCost,
+            rank: rank.rank,
+            totalUsers: rank.totalUsers,
+          }}
+          force={forceCarcinize}
+        />
+      )}
+
       {/* Badge unlock modal (owner only) */}
       {isOwner && (
         <BadgeUnlockModal
@@ -296,6 +328,9 @@ export default async function UserProfilePage({
           totalXp={totalXp}
           xpProgress={xpProgress}
           suppressModal={isFirstComputation}
+          suppressBadgeIds={
+            currentStreak >= TRANSCENDENT_MIN_DAYS ? ["streak-200"] : undefined
+          }
         />
       )}
 

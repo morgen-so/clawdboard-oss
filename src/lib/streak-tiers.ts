@@ -1,5 +1,5 @@
 // ─── Streak Tier System ─────────────────────────────────────────────────────
-// Single source of truth for the 6-tier "Streak Aura" system.
+// Single source of truth for the 7-tier "Streak Aura" system.
 // Every component that renders streak visuals imports from here.
 
 export type StreakTier = {
@@ -166,7 +166,34 @@ const TIERS: StreakTier[] = [
       modalGlow: "shadow-[0_0_50px_rgba(250,204,21,0.4)]",
     },
   },
+  {
+    tier: 7,
+    name: "Transcendent",
+    minDays: 200,
+    icon: "🦀",
+    ringClass:
+      "bg-[conic-gradient(from_0deg,#F9A615,#f43f5e,#a855f7,#22d3ee,#facc15,#F9A615)]",
+    glowClass: "shadow-[0_0_32px_rgba(249,166,21,0.65)]",
+    animationClass: "animate-streak-spin animate-streak-shimmer",
+    spins: true,
+    textColor: "text-accent-bright",
+    textGlow: "drop-shadow-[0_0_12px_rgba(249,166,21,0.6)]",
+    staticRingColor: "#F9A615",
+    celebration: {
+      confettiColors: ["#F9A615", "#FBC15B", "#facc15", "#f43f5e", "#fafafa"],
+      particleCount: 150,
+      secondBurstCount: 75,
+      spread: 130,
+      modalBorder: "border-accent/50",
+      modalGlow: "shadow-[0_0_60px_rgba(249,166,21,0.45)]",
+    },
+  },
 ];
+
+/** Tier number of the top "Transcendent" tier — owned by the Carcinization Event. */
+export const TRANSCENDENT_TIER = 7;
+/** Streak days required to reach the Transcendent tier. */
+export const TRANSCENDENT_MIN_DAYS = 200;
 
 /** Returns the matching streak tier for a given day count. */
 export function getStreakTier(days: number): StreakTier {

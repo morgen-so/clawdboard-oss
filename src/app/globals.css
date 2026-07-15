@@ -246,6 +246,85 @@ body {
   animation: donut-segment 0.8s ease-out forwards;
 }
 
+/* ── Carcinization Event (200-day streak takeover) ── */
+
+/* Chromatic-aberration jitter — 1.4s cycle keeps hits ≤2/sec (photosensitivity). */
+@keyframes carc-glitch {
+  0%, 88%, 100% {
+    text-shadow: none;
+    transform: translate(0, 0);
+  }
+  90% {
+    text-shadow: 2px 0 #f87171, -2px 0 #22d3ee;
+    transform: translate(-2px, 1px);
+  }
+  94% {
+    text-shadow: -2px 0 #f87171, 2px 0 #22d3ee;
+    transform: translate(2px, -1px);
+  }
+}
+
+.carc-glitch {
+  animation: carc-glitch 1.4s steps(1, end) infinite;
+}
+
+/* Stacked-span scramble frames: each span visible for its 0.5s slot, then gone.
+   Explicit 20% off-stop — a step-end easing would hold the frame visible
+   through the tail of the animation and stack every frame at once. */
+@keyframes carc-frame {
+  0% { opacity: 0; }
+  1%, 19% { opacity: 1; }
+  20%, 100% { opacity: 0; }
+}
+
+.carc-frame {
+  animation: carc-frame 2.5s linear both;
+  animation-delay: calc(var(--i, 0) * 0.5s);
+}
+
+/* Final frame appears at its slot and holds. */
+@keyframes carc-frame-hold {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.carc-frame-last {
+  opacity: 0;
+  animation: carc-frame-hold 0.2s linear forwards;
+  animation-delay: calc(var(--i, 0) * 0.5s);
+}
+
+/* Whole-line CSS typewriter — no per-character JS. */
+@keyframes carc-typeline {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+
+.carc-bootline {
+  animation: carc-typeline 0.45s steps(24, end) both;
+  animation-delay: calc(var(--line-index, 0) * var(--line-gap, 0.85s));
+}
+
+@keyframes carc-crabline {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.carc-crabline {
+  animation: carc-crabline 0.12s linear both;
+  animation-delay: calc(var(--line-index, 0) * 90ms);
+}
+
+@keyframes carc-twinkle {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.9; }
+}
+
+.carc-star {
+  animation: carc-twinkle 3s ease-in-out infinite;
+  animation-delay: var(--twinkle-delay, 0s);
+}
+
 /* ── Row stagger animation ───────────────────────── */
 
 .row-stagger {
@@ -289,5 +368,17 @@ body {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+  .carc-glitch,
+  .carc-frame,
+  .carc-frame-last,
+  .carc-bootline,
+  .carc-crabline,
+  .carc-star {
+    animation: none !important;
+    opacity: 1 !important;
+    clip-path: none !important;
+    transform: none !important;
+    text-shadow: none !important;
   }
 }

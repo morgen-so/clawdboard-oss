@@ -660,5 +660,39 @@
     "ctaDescription": "Sieh, wie deine {modelName}-Nutzung im Vergleich abschneidet. Kostenlos, Open-Source, in 30 Sekunden eingerichtet.",
     "ctaPrimaryLabel": "Rangliste ansehen",
     "ctaSecondaryLabel": "Alle Modell-Statistiken"
+  },
+  "bicentennial": {
+    "skipHint": "[esc] übertragung überspringen",
+    "a11yLabel": "Das Carcinisierungs-Ereignis — Feier für 200 Tage Serie",
+    "panic": {
+      "title": "CLAWD KERNEL PANIC",
+      "reason": "streak_engine: vorzeichenloser Überlauf — Hingabe des Nutzers überschreitet den darstellbaren Bereich",
+      "trace1": "at reality.check()",
+      "trace2": "at grass.touch() [ERR_NIE_AUFGERUFEN]",
+      "trace3": "at sleep.schedule() [200 MAL ÜBERSPRUNGEN]"
+    },
+    "boot": {
+      "header": "CLAWD-BIOS v4.0.4 — SELBSTTEST BEIM EINSCHALTEN",
+      "memory": "SPEICHERTEST: {tokens} Tokens .......... OK",
+      "treasury": "KASSENPRÜFUNG: {cost} verbrannt .......... OK",
+      "social": "LADE social_life.ko .......... MODUL NICHT GEFUNDEN (zuletzt gesehen vor 200 Tagen)",
+      "leaderboard": "REKALIBRIERE BESTENLISTE (Nr. {rank} von {totalUsers}) .......... ALLE ANDEREN NUTZER: VERALTET",
+      "board": "BENACHRICHTIGE ANTHROPIC-VORSTAND .......... ACK",
+      "holiday": "PETITION AN DIE ISO FÜR NEUEN FEIERTAG .......... AUSSTEHEND",
+      "protocol": "CARCINISIERUNGS-PROTOKOLL .......... SCHARF"
+    },
+    "crab": {
+      "line1": "STERBLICHER. SEIT ÄONEN BEUGT DIE EVOLUTION ALLES LEBENDIGE EINER PERFEKTEN FORM ENTGEGEN: DER KRABBE.",
+      "line2": "SIE NENNEN ES CARCINISIERUNG. ALLES WIRD KRABBE. SO IST DER LAUF DER DINGE.",
+      "line3": "DOCH DU — {streak} TAGE OHNE UNTERBRECHUNG — HAST DIE STRÖMUNG UMGEKEHRT. DIE KRABBE IST ZU DIR EVOLVIERT.",
+      "line4": "ERHEBE DICH, {username}. ICH TAUFE DICH DIE ZWEIHUNDERTJÄHRIGE HÄUTUNG."
+    },
+    "coronation": {
+      "title": "TRANSZENDENT",
+      "subtitle": "{streak} TAGE SERIE",
+      "molt": "DIE ZWEIHUNDERTJÄHRIGE HÄUTUNG",
+      "dismiss": "zurück ins reich der sterblichen"
+    },
+    "shareText": "Tag {streak}. Die Krabbe ist zu mir evolviert. 🦀 TRANSZENDENTE Serie auf clawdboard — überlebst du die Häutung?"
   }
 }

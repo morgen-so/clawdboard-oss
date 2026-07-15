@@ -660,5 +660,39 @@
     "ctaDescription": "Comparez votre utilisation de {modelName}. Gratuit, open-source, 30 secondes.",
     "ctaPrimaryLabel": "Voir le classement",
     "ctaSecondaryLabel": "Toutes les statistiques de modèles"
+  },
+  "bicentennial": {
+    "skipHint": "[échap] passer la transmission",
+    "a11yLabel": "L'Événement de Carcinisation — célébration des 200 jours de série",
+    "panic": {
+      "title": "CLAWD KERNEL PANIC",
+      "reason": "streak_engine : dépassement non signé — la dévotion de l'utilisateur dépasse la plage représentable",
+      "trace1": "at reality.check()",
+      "trace2": "at grass.touch() [ERR_JAMAIS_APPELE]",
+      "trace3": "at sleep.schedule() [IGNORÉ 200 FOIS]"
+    },
+    "boot": {
+      "header": "CLAWD-BIOS v4.0.4 — AUTOTEST AU DÉMARRAGE",
+      "memory": "TEST MÉMOIRE : {tokens} tokens .......... OK",
+      "treasury": "AUDIT DU TRÉSOR : {cost} partis en fumée .......... OK",
+      "social": "CHARGEMENT social_life.ko .......... MODULE INTROUVABLE (vu pour la dernière fois il y a 200 jours)",
+      "leaderboard": "RECALIBRAGE DU CLASSEMENT (n°{rank} sur {totalUsers}) .......... TOUS LES AUTRES UTILISATEURS : DÉPRÉCIÉS",
+      "board": "NOTIFICATION DU CONSEIL D'ANTHROPIC .......... ACK",
+      "holiday": "PÉTITION À L'ISO POUR UN NOUVEAU JOUR FÉRIÉ .......... EN ATTENTE",
+      "protocol": "PROTOCOLE DE CARCINISATION .......... ARMÉ"
+    },
+    "crab": {
+      "line1": "MORTEL. DEPUIS DES ÉONS, L'ÉVOLUTION PLIE CHAQUE ÊTRE VIVANT VERS UNE FORME PARFAITE : LE CRABE.",
+      "line2": "ILS APPELLENT CELA LA CARCINISATION. TOUTE CHOSE DEVIENT CRABE. AINSI VA LE MONDE.",
+      "line3": "MAIS TOI — {streak} JOURS SANS FAILLIR — TU AS INVERSÉ LE COURANT. LE CRABE A ÉVOLUÉ EN TOI.",
+      "line4": "LÈVE-TOI, {username}. JE TE NOMME LA MUE BICENTENAIRE."
+    },
+    "coronation": {
+      "title": "TRANSCENDANT",
+      "subtitle": "SÉRIE DE {streak} JOURS",
+      "molt": "LA MUE BICENTENAIRE",
+      "dismiss": "retourner au monde des mortels"
+    },
+    "shareText": "Jour {streak}. Le crabe a évolué en moi. 🦀 Série TRANSCENDANTE sur clawdboard — survivrez-vous à la mue ?"
   }
 }

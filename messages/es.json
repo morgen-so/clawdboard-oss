@@ -660,5 +660,39 @@
     "ctaDescription": "Mira cómo se compara tu uso de {modelName}. Gratis, open-source, se configura en 30 segundos.",
     "ctaPrimaryLabel": "Ver clasificación",
     "ctaSecondaryLabel": "Todas las estadísticas de modelos"
+  },
+  "bicentennial": {
+    "skipHint": "[esc] saltar transmisión",
+    "a11yLabel": "El Evento de Carcinización — celebración de racha de 200 días",
+    "panic": {
+      "title": "CLAWD KERNEL PANIC",
+      "reason": "streak_engine: desbordamiento sin signo — la dedicación del usuario excede el rango representable",
+      "trace1": "at reality.check()",
+      "trace2": "at grass.touch() [ERR_NUNCA_LLAMADO]",
+      "trace3": "at sleep.schedule() [OMITIDO 200 VECES]"
+    },
+    "boot": {
+      "header": "CLAWD-BIOS v4.0.4 — AUTODIAGNÓSTICO DE ENCENDIDO",
+      "memory": "COMPROBANDO MEMORIA: {tokens} tokens .......... OK",
+      "treasury": "AUDITANDO TESORERÍA: {cost} quemados .......... OK",
+      "social": "CARGANDO social_life.ko .......... MÓDULO NO ENCONTRADO (visto por última vez hace 200 días)",
+      "leaderboard": "RECALIBRANDO CLASIFICACIÓN (n.º {rank} de {totalUsers}) .......... TODOS LOS DEMÁS USUARIOS: OBSOLETOS",
+      "board": "NOTIFICANDO A LA JUNTA DE ANTHROPIC .......... ACK",
+      "holiday": "SOLICITANDO A LA ISO UN NUEVO DÍA FESTIVO .......... PENDIENTE",
+      "protocol": "PROTOCOLO DE CARCINIZACIÓN .......... ARMADO"
+    },
+    "crab": {
+      "line1": "MORTAL. DURANTE EONES, LA EVOLUCIÓN HA DOBLADO A TODO SER VIVO HACIA UNA FORMA PERFECTA: EL CANGREJO.",
+      "line2": "LO LLAMAN CARCINIZACIÓN. TODO SE CONVIERTE EN CANGREJO. ASÍ SON LAS COSAS.",
+      "line3": "PERO TÚ — {streak} DÍAS SIN FALLAR — HAS INVERTIDO LA CORRIENTE. EL CANGREJO HA EVOLUCIONADO EN TI.",
+      "line4": "ÁLZATE, {username}. TE NOMBRO LA MUDA BICENTENARIA."
+    },
+    "coronation": {
+      "title": "TRASCENDENTE",
+      "subtitle": "RACHA DE {streak} DÍAS",
+      "molt": "LA MUDA BICENTENARIA",
+      "dismiss": "volver al reino de los mortales"
+    },
+    "shareText": "Día {streak}. El cangrejo ha evolucionado en mí. 🦀 Racha TRASCENDENTE en clawdboard — ¿sobrevivirás a la muda?"
   }
 }

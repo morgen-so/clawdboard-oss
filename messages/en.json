@@ -660,5 +660,39 @@
     "ctaDescription": "See how your {modelName} usage compares. Free, open-source, takes 30 seconds.",
     "ctaPrimaryLabel": "View Leaderboard",
     "ctaSecondaryLabel": "All Model Statistics"
+  },
+  "bicentennial": {
+    "skipHint": "[esc] skip transmission",
+    "a11yLabel": "The Carcinization Event — 200 day streak celebration",
+    "panic": {
+      "title": "CLAWD KERNEL PANIC",
+      "reason": "streak_engine: unsigned overflow — user dedication exceeds representable range",
+      "trace1": "at reality.check()",
+      "trace2": "at grass.touch() [ERR_NEVER_CALLED]",
+      "trace3": "at sleep.schedule() [SKIPPED 200 TIMES]"
+    },
+    "boot": {
+      "header": "CLAWD-BIOS v4.0.4 — POWER-ON SELF TEST",
+      "memory": "MEMORY CHECK: {tokens} tokens .......... OK",
+      "treasury": "AUDITING TREASURY: {cost} burned .......... OK",
+      "social": "LOADING social_life.ko .......... MODULE NOT FOUND (last seen 200 days ago)",
+      "leaderboard": "RECALIBRATING LEADERBOARD (#{rank} of {totalUsers}) .......... ALL OTHER USERS: DEPRECATED",
+      "board": "NOTIFYING ANTHROPIC BOARD .......... ACK",
+      "holiday": "PETITIONING ISO FOR NEW HOLIDAY .......... PENDING",
+      "protocol": "CARCINIZATION PROTOCOL .......... ARMED"
+    },
+    "crab": {
+      "line1": "MORTAL. FOR EONS, EVOLUTION HAS BENT EVERY LIVING THING TOWARD ONE PERFECT FORM: THE CRAB.",
+      "line2": "THEY CALL IT CARCINISATION. ALL THINGS BECOME CRAB. IT IS THE WAY.",
+      "line3": "BUT YOU — {streak} DAYS WITHOUT BREAKING — HAVE REVERSED THE CURRENT. THE CRAB HAS EVOLVED INTO YOU.",
+      "line4": "RISE, {username}. I NAME THEE THE BICENTENNIAL MOLT."
+    },
+    "coronation": {
+      "title": "TRANSCENDENT",
+      "subtitle": "{streak} DAY STREAK",
+      "molt": "THE BICENTENNIAL MOLT",
+      "dismiss": "return to mortal realm"
+    },
+    "shareText": "Day {streak}. The crab has evolved into me. 🦀 TRANSCENDENT streak on clawdboard — can you survive the molt?"
   }
 }

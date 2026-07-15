@@ -213,6 +213,56 @@ await client.query(`
 `);
 console.log("  Index recreated");
 
+// ─── Seed a 205-day streak for dev-alice (Carcinization Event) ───────────────
+// Fills any gaps left by the random loop above so alice has 205 consecutive
+// active days ending today — past the 200-day "Transcendent" tier, so her
+// profile triggers the full takeover when she views it logged-in.
+// Runs after the NULLS NOT DISTINCT index so ON CONFLICT dedupes correctly.
+
+console.log("Seeding 205-day streak for dev-alice...");
+const alice = seedUsers[0];
+let streakRows = 0;
+for (let daysAgo = 0; daysAgo < 205; daysAgo++) {
+  // Deterministic modest usage — varies slightly by day so charts look organic
+  const inputTokens = 60000 + (daysAgo % 7) * 5000;
+  const outputTokens = 15000 + (daysAgo % 5) * 3000;
+  const cost = ((inputTokens * 0.003 + outputTokens * 0.015) / 1000).toFixed(4);
+  const breakdowns = [
+    {
+      modelName: models[0],
+      inputTokens,
+      outputTokens,
+      cacheCreationTokens: 0,
+      cacheReadTokens: 0,
+      cost: parseFloat(cost),
+    },
+  ];
+
+  const res = await client.query(
+    `INSERT INTO daily_aggregates
+     (id, user_id, date, source, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_cost, models_used, model_breakdowns, synced_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+     ON CONFLICT (user_id, date, source, machine_id) DO NOTHING`,
+    [
+      uuid(),
+      alice.id,
+      dateStr(daysAgo),
+      "claude-code",
+      inputTokens,
+      outputTokens,
+      0,
+      0,
+      cost,
+      JSON.stringify([models[0]]),
+      JSON.stringify(breakdowns),
+    ]
+  );
+  streakRows += res.rowCount;
+}
+console.log(
+  `  Added ${streakRows} filler rows — dev-alice now has a 205-day streak`
+);
+
 // ─── Create materialized view ────────────────────────────────────────────────
 
 console.log("Creating leaderboard materialized view...");
@@ -315,7 +365,7 @@ const aliceRecap = {
   tokensDelta: 580000,
   activeDays: 6,
   totalDays: 7,
-  currentStreak: 12,
+  currentStreak: 205,
   peakDay: dateStr(2),
   peakDayLabel: new Date(today.getTime() - 2 * dayMs).toLocaleDateString("en-US", { weekday: "long" }),
   peakDayCost: 28.45,
@@ -381,3 +431,6 @@ console.log("  Created 2 sample recaps (dev-alice: podium, dev-bob: normal)");
 await client.end();
 console.log("\nDone! Dev users: dev-alice, dev-bob, dev-carol, dev-dave, dev-eve");
 console.log("Sign in at http://localhost:3001/signin with any username above.");
+console.log(
+  "dev-alice has a 205-day streak — visit her profile logged-in as her to witness the Carcinization Event."
+);

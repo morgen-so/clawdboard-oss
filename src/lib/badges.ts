@@ -1,5 +1,5 @@
 // ─── Badge System ────────────────────────────────────────────────────────────
-// 36 badges across 3 categories: all-time, daily (best single day), monthly
+// 37 badges across 3 categories: all-time, daily (best single day), monthly
 // (best calendar month). Badges are earned once, permanently. Earned badge IDs
 // are persisted on the user record so badges can never be lost once earned.
 
@@ -57,6 +57,7 @@ export const BADGES: BadgeDefinition[] = [
   { id: "streak-30", category: "all-time", group: "streak", label: "30-Day Streak", description: "Coded 30 days in a row", threshold: 30, xp: 15, celebrationTier: true },
   { id: "streak-60", category: "all-time", group: "streak", label: "60-Day Streak", description: "Coded 60 days in a row", threshold: 60, xp: 22, celebrationTier: true },
   { id: "streak-100", category: "all-time", group: "streak", label: "100-Day Streak", description: "Coded 100 days in a row", threshold: 100, xp: 30, celebrationTier: true },
+  { id: "streak-200", category: "all-time", group: "streak", label: "Bicentennial", description: "Coded 200 days in a row", threshold: 200, xp: 40, celebrationTier: true },
 
   // ── All Time: Rank ──
   { id: "rank-top50", category: "all-time", group: "rank", label: "Top 50%", description: "Ranked in the top half of all users", threshold: 50, xp: 5, celebrationTier: false },
