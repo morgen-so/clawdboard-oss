@@ -9,6 +9,38 @@ import { rateLimit } from "@/lib/rate-limit";
 import { authenticateApiToken } from "@/lib/api-auth";
 import { isOrgDataStale, syncUserGitHubOrgs } from "@/lib/db/github-orgs";
 
+// Sources whose extractors double-counted cached tokens before CLI 0.3.5:
+// OpenAI, Gemini, and Copilot report cached tokens as a SUBSET of
+// input_tokens, but older CLIs added them on top (and billed them at the
+// full input rate). Historical rows were backfilled to corrected values.
+// Because the non-force conflict strategy below keeps GREATEST per column,
+// a single re-sync of inflated numbers from an old CLI would re-corrupt a
+// corrected row — so days for these sources are dropped unless the client
+// is on the fixed version. Force syncs from old CLIs are equally dangerous
+// (unconditional overwrite), so the guard applies to both paths.
+const SUBSET_SEMANTICS_SOURCES = new Set([
+  "codex",
+  "gemini-cli",
+  "copilot-cli",
+  "antigravity",
+]);
+const MIN_CLI_VERSION_FOR_SUBSET_SOURCES = [0, 3, 5] as const;
+
+/** Parse "clawdboard/x.y.z" from the User-Agent; unknown clients count as old. */
+function cliVersionAtLeast(
+  userAgent: string | null,
+  min: readonly [number, number, number]
+): boolean {
+  const m = /^clawdboard\/(\d+)\.(\d+)\.(\d+)/.exec(userAgent ?? "");
+  if (!m) return false;
+  const v = [Number(m[1]), Number(m[2]), Number(m[3])];
+  for (let i = 0; i < 3; i++) {
+    if (v[i] > min[i]) return true;
+    if (v[i] < min[i]) return false;
+  }
+  return true;
+}
+
 export async function POST(req: NextRequest) {
   const limited = rateLimit(req, { key: "sync", limit: 10 });
   if (limited) return limited;
@@ -52,7 +84,23 @@ export async function POST(req: NextRequest) {
     }
 
     // 4. Upsert each day (Pitfall 6: avoid Vercel timeout)
-    const { days, syncIntervalMs, machineId, reassignFromOpencode, force } = result.data;
+    const { syncIntervalMs, machineId, reassignFromOpencode, force } = result.data;
+    let { days } = result.data;
+
+    // Drop subset-semantics sources from pre-fix CLIs (see constants above).
+    let droppedLegacyDays = 0;
+    if (!cliVersionAtLeast(req.headers.get("user-agent"), MIN_CLI_VERSION_FOR_SUBSET_SOURCES)) {
+      const before = days.length;
+      days = days.filter((d) => !SUBSET_SEMANTICS_SOURCES.has(d.source ?? ""));
+      droppedLegacyDays = before - days.length;
+      if (droppedLegacyDays > 0) {
+        console.log(
+          `[sync] Dropped ${droppedLegacyDays} day(s) from outdated CLI ` +
+            `(${req.headers.get("user-agent") ?? "no UA"}) for user=${user.id}: ` +
+            `codex/gemini/copilot/antigravity data from CLIs < 0.3.5 double-counts cached tokens`
+        );
+      }
+    }
 
     // 4a. Clean up legacy null-source rows that would cause double-counting.
     // When a CLI upgrade starts sending source="claude-code" (or other), the
@@ -259,6 +307,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       daysUpserted: days.length,
+      ...(droppedLegacyDays > 0 && {
+        warning:
+          `${droppedLegacyDays} day(s) were not stored: this CLI version ` +
+          `double-counts cached tokens for codex/gemini/copilot/antigravity. ` +
+          `Update with: npm i -g clawdboard@latest (npx users update automatically).`,
+      }),
     });
   } catch (error) {
     console.error("Sync error:", error);
