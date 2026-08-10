@@ -45,18 +45,18 @@ export async function getCommunityStats(
       // 1. Basic totals (filtered)
       db.execute(sql`
         SELECT
-          (SELECT COUNT(*)::int FROM users) AS total_users,
+          (SELECT COUNT(*)::int FROM users WHERE banned_at IS NULL) AS total_users,
           COUNT(DISTINCT user_id)::int AS active_users,
           COALESCE(SUM(total_cost::numeric), 0)::text AS total_cost,
           COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0)::bigint AS total_tokens,
           COUNT(DISTINCT user_id || '-' || date)::int AS total_active_days
-        FROM daily_aggregates
+        FROM visible_daily_aggregates
         WHERE ${filter}
       `),
       // 2. Biggest single community day (filtered)
       db.execute(sql`
         SELECT date, SUM(total_cost::numeric)::text AS day_cost
-        FROM daily_aggregates
+        FROM visible_daily_aggregates
         WHERE ${filter}
         GROUP BY date
         ORDER BY SUM(total_cost::numeric) DESC
@@ -66,7 +66,7 @@ export async function getCommunityStats(
       db.execute(sql`
         WITH user_costs AS (
           SELECT SUM(total_cost::numeric) AS c
-          FROM daily_aggregates
+          FROM visible_daily_aggregates
           WHERE ${filter}
           GROUP BY user_id
         )
@@ -117,7 +117,7 @@ export async function getDailyTrends(days = 90): Promise<DailyTrendPoint[]> {
       SUM(da.total_cost::numeric)::float AS cost,
       SUM(da.input_tokens + da.output_tokens + da.cache_creation_tokens + da.cache_read_tokens)::bigint AS tokens,
       COUNT(DISTINCT da.user_id)::int AS active_users
-    FROM daily_aggregates da
+    FROM visible_daily_aggregates da
     WHERE da.date >= ${cutoffStr}
     GROUP BY da.date
     ORDER BY da.date ASC
@@ -139,7 +139,7 @@ export async function getWeeklyGrowth(): Promise<GrowthPoint[]> {
         TO_CHAR(DATE_TRUNC('week', created_at), 'YYYY-"W"IW') AS week,
         COUNT(*)::int AS new_users
       FROM users
-      WHERE created_at IS NOT NULL
+      WHERE created_at IS NOT NULL AND banned_at IS NULL
       GROUP BY DATE_TRUNC('week', created_at)
       ORDER BY DATE_TRUNC('week', created_at) ASC
     )

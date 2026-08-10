@@ -33,7 +33,7 @@ export async function getModelStats(
         SUM((elem->>'outputTokens')::bigint) AS output_tokens,
         SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint + COALESCE((elem->>'cacheCreationTokens')::bigint, 0) + COALESCE((elem->>'cacheReadTokens')::bigint, 0)) AS total_tokens,
         COUNT(DISTINCT da.user_id) AS user_count
-      FROM daily_aggregates da,
+      FROM visible_daily_aggregates da,
         jsonb_array_elements(da.model_breakdowns) AS elem
       WHERE ${filter}
       GROUP BY elem->>'modelName'
@@ -99,7 +99,7 @@ export async function getModelDetailStats(
         COALESCE((elem->>'cacheReadTokens')::bigint, 0) AS cache_read,
         da.user_id,
         da.date
-      FROM daily_aggregates da,
+      FROM visible_daily_aggregates da,
         jsonb_array_elements(da.model_breakdowns) AS elem
       WHERE (
         elem->>'modelName' = ${slug}
@@ -108,7 +108,7 @@ export async function getModelDetailStats(
     ),
     grand_total AS (
       SELECT COALESCE(SUM((elem->>'cost')::numeric), 0) AS total
-      FROM daily_aggregates da,
+      FROM visible_daily_aggregates da,
         jsonb_array_elements(da.model_breakdowns) AS elem
     ),
     user_costs AS (
@@ -175,7 +175,7 @@ export async function getModelDailyTrends(
       SUM((elem->>'cost')::numeric)::float AS cost,
       SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint + COALESCE((elem->>'cacheCreationTokens')::bigint, 0) + COALESCE((elem->>'cacheReadTokens')::bigint, 0))::bigint AS tokens,
       COUNT(DISTINCT da.user_id)::int AS active_users
-    FROM daily_aggregates da,
+    FROM visible_daily_aggregates da,
       jsonb_array_elements(da.model_breakdowns) AS elem
     WHERE da.date >= ${cutoffStr}
       AND (
@@ -199,7 +199,7 @@ export async function getDistinctModelSlugs(): Promise<string[]> {
   const result = await db.execute(sql`
     SELECT DISTINCT
       regexp_replace(elem->>'modelName', '-[0-9]{6,8}$', '') AS slug
-    FROM daily_aggregates da,
+    FROM visible_daily_aggregates da,
       jsonb_array_elements(da.model_breakdowns) AS elem
     WHERE (elem->>'cost')::numeric > 0
   `);

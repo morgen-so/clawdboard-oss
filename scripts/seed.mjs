@@ -263,7 +263,18 @@ console.log(
   `  Added ${streakRows} filler rows — dev-alice now has a 205-day streak`
 );
 
-// ─── Create materialized view ────────────────────────────────────────────────
+// ─── Create views ────────────────────────────────────────────────────────────
+
+// Community-wide stats read through this view so banned users never reach the
+// /stats aggregates. Mirrors the definition in GET /api/cron/refresh.
+console.log("Creating visible_daily_aggregates view...");
+await client.query(`
+  CREATE OR REPLACE VIEW visible_daily_aggregates AS
+  SELECT da.*
+  FROM daily_aggregates da
+  JOIN users u ON u.id = da.user_id
+  WHERE u.banned_at IS NULL
+`);
 
 console.log("Creating leaderboard materialized view...");
 await client.query(`DROP MATERIALIZED VIEW IF EXISTS leaderboard_mv`);

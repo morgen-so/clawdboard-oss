@@ -44,10 +44,10 @@ export async function getSourceDetailStats(
 
     const result = await db.execute(sql`
       WITH source_data AS (
-        SELECT * FROM daily_aggregates WHERE ${sourceFilter}
+        SELECT * FROM visible_daily_aggregates WHERE ${sourceFilter}
       ),
       grand_total AS (
-        SELECT COALESCE(SUM(total_cost::numeric), 0) AS total FROM daily_aggregates
+        SELECT COALESCE(SUM(total_cost::numeric), 0) AS total FROM visible_daily_aggregates
       ),
       user_costs AS (
         SELECT SUM(total_cost::numeric) AS c FROM source_data GROUP BY user_id
@@ -101,7 +101,7 @@ export async function getSourceDetailStats(
 async function _getSourceDetailStatsFallback(): Promise<SourceDetailStats | null> {
   const result = await db.execute(sql`
     WITH user_costs AS (
-      SELECT SUM(total_cost::numeric) AS c FROM daily_aggregates GROUP BY user_id
+      SELECT SUM(total_cost::numeric) AS c FROM visible_daily_aggregates GROUP BY user_id
     )
     SELECT
       COALESCE(SUM(total_cost::numeric), 0)::text AS total_cost,
@@ -116,7 +116,7 @@ async function _getSourceDetailStatsFallback(): Promise<SourceDetailStats | null
       COALESCE((SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY c) FROM user_costs), 0)::text AS median_cost,
       MIN(date)::text AS first_seen,
       COUNT(DISTINCT user_id || '-' || date)::int AS active_days
-    FROM daily_aggregates
+    FROM visible_daily_aggregates
   `);
   const row = result.rows[0];
   if (!row || Number(row.user_count ?? 0) === 0) return null;
@@ -157,7 +157,7 @@ export async function getSourceDailyTrends(
         SUM(total_cost::numeric)::float AS cost,
         SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens)::bigint AS tokens,
         COUNT(DISTINCT user_id)::int AS active_users
-      FROM daily_aggregates
+      FROM visible_daily_aggregates
       WHERE date >= ${cutoffStr} AND ${sourceFilter}
       GROUP BY date
       ORDER BY date ASC
@@ -194,7 +194,7 @@ export async function getSourceModelBreakdown(
           SUM((elem->>'outputTokens')::bigint) AS output_tokens,
           SUM((elem->>'inputTokens')::bigint + (elem->>'outputTokens')::bigint + COALESCE((elem->>'cacheCreationTokens')::bigint, 0) + COALESCE((elem->>'cacheReadTokens')::bigint, 0)) AS total_tokens,
           COUNT(DISTINCT da.user_id) AS user_count
-        FROM daily_aggregates da,
+        FROM visible_daily_aggregates da,
           jsonb_array_elements(da.model_breakdowns) AS elem
         WHERE ${sourceFilter}
         GROUP BY elem->>'modelName'
@@ -270,7 +270,7 @@ export async function getSourceComparisonTrends(
         COALESCE(SUM(CASE WHEN source = 'gemini-cli' THEN total_cost::numeric ELSE 0 END), 0)::float AS gemini_cli,
         COALESCE(SUM(CASE WHEN source = 'antigravity' THEN total_cost::numeric ELSE 0 END), 0)::float AS antigravity,
         COALESCE(SUM(CASE WHEN source = 'copilot-cli' THEN total_cost::numeric ELSE 0 END), 0)::float AS copilot_cli
-      FROM daily_aggregates
+      FROM visible_daily_aggregates
       WHERE date >= ${cutoffStr}
       GROUP BY date
       ORDER BY date ASC
@@ -313,7 +313,7 @@ export async function getDistinctSources(): Promise<string[]> {
   try {
     const result = await db.execute(sql`
       SELECT DISTINCT COALESCE(source, 'claude-code') AS source
-      FROM daily_aggregates
+      FROM visible_daily_aggregates
       WHERE total_cost::numeric > 0
       ORDER BY source
     `);
@@ -336,7 +336,7 @@ export async function getSourceBreakdown(
         COALESCE(SUM(total_cost::numeric), 0)::float AS total_cost,
         COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0)::bigint AS total_tokens,
         COUNT(DISTINCT user_id)::int AS user_count
-      FROM daily_aggregates
+      FROM visible_daily_aggregates
       WHERE ${filter}
       GROUP BY COALESCE(source, 'claude-code')
     `);
@@ -354,7 +354,7 @@ export async function getSourceBreakdown(
         COALESCE(SUM(total_cost::numeric), 0)::float AS total_cost,
         COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0)::bigint AS total_tokens,
         COUNT(DISTINCT user_id)::int AS user_count
-      FROM daily_aggregates
+      FROM visible_daily_aggregates
       WHERE ${filter}
     `);
 

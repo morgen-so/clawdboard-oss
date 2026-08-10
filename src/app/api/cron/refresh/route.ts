@@ -104,6 +104,20 @@ export async function GET(req: NextRequest) {
       `);
     }
 
+    // Banned users' rows must not leak into community-wide aggregates (the
+    // /stats pages). Rather than repeat the exclusion across ~19 stats
+    // queries — several of which use LATERAL joins where an extra WHERE is
+    // easy to get wrong — define it once here. A plain view, so there is
+    // nothing to refresh: it always reflects the current banned_at flags.
+    // CREATE OR REPLACE keeps this idempotent across cron ticks.
+    await db.execute(sql`
+      CREATE OR REPLACE VIEW visible_daily_aggregates AS
+      SELECT da.*
+      FROM daily_aggregates da
+      JOIN users u ON u.id = da.user_id
+      WHERE u.banned_at IS NULL
+    `);
+
     // Create the materialized view on first run only. Subsequent ticks use
     // REFRESH MATERIALIZED VIEW CONCURRENTLY (below) to pick up fresh data
     // without blocking readers. If the MV definition below ever changes,
