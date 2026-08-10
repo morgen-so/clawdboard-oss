@@ -164,7 +164,9 @@ describe("extractGeminiCliData", () => {
       expect(result).toHaveLength(2);
       const byDate = Object.fromEntries(result.map((d) => [d.date, d]));
       expect(byDate["2026-03-10"]?.inputTokens).toBe(1000);
-      expect(byDate["2026-03-11"]?.inputTokens).toBe(2000);
+      // cached is a subset of input in Gemini's reporting; the extractor
+      // stores the uncached remainder (2000 - 200).
+      expect(byDate["2026-03-11"]?.inputTokens).toBe(1800);
       expect(byDate["2026-03-11"]?.cacheReadTokens).toBe(200);
     });
 

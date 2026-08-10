@@ -160,15 +160,49 @@ describe("extractCodexData", () => {
     expect(result[0].modelsUsed).toContain("gpt-4o");
   });
 
-  it("handles cached_input_tokens as cacheReadTokens", async () => {
+  it("subtracts cached_input_tokens from input (OpenAI subset semantics)", async () => {
+    // Codex reports cached_input_tokens as a SUBSET of input_tokens
+    // (total_tokens = input + output). The extractor must not count the
+    // cached portion twice — regression test for the double-count bug
+    // that inflated every Codex user ~2x on tokens (fixed 2026-08-10).
     writeRollout(tmpDir, "2026-03-10", "rollout-test.jsonl", [
       turnContext("o4-mini"),
       tokenCount({ input_tokens: 5000, cached_input_tokens: 3000, output_tokens: 1000 }),
     ]);
 
     const result = await extractCodexData();
+    expect(result[0].inputTokens).toBe(2000); // 5000 - 3000 uncached
     expect(result[0].cacheReadTokens).toBe(3000);
     expect(result[0].cacheCreationTokens).toBe(0);
+    // Invariant: our components sum to Codex's own total (input + output).
+    expect(
+      result[0].inputTokens + result[0].outputTokens + result[0].cacheReadTokens
+    ).toBe(5000 + 1000);
+  });
+
+  it("does not bill cached tokens at the full input rate", async () => {
+    // 1M input of which 900k cached, 0 output, on o4-mini
+    // ($1.1/M input, $0.275/M cache read):
+    // correct = 0.1M * 1.1 + 0.9M * 0.275 = 0.11 + 0.2475 = 0.3575
+    // buggy   = 1.0M * 1.1 + 0.9M * 0.275 = 1.1 + 0.2475 = 1.3475
+    writeRollout(tmpDir, "2026-03-10", "rollout-test.jsonl", [
+      turnContext("o4-mini"),
+      tokenCount({ input_tokens: 1_000_000, cached_input_tokens: 900_000, output_tokens: 0 }),
+    ]);
+
+    const result = await extractCodexData();
+    expect(result[0].totalCost).toBeCloseTo(0.3575, 3);
+  });
+
+  it("clamps input at zero if cached exceeds input (defensive)", async () => {
+    writeRollout(tmpDir, "2026-03-10", "rollout-test.jsonl", [
+      turnContext("o4-mini"),
+      tokenCount({ input_tokens: 1000, cached_input_tokens: 1500, output_tokens: 100 }),
+    ]);
+
+    const result = await extractCodexData();
+    expect(result[0].inputTokens).toBe(0);
+    expect(result[0].cacheReadTokens).toBe(1500);
   });
 
   it("calculates cost from tokens", async () => {

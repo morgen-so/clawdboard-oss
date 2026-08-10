@@ -131,10 +131,13 @@ export async function extractCodexData(since?: string): Promise<SyncDay[]> {
             }
 
             const modelId = model || "unknown";
-            const input = tokens.input_tokens ?? 0;
             const output = tokens.output_tokens ?? 0;
-            // Codex cached_input_tokens = reads from OpenAI's prompt caching
+            // OpenAI reports cached_input_tokens as a SUBSET of input_tokens
+            // (Codex's own total_tokens = input + output). Subtract so the
+            // cached portion is counted (and billed) once, at the cache-read
+            // rate — unlike Anthropic, where the two fields are disjoint.
             const cacheRead = tokens.cached_input_tokens ?? 0;
+            const input = Math.max(0, (tokens.input_tokens ?? 0) - cacheRead);
 
             const cost = calculateCost(modelId, {
               input,

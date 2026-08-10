@@ -249,9 +249,12 @@ export async function extractAntigravityData(
     }
 
     const modelId = metric.model ?? "unknown";
-    const input = Number(metric.inputTokens) || 0;
     const output = Number(metric.outputTokens) || 0;
+    // Antigravity is Gemini-backed: cachedTokens is a SUBSET of inputTokens
+    // (Gemini's cachedContentTokenCount ⊆ promptTokenCount). Subtract so the
+    // cached portion is counted (and billed) once, at the cache-read rate.
     const cacheRead = Number(metric.cachedTokens) || 0;
+    const input = Math.max(0, (Number(metric.inputTokens) || 0) - cacheRead);
     if (input === 0 && output === 0 && cacheRead === 0) continue;
 
     const cost = calculateCost(modelId, {

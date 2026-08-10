@@ -126,7 +126,9 @@ describe("extractCopilotCliData", () => {
       expect(result).toHaveLength(1);
       expect(result[0].source).toBe("copilot-cli");
       expect(result[0].date).toBe("2026-03-10");
-      expect(result[0].inputTokens).toBe(1000);
+      // cacheReadTokens is a subset of inputTokens in Copilot's reporting;
+      // the extractor stores the uncached remainder (1000 - 200).
+      expect(result[0].inputTokens).toBe(800);
       expect(result[0].outputTokens).toBe(500);
       expect(result[0].cacheReadTokens).toBe(200);
       expect(result[0].cacheCreationTokens).toBe(100);

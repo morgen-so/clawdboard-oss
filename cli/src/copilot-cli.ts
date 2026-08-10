@@ -212,11 +212,16 @@ export async function extractCopilotCliData(
 
     for (const [modelId, metrics] of Object.entries(shutdown.modelMetrics)) {
       const usage = metrics?.usage ?? {};
-      const input = Number(usage.inputTokens) || 0;
       const output = Number(usage.outputTokens) || 0;
       const reasoning = Number(usage.reasoningTokens) || 0;
+      // Copilot reports cacheReadTokens as a SUBSET of inputTokens for every
+      // model it proxies (verified empirically: cache <= input on all
+      // breakdowns, Claude models included — Claude's native disjoint
+      // semantics would show cache 20-400x input). Subtract so the cached
+      // portion is counted (and billed) once, at the cache-read rate.
       const cacheRead = Number(usage.cacheReadTokens) || 0;
       const cacheWrite = Number(usage.cacheWriteTokens) || 0;
+      const input = Math.max(0, (Number(usage.inputTokens) || 0) - cacheRead);
       // Premium-request count contributed by this model in this session.
       const premiumRequests = Number(metrics?.requests?.count) || 0;
 

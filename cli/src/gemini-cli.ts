@@ -247,15 +247,18 @@ export async function extractGeminiCliData(
         if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
 
         const modelId = msg.model ?? "gemini-unknown";
-        const input = Number(msg.tokens.input) || 0;
         const output = Number(msg.tokens.output) || 0;
         // Gemini's "thoughts" tokens are billed as output for reasoning;
         // we accumulate them with output to keep the cost calculation
         // consistent with gemini-api's billing model.
         const thoughts = Number(msg.tokens.thoughts) || 0;
+        // Gemini's cachedContentTokenCount is a SUBSET of promptTokenCount.
+        // Subtract so cached tokens are counted (and billed) once, at the
+        // cache-read rate — unlike Anthropic, where the fields are disjoint.
         const cached = Number(msg.tokens.cached) || 0;
+        const input = Math.max(0, (Number(msg.tokens.input) || 0) - cached);
 
-        if (input === 0 && output === 0 && thoughts === 0) continue;
+        if (input === 0 && cached === 0 && output === 0 && thoughts === 0) continue;
 
         const cost = calculateCost(modelId, {
           input,
