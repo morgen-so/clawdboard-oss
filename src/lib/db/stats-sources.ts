@@ -1,5 +1,4 @@
 import { db } from "@/lib/db";
-import { dailyAggregates } from "./schema";
 import { sql } from "drizzle-orm";
 import type { Period, DateRange } from "./leaderboard";
 import { statsDateFilter } from "./date-filter";
@@ -38,9 +37,12 @@ export async function getSourceDetailStats(
   source: string
 ): Promise<SourceDetailStats | null> {
   try {
+    // Unqualified so it resolves against whichever relation is in scope.
+    // A Drizzle column ref renders as "daily_aggregates"."source", which no
+    // longer has a FROM-clause entry now that the CTE reads the view.
     const sourceFilter = source === "claude-code"
-      ? sql`(${dailyAggregates.source} = 'claude-code' OR ${dailyAggregates.source} IS NULL)`
-      : sql`${dailyAggregates.source} = ${source}`;
+      ? sql`(source = 'claude-code' OR source IS NULL)`
+      : sql`source = ${source}`;
 
     const result = await db.execute(sql`
       WITH source_data AS (
