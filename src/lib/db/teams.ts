@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 
 import { db, executeRows } from "@/lib/db";
 import { teams, teamMembers, users } from "./schema";
@@ -52,7 +53,11 @@ export async function generateUniqueSlug(name: string): Promise<string> {
 
 // ─── Team lookups ───────────────────────────────────────────────────────────
 
-export async function getTeamBySlug(
+/**
+ * Wrapped in React cache() so the layout, generateMetadata, and the page can
+ * each resolve the slug within one request without re-querying.
+ */
+export const getTeamBySlug = cache(async function getTeamBySlug(
   slug: string
 ): Promise<typeof teams.$inferSelect | null> {
   const [team] = await db
@@ -61,7 +66,7 @@ export async function getTeamBySlug(
     .where(and(eq(teams.slug, slug), isNull(teams.deletedAt)))
     .limit(1);
   return team ?? null;
-}
+});
 
 export async function getTeamMembership(
   teamId: string,

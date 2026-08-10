@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { db, executeRows } from "@/lib/db";
 import { users, dailyAggregates } from "@/lib/db/schema";
 import { eq, sql, asc, and } from "drizzle-orm";
@@ -59,8 +60,11 @@ export type UserRank = {
 /**
  * Look up a user by GitHub username (case-insensitive).
  * Returns null if no user found.
+ *
+ * Wrapped in React cache() so the layout, generateMetadata, and the page can
+ * each resolve the username within one request without re-querying.
  */
-export async function getUserByUsername(
+export const getUserByUsername = cache(async function getUserByUsername(
   username: string
 ): Promise<ProfileUser | null> {
   const [user] = await db
@@ -83,7 +87,7 @@ export async function getUserByUsername(
   // Banned users are treated as nonexistent so their profile 404s.
   if (!user || user.bannedAt) return null;
   return user;
-}
+});
 
 /**
  * Persist earned badge IDs to the user record.
