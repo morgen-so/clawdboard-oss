@@ -1,0 +1,56 @@
+name: Publish CLI to npm
+
+# Publishes the `clawdboard` package from cli/ via npm trusted publishing
+# (OIDC). No npm token is involved: npmjs.com is configured to trust this
+# exact workflow file in this repo, and npm >= 11.5.1 exchanges the GitHub
+# OIDC token for a short-lived publish credential and attaches provenance.
+#
+# Trigger: push a tag like v0.3.7 whose version matches cli/package.json.
+# The manual trigger re-runs the same steps for the checked-out ref.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  id-token: write # OIDC token for npm trusted publishing
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cli
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: npm
+          cache-dependency-path: cli/package-lock.json
+
+      # Trusted publishing needs npm 11.5.1+; make sure we're not on an older bundled npm.
+      - name: Update npm
+        run: npm install -g npm@latest && npm --version
+
+      - name: Check tag matches package version
+        if: github.ref_type == 'tag'
+        run: |
+          pkg="$(node -p "require('./package.json').version")"
+          tag="${GITHUB_REF_NAME#v}"
+          if [ "$pkg" != "$tag" ]; then
+            echo "Tag v$tag does not match cli/package.json version $pkg" >&2
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+
+      - name: Publish
+        run: npm publish --access public
