@@ -27,6 +27,11 @@ export const users = pgTable("users", {
   // Custom clawdboard fields
   githubUsername: text("github_username"),
   apiToken: text("api_token").unique(),
+  // SHA-256 hex digest of api_token. Auth looks tokens up by this hash so
+  // the index comparison never operates on the raw secret. Written at
+  // issuance; tokens from before the column existed are backfilled by
+  // scripts/backfill-api-token-hash.mjs.
+  apiTokenHash: text("api_token_hash").unique(),
   cookingUrl: text("cooking_url"),
   cookingLabel: text("cooking_label"),
   createdAt: timestamp("created_at").defaultNow(),

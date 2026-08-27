@@ -12,6 +12,7 @@
  * All data is clearly fake (dev-alice, dev-bob, etc.) — no real user data.
  */
 
+import { createHash } from "node:crypto";
 import pg from "pg";
 
 const DATABASE_URL =
@@ -79,10 +80,18 @@ const seedUsers = [
 console.log("Seeding users...");
 for (const u of seedUsers) {
   await client.query(
-    `INSERT INTO users (id, name, email, github_username, image, api_token, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, NOW())
+    `INSERT INTO users (id, name, email, github_username, image, api_token, api_token_hash, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
      ON CONFLICT (id) DO NOTHING`,
-    [u.id, u.name, u.email, u.github_username, u.image, u.api_token]
+    [
+      u.id,
+      u.name,
+      u.email,
+      u.github_username,
+      u.image,
+      u.api_token,
+      createHash("sha256").update(u.api_token).digest("hex"),
+    ]
   );
 }
 console.log(`  Created ${seedUsers.length} users`);
