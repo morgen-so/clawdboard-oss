@@ -20,6 +20,145 @@ export const logEntries: LogEntry[] = [
         description:
           "clawdboard now tracks Pi (the terminal coding harness from Armin Ronacher and Mario Zechner), Nous Research's Hermes Agent, and DeepSeek Harness (dsh). Nothing to configure: the CLI reads Pi's session logs from ~/.pi/agent/sessions/, Hermes's state database at ~/.hermes/state.db, and dsh's session logs from ~/.dsh/sessions/ on your next sync. For Hermes, interactive sessions count (terminal, desktop app, editor integrations, web UI); scheduled cron jobs and conversations through its Telegram, Discord, or other chat gateways are left out. Each shows up as its own source on your profile and the leaderboard.",
       },
+      {
+        title: "GitHub sign-in works again",
+        type: "fix",
+        description:
+          "GitHub started sending an extra iss parameter on OAuth callbacks that our auth library rejected, so every sign-in attempt bounced to a \"Configuration\" error. Updated the auth library to accept it. No action needed on your side.",
+      },
+      {
+        title: "Full French, German, and Spanish coverage",
+        type: "improvement",
+        description:
+          "The last pockets of hardcoded English are gone: the feedback widget, recap banners and stories, badge group labels, the team join card, calendar weekday headers, and screen-reader labels on icon buttons now follow your chosen language. Keyboard and screen-reader users also get proper labels on controls that had none.",
+      },
+      {
+        title: "API tokens now stored as hashes",
+        type: "fix",
+        description:
+          "Your CLI token is looked up by its SHA-256 hash instead of the raw value, so the database never compares the secret directly. Existing tokens keep working, nothing to re-run.",
+      },
+    ],
+  },
+  {
+    date: "2026-08-10",
+    items: [
+      {
+        title: "Codex, Gemini, Copilot, and Antigravity costs were overcounted",
+        type: "fix",
+        description:
+          "Those tools report cached tokens as part of the input count, but the CLI treated them like Claude Code (where they're separate) and counted the cached portion twice. With most Codex traffic cached, that inflated token totals roughly 2x and cost up to 8x. Fixed in CLI 0.3.5 and all historical data has been corrected on the server. Older CLI versions can no longer sync those four sources, so update if you haven't.",
+      },
+    ],
+  },
+  {
+    date: "2026-07-15",
+    items: [
+      {
+        title: "The Carcinization Event",
+        type: "feature",
+        description:
+          "Hit a 200-day streak and your next profile visit triggers a full-screen takeover: the streak counter overflows, the site kernel-panics, CLAWD-BIOS reboots with your real stats in the boot log, and CLAWD PRIME arrives to explain that carcinisation has run in reverse. You come out the other side with a new tier-7 \"Transcendent\" 🦀 aura on every streak surface and the \"Bicentennial\" badge. Plays once; Esc skips it.",
+        image: "/log/carcinization-event.png",
+      },
+    ],
+  },
+  {
+    date: "2026-06-19",
+    items: [
+      {
+        title: "Cursor usage now tracked",
+        type: "feature",
+        description:
+          "Added Cursor as a source. The CLI reads token counts and model names from Cursor's local state database (never prompts or code). One caveat: Cursor moved conversation data server-side in late 2025, so local data only covers usage before that.",
+      },
+      {
+        title: "Compare your usage against anyone",
+        type: "feature",
+        description:
+          "The profile Usage chart has a new \"+ Compare\" picker that overlays another user's line on the same axis, with per-user totals and a gap factor. The comparison lives in the URL (?vs=username), so you can share a link straight to the matchup.",
+        image: "/log/compare-users.png",
+      },
+      {
+        title: "Daily, weekly, or monthly view on the usage chart",
+        type: "feature",
+        description:
+          "A View dropdown rolls the chart up into weekly or monthly buckets, which makes longer periods readable instead of a wall of daily spikes. Appears whenever the selected period spans 8+ days.",
+        image: "/log/usage-view-toggle.png",
+      },
+      {
+        title: "Numbers follow your language",
+        type: "improvement",
+        description:
+          "Token counts and costs now format with your chosen language instead of whatever locale the server or browser happened to have (so /fr shows 2 330 479 while English keeps 2,330,479). Leaderboard cost columns also gained thousand separators.",
+      },
+      {
+        title: "Stable leaderboard ordering on ties",
+        type: "fix",
+        description:
+          "Users with identical scores could appear on two leaderboard pages or none, and tied teams could swap places between refreshes. Ties now break deterministically.",
+      },
+      {
+        title: "CLI: clearer errors and setup warnings",
+        type: "improvement",
+        description:
+          "clawdboard leaderboard now validates --limit and --period up front with a clear message instead of silently clamping, and clawdboard setup warns you when the OpenCode plugin or Codex hook fails to install rather than pretending everything auto-syncs.",
+      },
+    ],
+  },
+  {
+    date: "2026-06-15",
+    items: [
+      {
+        title: "Accents restored in French, German, and Spanish",
+        type: "fix",
+        description:
+          "The FR/DE/ES translations had been generated without diacritics (no é, ü, ß, ñ). All three are fixed.",
+      },
+    ],
+  },
+  {
+    date: "2026-06-10",
+    items: [
+      {
+        title: "Live model pricing",
+        type: "improvement",
+        description:
+          "The CLI now pulls current prices from LiteLLM's pricing table at sync time (cached for 24 hours) instead of relying on a static list that went stale every time a model launched. New models get billed at their real rate from day one; offline syncs fall back to the built-in table.",
+      },
+    ],
+  },
+  {
+    date: "2026-05-28",
+    items: [
+      {
+        title: "Activity heatmap dots on the right weekday",
+        type: "fix",
+        description:
+          "Cells were placed in insertion order rather than by actual day of week, so the whole grid was shifted by the start date's offset (a Tuesday could render on the Saturday row).",
+      },
+    ],
+  },
+  {
+    date: "2026-05-12",
+    items: [
+      {
+        title: "Sign-in hiccups no longer 500",
+        type: "fix",
+        description:
+          "A stale tab or back-button re-entry during GitHub sign-in used to land on a raw 500 error page. It now returns you to the sign-in page with a \"try again\" banner.",
+      },
+    ],
+  },
+  {
+    date: "2026-05-11",
+    items: [
+      {
+        title: "OpenCode usage after its database switch",
+        type: "fix",
+        description:
+          "OpenCode moved from JSON files to a SQLite database in late April, which made all usage after the switch invisible to the CLI. It now reads the database directly (falling back to JSON only when the DB is empty), and sessions with only reasoning or cache tokens are no longer skipped.",
+      },
     ],
   },
   {
