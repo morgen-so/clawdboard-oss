@@ -248,6 +248,9 @@ export interface SourceComparisonPoint {
   geminiCli: number;
   antigravity: number;
   copilotCli: number;
+  pi: number;
+  hermes: number;
+  deepseekHarness: number;
 }
 
 /** All-source daily trends for comparison chart (last N days). */
@@ -271,7 +274,10 @@ export async function getSourceComparisonTrends(
         COALESCE(SUM(CASE WHEN source = 'cursor' THEN total_cost::numeric ELSE 0 END), 0)::float AS cursor,
         COALESCE(SUM(CASE WHEN source = 'gemini-cli' THEN total_cost::numeric ELSE 0 END), 0)::float AS gemini_cli,
         COALESCE(SUM(CASE WHEN source = 'antigravity' THEN total_cost::numeric ELSE 0 END), 0)::float AS antigravity,
-        COALESCE(SUM(CASE WHEN source = 'copilot-cli' THEN total_cost::numeric ELSE 0 END), 0)::float AS copilot_cli
+        COALESCE(SUM(CASE WHEN source = 'copilot-cli' THEN total_cost::numeric ELSE 0 END), 0)::float AS copilot_cli,
+        COALESCE(SUM(CASE WHEN source = 'pi' THEN total_cost::numeric ELSE 0 END), 0)::float AS pi,
+        COALESCE(SUM(CASE WHEN source = 'hermes' THEN total_cost::numeric ELSE 0 END), 0)::float AS hermes,
+        COALESCE(SUM(CASE WHEN source = 'deepseek-harness' THEN total_cost::numeric ELSE 0 END), 0)::float AS deepseek_harness
       FROM visible_daily_aggregates
       WHERE date >= ${cutoffStr}
       GROUP BY date
@@ -290,6 +296,9 @@ export async function getSourceComparisonTrends(
       geminiCli: Number(row.gemini_cli ?? 0),
       antigravity: Number(row.antigravity ?? 0),
       copilotCli: Number(row.copilot_cli ?? 0),
+      pi: Number(row.pi ?? 0),
+      hermes: Number(row.hermes ?? 0),
+      deepseekHarness: Number(row.deepseek_harness ?? 0),
     }));
   } catch {
     // source column missing — all data goes to claudeCode
@@ -306,6 +315,9 @@ export async function getSourceComparisonTrends(
       geminiCli: 0,
       antigravity: 0,
       copilotCli: 0,
+      pi: 0,
+      hermes: 0,
+      deepseekHarness: 0,
     }));
   }
 }

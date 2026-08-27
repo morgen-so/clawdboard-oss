@@ -33,6 +33,9 @@ const SOURCE_COLORS: Record<string, string> = {
   "gemini-cli": "#8b5cf6", // violet
   antigravity: "#06b6d4", // cyan
   "copilot-cli": "#94a3b8", // slate
+  pi: "#f43f5e", // rose
+  hermes: "#14b8a6", // teal
+  "deepseek-harness": "#84cc16", // lime
 };
 
 const SOURCE_LABELS: Record<string, string> = {
@@ -46,6 +49,9 @@ const SOURCE_LABELS: Record<string, string> = {
   "gemini-cli": "Gemini CLI",
   antigravity: "Antigravity",
   "copilot-cli": "Copilot CLI",
+  pi: "Pi",
+  hermes: "Hermes",
+  "deepseek-harness": "DeepSeek Harness",
 };
 
 

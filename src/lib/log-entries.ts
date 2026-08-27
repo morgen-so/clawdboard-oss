@@ -12,6 +12,17 @@ export interface LogEntry {
 
 export const logEntries: LogEntry[] = [
   {
+    date: "2026-08-27",
+    items: [
+      {
+        title: "Three new tools: Pi, Hermes, DeepSeek Harness",
+        type: "feature",
+        description:
+          "clawdboard now tracks Pi (the terminal coding harness from Armin Ronacher and Mario Zechner), Nous Research's Hermes Agent, and DeepSeek Harness (dsh). Nothing to configure: the CLI reads Pi's session logs from ~/.pi/agent/sessions/, Hermes's state database at ~/.hermes/state.db, and dsh's session logs from ~/.dsh/sessions/ on your next sync. For Hermes, interactive sessions count (terminal, desktop app, editor integrations, web UI); scheduled cron jobs and conversations through its Telegram, Discord, or other chat gateways are left out. Each shows up as its own source on your profile and the leaderboard.",
+      },
+    ],
+  },
+  {
     date: "2026-05-05",
     items: [
       {

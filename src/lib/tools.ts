@@ -86,6 +86,27 @@ const TOOL_REGISTRY: Record<string, ToolMeta> = {
     provider: "GitHub",
     website: "https://github.com/github/copilot-cli",
   },
+  pi: {
+    slug: "pi",
+    name: "Pi",
+    color: "#f43f5e",
+    provider: "Community",
+    website: "https://pi.dev",
+  },
+  hermes: {
+    slug: "hermes",
+    name: "Hermes Agent",
+    color: "#14b8a6",
+    provider: "Nous Research",
+    website: "https://hermes-agent.nousresearch.com",
+  },
+  "deepseek-harness": {
+    slug: "deepseek-harness",
+    name: "DeepSeek Harness",
+    color: "#84cc16",
+    provider: "DeepSeek",
+    website: "https://github.com/deepseek-ai/deepseek-harness",
+  },
 };
 
 const FALLBACK_COLOR = "#6366f1";

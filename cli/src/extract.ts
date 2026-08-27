@@ -6,6 +6,12 @@ import { extractDesktopData, hasDesktopData } from "./desktop.js";
 import { extractGeminiCliData, hasGeminiCliData } from "./gemini-cli.js";
 import { extractCopilotCliData, hasCopilotCliData } from "./copilot-cli.js";
 import { extractAntigravityData, hasAntigravityData } from "./antigravity.js";
+import { extractPiData, hasPiData } from "./pi.js";
+import { extractHermesData, hasHermesData } from "./hermes.js";
+import {
+  extractDeepSeekHarnessData,
+  hasDeepSeekHarnessData,
+} from "./deepseek-harness.js";
 import { loadLivePricing } from "./litellm-pricing.js";
 import type { Source } from "./accumulator.js";
 
@@ -79,6 +85,9 @@ export function sanitizeDailyData(
  *      ~/.gemini/oauth_creds.json. Disabled by default; enable with
  *      `clawdboard antigravity enable`.
  *   8. Claude desktop app (Cowork / Dispatch).
+ *   9. Pi — reads session JSONL files from ~/.pi/agent/sessions/
+ *  10. Hermes Agent — reads the SQLite state DB at ~/.hermes/state.db
+ *  11. DeepSeek Harness — reads (zstd) session logs from ~/.dsh/sessions/
  *
  * All sources are optional and run concurrently via Promise.allSettled —
  * one source failing or being absent never blocks the others. Each
@@ -108,6 +117,9 @@ export async function extractAndSanitize(
     copilotResult,
     antigravityResult,
     desktopResult,
+    piResult,
+    hermesResult,
+    dshResult,
   ] = await Promise.allSettled([
     // Source 1: Claude Code via ccusage
     (async (): Promise<SyncDay[]> => {
@@ -133,6 +145,12 @@ export async function extractAndSanitize(
     extractAntigravityData(since),
     // Source 8: Claude desktop app (Cowork / Dispatch)
     extractDesktopData(since),
+    // Source 9: Pi
+    extractPiData(since),
+    // Source 10: Hermes Agent
+    extractHermesData(since),
+    // Source 11: DeepSeek Harness
+    extractDeepSeekHarnessData(since),
   ]);
 
   const claudeDays = claudeResult.status === "fulfilled" ? claudeResult.value : [];
@@ -143,6 +161,9 @@ export async function extractAndSanitize(
   const copilotDays = copilotResult.status === "fulfilled" ? copilotResult.value : [];
   const antigravityDays = antigravityResult.status === "fulfilled" ? antigravityResult.value : [];
   const desktopDays = desktopResult.status === "fulfilled" ? desktopResult.value : [];
+  const piDays = piResult.status === "fulfilled" ? piResult.value : [];
+  const hermesDays = hermesResult.status === "fulfilled" ? hermesResult.value : [];
+  const dshDays = dshResult.status === "fulfilled" ? dshResult.value : [];
 
   // Concatenate all sources — each entry already has its source tag,
   // so the server can upsert them as separate (user_id, date, source) rows
@@ -155,6 +176,9 @@ export async function extractAndSanitize(
     ...copilotDays,
     ...antigravityDays,
     ...desktopDays,
+    ...piDays,
+    ...hermesDays,
+    ...dshDays,
   ];
 
   if (
@@ -165,10 +189,13 @@ export async function extractAndSanitize(
     !hasGeminiCliData() &&
     !hasCopilotCliData() &&
     !hasAntigravityData() &&
-    !hasDesktopData()
+    !hasDesktopData() &&
+    !hasPiData() &&
+    !hasHermesData() &&
+    !hasDeepSeekHarnessData()
   ) {
     throw new Error(
-      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, Cursor, Gemini CLI, GitHub Copilot CLI, Antigravity, or the Claude desktop app on this machine."
+      "No usage data found. Make sure you have used Claude Code, OpenCode, Codex, Cursor, Gemini CLI, GitHub Copilot CLI, Antigravity, Pi, Hermes, DeepSeek Harness, or the Claude desktop app on this machine."
     );
   }
 
