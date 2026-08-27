@@ -75,11 +75,15 @@ Translation files live in `messages/` (EN, FR, DE, ES). Use `next-intl` APIs for
 
 ### CLI Publishing (npm)
 
+Publishing runs in GitHub Actions via npm trusted publishing (`.github/workflows/publish-cli.yml`); there is no npm token anywhere. To release:
+
 ```bash
-cd cli && npm version patch && npm publish
+cd cli && npm version patch --no-git-tag-version && npm install
+cd .. && git add cli/package.json cli/package-lock.json cli/CHANGELOG.md
+git commit -m "chore(cli): release X.Y.Z" && git tag vX.Y.Z && git push origin main vX.Y.Z
 ```
 
-Always run from `cli/`, not project root. `README.md` in `cli/` is the npm landing page.
+The workflow checks that the tag matches `cli/package.json`, runs the tests, builds, and publishes with provenance. Date the `[Unreleased]` section of `cli/CHANGELOG.md` in the same commit. `README.md` in `cli/` is the npm landing page.
 
 ### Environment
 - Variables validated with `@t3-oss/env-nextjs` in `src/lib/env.ts`
