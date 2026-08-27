@@ -41,7 +41,7 @@ export async function runSync(
       );
       console.error(
         chalk.dim(
-          "Gemini CLI, GitHub Copilot CLI, or Antigravity (opt-in) on this machine."
+          "Gemini CLI, GitHub Copilot CLI, Antigravity (opt-in), Pi, Hermes, or DeepSeek Harness on this machine."
         )
       );
       console.error(chalk.dim(`Detail: ${err.message}`));
@@ -142,7 +142,8 @@ export async function runSync(
  * sanitize, and upload.
  *
  * Tools: Claude Code, OpenCode (incl. Go and Zen tiers), Codex CLI,
- * Cursor, Gemini CLI, GitHub Copilot CLI, and Antigravity (opt-in).
+ * Cursor, Gemini CLI, GitHub Copilot CLI, Antigravity (opt-in), Pi,
+ * Hermes Agent, and DeepSeek Harness.
  *
  * Flow:
  * 1. Load config and check for API token
@@ -153,7 +154,7 @@ export async function runSync(
  */
 export const syncCommand = new Command("sync")
   .description(
-    "Sync usage data (Claude Code, OpenCode, Codex, Cursor, Gemini CLI, Copilot CLI, Antigravity)"
+    "Sync usage data (Claude Code, OpenCode, Codex, Cursor, Gemini CLI, Copilot CLI, Antigravity, Pi, Hermes, DeepSeek Harness)"
   )
   .option("--since <date>", "Sync data from this date forward (YYYY-MM-DD)")
   .option("--dry-run", "Extract and display data without uploading")

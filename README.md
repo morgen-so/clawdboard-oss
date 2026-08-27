@@ -1,6 +1,6 @@
 # clawdboard
 
-The open-source leaderboard for AI coding agents. Track and compare usage, costs, tokens, streaks, and model breakdowns across developers. Supports Claude Code, OpenCode, and Codex.
+The open-source leaderboard for AI coding agents. Track and compare usage, costs, tokens, streaks, and model breakdowns across developers. Supports Claude Code, OpenCode, Codex CLI, Cursor, Gemini CLI, GitHub Copilot CLI, Antigravity, Pi, Hermes Agent, and DeepSeek Harness.
 
 [clawdboard.ai](https://clawdboard.ai)
 

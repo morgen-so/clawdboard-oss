@@ -28,6 +28,9 @@ const SOURCE_VALUES = [
   "gemini-cli",
   "antigravity",
   "copilot-cli",
+  "pi",
+  "hermes",
+  "deepseek-harness",
 ] as const;
 
 

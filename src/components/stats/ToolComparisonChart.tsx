@@ -25,6 +25,9 @@ interface ToolComparisonPoint {
   geminiCli: number;
   antigravity: number;
   copilotCli: number;
+  pi: number;
+  hermes: number;
+  deepseekHarness: number;
 }
 
 interface ToolComparisonChartProps {
@@ -42,6 +45,9 @@ const TOOL_CONFIG = [
   { key: "geminiCli", label: "Gemini CLI", color: "#8b5cf6" },
   { key: "antigravity", label: "Antigravity", color: "#06b6d4" },
   { key: "copilotCli", label: "Copilot CLI", color: "#94a3b8" },
+  { key: "pi", label: "Pi", color: "#f43f5e" },
+  { key: "hermes", label: "Hermes", color: "#14b8a6" },
+  { key: "deepseekHarness", label: "DeepSeek Harness", color: "#84cc16" },
 ] as const;
 
 function formatDate(dateStr: string): string {
@@ -70,6 +76,9 @@ function movingAverage(
       geminiCli: slice.reduce((s, p) => s + p.geminiCli, 0) / n,
       antigravity: slice.reduce((s, p) => s + p.antigravity, 0) / n,
       copilotCli: slice.reduce((s, p) => s + p.copilotCli, 0) / n,
+      pi: slice.reduce((s, p) => s + p.pi, 0) / n,
+      hermes: slice.reduce((s, p) => s + p.hermes, 0) / n,
+      deepseekHarness: slice.reduce((s, p) => s + p.deepseekHarness, 0) / n,
     };
   });
 }

@@ -4,6 +4,30 @@ All notable changes to the `clawdboard` CLI are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses semver loosely while pre-1.0.
 
+## [0.3.6] - 2026-08-27
+
+### Added
+
+- **Pi extractor (`pi`).** Reads session JSONL logs at
+  `~/.pi/agent/sessions/<project>/<timestamp>_<uuid>.jsonl` (honours
+  `PI_CODING_AGENT_SESSION_DIR` and `PI_CODING_AGENT_DIR`). Counts every
+  assistant message, including ones on abandoned branches. Pi already
+  normalizes provider accounting to disjoint input / cache-read counts, so
+  no subset correction is applied.
+- **Hermes Agent extractor (`hermes`).** Reads the SQLite state DB at
+  `~/.hermes/state.db` (honours `HERMES_HOME`), copying it (and its WAL)
+  to a temp dir first so it never contends with a running Hermes process.
+  Uses the per-model `session_model_usage` table when present, otherwise
+  session totals. Only interactive sessions are counted (`cli`, `tui`,
+  `desktop`, `acp`, web UI); cron jobs, kanban runs, sub-agent `tool`
+  runs, and chat-gateway traffic (Telegram, Discord, WhatsApp, …) are
+  excluded.
+- **DeepSeek Harness extractor (`deepseek-harness`).** Reads dsh's
+  append-only session logs at `~/.dsh/sessions/<project>/<id>/session.jsonl.zstd`
+  (honours `DSH_HOME`). Zstandard logs are decoded frame by frame via
+  `node:zlib` (Node ≥ 22.15); a torn trailing frame is ignored. Plain
+  `session.jsonl` logs (`compression: none`) are read too.
+
 ## [0.3.2] - 2026-05-05
 
 ### Added

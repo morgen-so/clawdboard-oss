@@ -248,6 +248,9 @@ export default async function StatsPage() {
                     "gemini-cli": "Gemini CLI",
                     antigravity: "Antigravity",
                     "copilot-cli": "Copilot CLI",
+                    pi: "Pi",
+                    hermes: "Hermes",
+                    "deepseek-harness": "DeepSeek Harness",
                   };
                   return labels[s.source] ?? s.source;
                 })
