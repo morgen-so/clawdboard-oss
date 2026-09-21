@@ -7,6 +7,12 @@ import { rateLimit } from "@/lib/rate-limit";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { recomputeAllStreaks } from "@/lib/db/streak-state";
 
+// This route does schema work, rebuilds the materialized view and refolds
+// every user's streak, so it needs more than the default function timeout.
+// A timeout on the first run after a deploy would leave user_streaks empty,
+// and every user reading as a 0 streak until a later tick got through.
+export const maxDuration = 300;
+
 export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { key: "cron-refresh", limit: 2 });
   if (limited) return limited;
