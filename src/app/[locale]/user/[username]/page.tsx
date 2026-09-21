@@ -24,15 +24,17 @@ import {
 } from "@/lib/db/cached";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { ActivityGrid } from "@/components/profile/ActivityGrid";
+import { StreakPasses } from "@/components/profile/StreakPasses";
 import { ShareButtons } from "@/components/profile/ShareButtons";
 import { BadgeSnippet } from "@/components/profile/BadgeSnippet";
 import { TimeFilter } from "@/components/leaderboard/TimeFilter";
-import { computeCurrentStreak } from "@/lib/streak";
+import { computeStreakState } from "@/lib/streak";
 import { TRANSCENDENT_MIN_DAYS } from "@/lib/streak-tiers";
 import { computeFullBadgeState } from "@/lib/badges";
 import { PinnedBadges } from "@/components/profile/PinnedBadges";
 import { BadgeUnlockModal } from "@/components/profile/BadgeUnlockModal";
 import { StreakCelebration } from "@/components/profile/StreakCelebration";
+import { StreakPassCelebration } from "@/components/profile/StreakPassCelebration";
 import { TeamNudge } from "@/components/profile/TeamNudge";
 import { ProfileJoinCta } from "@/components/profile/ProfileJoinCta";
 import { env } from "@/lib/env";
@@ -113,6 +115,7 @@ interface PageProps {
     to?: string;
     vs?: string;
     carcinize?: string;
+    passes?: string;
   }>;
 }
 
@@ -199,14 +202,38 @@ export default async function UserProfilePage({
       vsParam ? getUserByUsername(vsParam) : Promise.resolve(null),
     ]);
 
-  const currentStreak = computeCurrentStreak(allDailyData);
+  // One fold over the full history gives the streak, the free-pass balance and
+  // which days a pass covered. Read-only: the stored snapshot the leaderboard
+  // joins is written by /api/sync and the cron, never by a page view.
+  const streak = computeStreakState(allDailyData);
+  const currentStreak = streak.current;
+
   const isOwner =
     session?.user?.githubUsername?.toLowerCase() ===
     (user.githubUsername ?? "").toLowerCase();
 
+  // Free passes are the user's own business. Visitors see the streak number
+  // and nothing about what's holding it up, so the pass state never reaches
+  // their page payload at all.
+  const visibleStreak = isOwner
+    ? streak
+    : {
+        ...streak,
+        passesLeft: 0,
+        passesEarned: 0,
+        passesSpent: 0,
+        daysToNextPass: null,
+        frozen: false,
+        frozenFor: 0,
+        frozenDays: [],
+      };
+
   // The Carcinization Event — dev preview via ?carcinize=1 (never in prod)
   const forceCarcinize =
     process.env.NODE_ENV === "development" && sp.carcinize === "1";
+  // Free-pass celebration — dev preview via ?passes=1 (never in prod)
+  const forcePasses =
+    process.env.NODE_ENV === "development" && sp.passes === "1";
   const showCarcinization =
     isOwner && (currentStreak >= TRANSCENDENT_MIN_DAYS || forceCarcinize);
 
@@ -296,6 +323,20 @@ export default async function UserProfilePage({
       {/* Header */}
       <Header subtitle={user.githubUsername ?? "profile"} />
 
+      {/* Free pass banked. Mounted for the owner only: it's a client
+          component, so its props are in the page payload for whoever gets it. */}
+      {(isOwner || forcePasses) && (
+        <StreakPassCelebration
+          username={user.githubUsername ?? username}
+          runStart={streak.runStart}
+          currentStreak={currentStreak}
+          passesEarned={streak.passesEarned}
+          passesLeft={streak.passesLeft}
+          suppress={showCarcinization}
+          force={forcePasses}
+        />
+      )}
+
       {/* Streak tier-up celebration (owner only) */}
       <StreakCelebration
         username={user.githubUsername ?? username}
@@ -353,7 +394,7 @@ export default async function UserProfilePage({
             user={user}
             summary={summary}
             rank={rank}
-            currentStreak={currentStreak}
+            streak={visibleStreak}
             teams={publicTeams}
           >
             <div className="flex items-center gap-2">
@@ -382,7 +423,12 @@ export default async function UserProfilePage({
 
           {userRecaps.length > 0 && <RecapStrip recaps={userRecaps} />}
 
-          <ActivityGrid data={activityGridData} />
+          <ActivityGrid
+            data={activityGridData}
+            frozenDays={visibleStreak.frozenDays}
+          />
+
+          {isOwner && <StreakPasses streak={streak} />}
 
           <PinnedBadges
             pinnedBadges={pinnedBadges}

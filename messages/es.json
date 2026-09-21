@@ -119,14 +119,17 @@
     "activeDays": "Días activos",
     "cooking": "Cocinando",
     "cookingTooltip": "Configura tu enlace de cocina en Ajustes para mostrar lo que estás construyendo",
-    "streakTooltip": "Días consecutivos de uso",
+    "streakTooltip": "Días consecutivos de uso. Cada 75 días ganas un pase libre que cubre un día perdido.",
     "noDataYet": "Sin datos aún",
     "getStarted": "Ejecuta <command>npx clawdboard auth</command> para comenzar",
     "showingCount": "Mostrando {shown} de {total} usuarios",
     "loadMore": "Cargar más",
     "loading": "Cargando…",
     "you": "tú",
-    "anonymous": "Anónimo"
+    "anonymous": "Anónimo",
+    "streakTitle": "Racha de {count} días · {tier}",
+    "streakFrozenTitle": "{days, plural, one {sostenida por un pase libre} other {sostenida por pases libres (# días)}}",
+    "streakPassesTitle": "{count, plural, one {# pase libre guardado} other {# pases libres guardados}}"
   },
   "syncBanner": {
     "message": "Hola {username}, tus estadísticas aún no están en la tabla. Ejecuta",
@@ -234,7 +237,21 @@
     "top": "Top {percent}%",
     "on": "en",
     "noBadgesPinned": "Sin insignias fijadas.",
-    "pinBadgesInSettings": "Fijar insignias en ajustes"
+    "pinBadgesInSettings": "Fijar insignias en ajustes",
+    "passes": "Pases libres",
+    "passesBanked": "{count, plural, =0 {ninguno guardado} one {# guardado} other {# guardados}}",
+    "passesEarnedTotal": "{count, plural, one {# ganado} other {# ganados}}",
+    "passesSpentTotal": "{count, plural, one {# usado} other {# usados}}",
+    "passesExplainer": "Cada {days} días de racha ganas un pase libre. Un pase cubre un día perdido, y los que no uses se acumulan.",
+    "nextPassIn": "{days, plural, one {# día para tu próximo pase libre} other {# días para tu próximo pase libre}}",
+    "frozenNow": "{days, plural, one {Un pase libre está cubriendo el último día.} other {Hay pases libres cubriendo los últimos # días.}}",
+    "frozenHint": "Sincroniza hoy y la racha sigue.",
+    "frozenDay": "cubierto por un pase libre",
+    "frozenLegend": "Días cubiertos por un pase libre",
+    "passEarnedTitle": "{count, plural, one {Pase libre ganado} other {# pases libres ganados}}",
+    "passEarnedBody": "Un pase libre cubre un día perdido, así que un día de descanso no rompe tu racha. Ganas otro cada {days} días.",
+    "passEarnedDismiss": "Entendido",
+    "passEarnedStreak": "{days} días sin interrupción · {left, plural, =0 {todos los pases usados} one {# guardado} other {# guardados}}"
   },
   "settings": {
     "profile": "Perfil",
@@ -446,7 +463,7 @@
     "q10": "Qué significa el número de \"costo\"?",
     "a10": "Es el costo estimado de tu uso de tokens a las tarifas API publicadas (Anthropic, OpenAI, etc.). Es una estimación calculada, no una factura real. Piensa en ello como un indicador de cuán intensivamente usas herramientas de codificación IA.",
     "q11": "Cómo se calculan las rachas?",
-    "a11": "Una racha cuenta los días consecutivos en que usaste herramientas de codificación IA. Si las usas el lunes, martes y miércoles, esa es una racha de 3 días. Perder un día la reinicia. La clasificación muestra tu racha activa actual.",
+    "a11": "Una racha cuenta los días consecutivos en que usaste herramientas de codificación IA. Si las usas el lunes, martes y miércoles, esa es una racha de 3 días. Perder un día la rompe, salvo que tengas un pase libre guardado que cubra ese día. La clasificación muestra tu racha activa actual.",
     "q12": "Cómo se determina el ranking?",
     "a12": "Por defecto, los usuarios se clasifican por costo estimado (el más alto primero). También puedes ordenar por tokens totales, número de días activos o racha actual. Cada columna es ordenable, y puedes filtrar por período (7d, 30d, este mes, desde inicio de año o un rango personalizado).",
     "q13": "Rastrea clawdboard el uso de API de mis propias apps?",
@@ -456,7 +473,9 @@
     "q15": "Qué es el plugin de clawdboard?",
     "a15": "Es un plugin de Claude Code que agrega los comandos /sync, /stats y /leaderboard directamente en Claude Code. También sincroniza automáticamente tu uso cada 2 horas mediante un hook en segundo plano -- para que tus estadísticas se mantengan actualizadas sin esfuerzo manual.",
     "q16": "Cómo instalo el plugin?",
-    "a16": "Instálalo desde GitHub ejecutando \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" en tu terminal. Primero necesitarás una cuenta gratuita de clawdboard -- inicia sesión en clawdboard.ai con GitHub y luego ejecuta \"npx clawdboard auth\" para vincular tu máquina."
+    "a16": "Instálalo desde GitHub ejecutando \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" en tu terminal. Primero necesitarás una cuenta gratuita de clawdboard -- inicia sesión en clawdboard.ai con GitHub y luego ejecuta \"npx clawdboard auth\" para vincular tu máquina.",
+    "q17": "¿Qué son los pases libres de racha?",
+    "a17": "Cada 75 días de racha ininterrumpida ganas un pase libre. Un pase cubre exactamente un día perdido: tu racha sobrevive y el día cubierto aparece en azul en tu cuadrícula de actividad. Los pases sin usar se acumulan, así que tres pases guardados cubren tres días perdidos, juntos o separados. El día que cubre un pase no suma a tu racha -- el número sigue siendo un recuento de los días en que realmente apareciste. Los pases se cuentan desde tu racha actual y solo cubren días perdidos desde el lanzamiento: una racha que ya se había roto sigue rota. Tus pases son privados: solo tú ves lo que tienes guardado o si un pase está sosteniendo tu racha. Los demás solo ven el número."
   },
   "contribute": {
     "heading": "Contribuir",
@@ -547,7 +566,7 @@
     "faqQ5": "Con qué frecuencia se actualizan estos datos?",
     "faqA5": "Los desarrolladores individuales sincronizan su uso cada 2 horas por defecto. Las estadísticas agregadas de esta página se recalculan cada hora. Los datos cubren todo el uso desde enero de 2024.",
     "faqQ6": "Qué es una racha y cómo se calcula?",
-    "faqA6": "Una racha cuenta los días calendario consecutivos en que un desarrollador usó herramientas de codificación IA al menos una vez. Faltar un solo día reinicia la racha. La racha activa más larga en la comunidad es actualmente de {longestStreak} días. Puedes ver las rachas individuales en la clasificación y en las páginas de perfil.",
+    "faqA6": "Una racha cuenta los días calendario consecutivos en que un desarrollador usó herramientas de codificación IA al menos una vez. Faltar un día reinicia la racha, salvo que un pase libre lo cubra (se gana un pase cada 75 días de racha). La racha activa más larga en la comunidad es actualmente de {longestStreak} días. Puedes ver las rachas individuales en la clasificación y en las páginas de perfil.",
     "faqQ7": "Puedo acceder a estos datos de forma programática?",
     "faqA7": "Sí. clawdboard ofrece una API pública gratuita en {statsUrl} que devuelve estadísticas agregadas de toda la comunidad, incluyendo gasto total, conteos de tokens, desgloses por modelo y notas metodológicas. La API está limitada a 15 solicitudes por minuto y devuelve JSON. La API de clasificación en {leaderboardUrl} también es pública.",
     "faqQ8": "Son estos datos representativos de todos los usuarios de herramientas de codificación IA?",

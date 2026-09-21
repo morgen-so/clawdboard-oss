@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { cachedAuth, signIn, isDevAuthMode } from "@/lib/auth";
 import { getTranslations } from "next-intl/server";
+import { DevSignInForm } from "./DevSignInForm";
 
 export const metadata: Metadata = {
   title: "Sign In",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
 export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; error?: string; as?: string }>;
 }) {
   const session = await cachedAuth();
   const params = await searchParams;
@@ -21,7 +22,14 @@ export default async function SignInPage({
   const hasAuthError = !!params.error;
   const t = await getTranslations("auth");
 
-  if (session?.user) {
+  // ?as=dev-bob signs straight in, so a demo link needs no typing. The
+  // credentials provider still only accepts seeded dev- users.
+  const asUser =
+    isDevAuthMode && params.as?.startsWith("dev-") ? params.as : null;
+
+  // An existing session normally means there's nothing to do here — except
+  // when ?as= names a different dev user, which is a request to switch.
+  if (session?.user && !asUser) {
     redirect(callbackUrl);
   }
 
@@ -39,7 +47,9 @@ export default async function SignInPage({
             </p>
           </div>
 
-          <form
+          <DevSignInForm
+            defaultUsername={asUser ?? "dev-alice"}
+            autoSubmit={!!asUser}
             action={async (formData: FormData) => {
               "use server";
               const username = formData.get("username") as string;
@@ -48,31 +58,7 @@ export default async function SignInPage({
                 redirectTo: callbackUrl,
               });
             }}
-            className="mt-8 space-y-4"
-          >
-            <div>
-              <label
-                htmlFor="username"
-                className="block font-mono text-xs text-muted mb-1"
-              >
-                Seeded username
-              </label>
-              <input
-                id="username"
-                name="username"
-                type="text"
-                defaultValue="dev-alice"
-                className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm text-foreground focus:border-accent focus:outline-none"
-                placeholder="dev-alice"
-              />
-            </div>
-            <button
-              type="submit"
-              className="flex w-full items-center justify-center gap-3 rounded-md bg-accent px-4 py-3 font-mono text-sm font-semibold text-background transition-all hover:bg-accent-bright focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background focus:outline-none"
-            >
-              Sign in as dev user
-            </button>
-          </form>
+          />
 
           <p className="mt-6 text-center font-mono text-[10px] text-dim">
             Set AUTH_GITHUB_ID and AUTH_GITHUB_SECRET

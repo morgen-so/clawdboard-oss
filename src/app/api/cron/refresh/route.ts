@@ -5,6 +5,13 @@ import { sql } from "drizzle-orm";
 
 import { rateLimit } from "@/lib/rate-limit";
 import { verifyCronSecret } from "@/lib/api-auth";
+import { recomputeAllStreaks } from "@/lib/db/streak-state";
+
+// This route does schema work, rebuilds the materialized view and refolds
+// every user's streak, so it needs more than the default function timeout.
+// A timeout on the first run after a deploy would leave user_streaks empty,
+// and every user reading as a 0 streak until a later tick got through.
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { key: "cron-refresh", limit: 2 });
@@ -118,10 +125,29 @@ export async function GET(req: NextRequest) {
       WHERE u.banned_at IS NULL
     `);
 
+    // Rebuild every user's streak snapshot. Streaks with free passes are a
+    // fold over each user's active days rather than a window function, so the
+    // maths lives in TypeScript and the result is stored in user_streaks.
+    // Syncs keep each user's row current; this pass backfills users who
+    // haven't synced since the feature shipped and repairs rows whose
+    // daily_aggregates were just deduplicated above.
+    const streaksRecomputed = await recomputeAllStreaks();
+
+    // The MV used to work streaks out itself with a window function; it now
+    // reads them from user_streaks. Drop a view built from the old definition
+    // so the CREATE below rebuilds it (one-time per environment). NULL means
+    // there's no view yet, which the CREATE handles on its own.
+    const mvShape = await db.execute<{ ok: boolean | null }>(sql`
+      SELECT pg_get_viewdef(to_regclass('leaderboard_mv')) LIKE '%user_streaks%' AS ok
+    `);
+    if (mvShape.rows?.[0]?.ok === false) {
+      await db.execute(sql`DROP MATERIALIZED VIEW IF EXISTS leaderboard_mv`);
+    }
+
     // Create the materialized view on first run only. Subsequent ticks use
     // REFRESH MATERIALIZED VIEW CONCURRENTLY (below) to pick up fresh data
     // without blocking readers. If the MV definition below ever changes,
-    // drop it manually in a migration so this branch rebuilds it.
+    // update the probe above so this branch rebuilds it.
     await db.execute(sql`
       CREATE MATERIALIZED VIEW IF NOT EXISTS leaderboard_mv AS
       WITH user_totals AS (
@@ -137,33 +163,16 @@ export async function GET(req: NextRequest) {
         WHERE u.banned_at IS NULL
         GROUP BY u.id, u.github_username, u.image
       ),
-      streak_days AS (
-        SELECT DISTINCT user_id, date::date AS d
-        FROM daily_aggregates
-      ),
-      streak_groups AS (
-        SELECT
-          user_id,
-          d,
-          d - (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d))::int AS grp
-        FROM streak_days
-      ),
-      streak_lengths AS (
-        SELECT
-          user_id,
-          grp,
-          COUNT(*) AS streak_len,
-          MAX(d) AS streak_end
-        FROM streak_groups
-        GROUP BY user_id, grp
-      ),
+      -- Ages each stored snapshot to refresh time; mirrors streakSelect()
+      -- in src/lib/db/streak-state.ts. Only the streak number: pass state is
+      -- private and this view feeds public stats.
       current_streaks AS (
         SELECT
           user_id,
-          MAX(streak_len) AS current_streak
-        FROM streak_lengths
-        WHERE streak_end >= CURRENT_DATE - 1
-        GROUP BY user_id
+          last_active IS NOT NULL
+            AND GREATEST(0, (CURRENT_DATE - last_active) - 1) <= passes_left AS alive,
+          streak_days
+        FROM user_streaks
       )
       SELECT
         ut.user_id,
@@ -172,7 +181,7 @@ export async function GET(req: NextRequest) {
         ut.total_cost,
         ut.total_tokens,
         ut.active_days::int,
-        COALESCE(cs.current_streak, 0)::int AS current_streak
+        COALESCE(CASE WHEN cs.alive THEN cs.streak_days END, 0)::int AS current_streak
       FROM user_totals ut
       LEFT JOIN current_streaks cs ON cs.user_id = ut.user_id
       WITH DATA
@@ -322,6 +331,7 @@ export async function GET(req: NextRequest) {
       ok: true,
       refreshedAt: new Date().toISOString(),
       snapshotsCaptured,
+      streaksRecomputed,
       cleanup: {
         duplicateRowsRemoved: dedupedCount,
         badgesReset,

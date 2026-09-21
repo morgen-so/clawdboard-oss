@@ -13,7 +13,12 @@ interface ActivityDataPoint {
 
 interface ActivityGridProps {
   data: ActivityDataPoint[];
+  /** Days a free pass covered ("YYYY-MM-DD") — drawn as bridged, not blank. */
+  frozenDays?: string[];
 }
+
+/** Stable default, so an omitted prop doesn't rebuild the grid every render. */
+const NO_FROZEN_DAYS: string[] = [];
 
 /** Graduated intensity levels matching GitHub contribution colors */
 const LEVEL_CLASSES = [
@@ -65,8 +70,12 @@ const DAY_LABELS: Record<number, string> = {
  * by its day-of-week (row) and week index (column) so partial weeks render in
  * the correct row instead of shifting the whole grid up.
  */
-export function ActivityGrid({ data }: ActivityGridProps) {
+export function ActivityGrid({
+  data,
+  frozenDays = NO_FROZEN_DAYS,
+}: ActivityGridProps) {
   const t = useTranslations("profile");
+  const frozenSet = useMemo(() => new Set(frozenDays), [frozenDays]);
   const gridData = useMemo(() => {
     const totalDays = 364; // 52 weeks
     const today = new Date();
@@ -89,6 +98,7 @@ export function ActivityGrid({ data }: ActivityGridProps) {
       displayDate: string;
       cost: number;
       level: number;
+      frozen: boolean;
       dayOfWeek: number;
       weekIndex: number;
     }[] = [];
@@ -117,6 +127,7 @@ export function ActivityGrid({ data }: ActivityGridProps) {
         displayDate: format(d, "MMM d, yyyy"),
         cost,
         level: getLevel(cost, thresholds),
+        frozen: cost <= 0 && frozenSet.has(dateStr),
         dayOfWeek,
         weekIndex: i === 0 && startDayOfWeek !== 0 ? 0 : adjustedWeekIndex,
       });
@@ -141,7 +152,7 @@ export function ActivityGrid({ data }: ActivityGridProps) {
     }
 
     return { cells, totalWeeks, monthLabels };
-  }, [data]);
+  }, [data, frozenSet]);
 
   return (
     <div className="rounded-lg border border-border bg-surface p-6">
@@ -228,18 +239,32 @@ export function ActivityGrid({ data }: ActivityGridProps) {
               {gridData.cells.map((cell) => (
                 <div
                   key={cell.date}
-                  className={`w-3 h-3 rounded-sm ${LEVEL_CLASSES[cell.level]} transition-colors hover:ring-1 hover:ring-foreground/30`}
+                  className={`w-3 h-3 rounded-sm transition-colors hover:ring-1 hover:ring-foreground/30 ${
+                    cell.frozen
+                      ? "bg-sky-900 ring-1 ring-sky-500/60"
+                      : LEVEL_CLASSES[cell.level]
+                  }`}
                   style={{
                     gridRow: cell.dayOfWeek + 1,
                     gridColumn: cell.weekIndex + 1,
                   }}
-                  title={`${cell.displayDate}: ${formatUsdPlain(cell.cost)}`}
+                  title={
+                    cell.frozen
+                      ? `${cell.displayDate}: ${t("frozenDay")}`
+                      : `${cell.displayDate}: ${formatUsdPlain(cell.cost)}`
+                  }
                 />
               ))}
             </div>
           </div>
         </div>
       </div>
+      {frozenDays.length > 0 && (
+        <p className="mt-3 flex items-center gap-2 text-xs text-muted">
+          <span className="inline-block h-3 w-3 rounded-sm bg-sky-900 ring-1 ring-sky-500/60" />
+          {t("frozenLegend")}
+        </p>
+      )}
     </div>
   );
 }

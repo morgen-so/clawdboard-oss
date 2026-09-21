@@ -2,6 +2,7 @@ import { db, executeRows } from "@/lib/db";
 import { sql } from "drizzle-orm";
 import { MIN_DATE, NEW_USER_WINDOW_MS, VALID_PERIODS, type Period } from "@/lib/constants";
 import { periodFilter } from "./date-filter";
+import { ensureStreakTable, streakSelect } from "./streak-state";
 export type { Period };
 export { VALID_PERIODS };
 
@@ -17,6 +18,24 @@ export interface DateRange {
   to: string;   // ISO date "YYYY-MM-DD"
 }
 
+/**
+ * Free-pass state is private to the user it belongs to: nobody else needs to
+ * know someone is carrying passes or that a streak is resting on one. The
+ * queries fetch it for every row, so strip it before any of this reaches a
+ * client component or an API response — zeroing it here keeps other people's
+ * pass state out of the serialized page payload, not just off the screen.
+ */
+export function redactStreakPasses(
+  rows: LeaderboardRow[],
+  viewerId?: string
+): LeaderboardRow[] {
+  return rows.map((row) =>
+    row.userId === viewerId
+      ? row
+      : { ...row, streakPasses: 0, streakFrozenFor: 0 }
+  );
+}
+
 export interface LeaderboardRow {
   rank: number;
   userId: string;
@@ -26,6 +45,10 @@ export interface LeaderboardRow {
   totalTokens: number;
   activeDays: number;
   currentStreak: number;
+  /** Free passes banked and unspent right now. */
+  streakPasses: number;
+  /** Days a pass is currently holding the streak open. 0 when not frozen. */
+  streakFrozenFor: number;
   rankDelta: number | null; // null = no previous snapshot, 0 = unchanged, positive = moved up, negative = moved down
   isNew: boolean; // true if account created within 48h
   cookingUrl: string | null;
@@ -62,7 +85,9 @@ export const SQL_COL_MAP: Record<SortCol, string> = {
   cost: "total_cost::numeric",
   tokens: "total_tokens",
   days: "active_days",
-  streak: "current_streak",
+  // Users who have never synced have no user_streaks row; sort them as 0
+  // rather than letting NULLs float to the top of a DESC sort.
+  streak: "COALESCE(s.current_streak, 0)",
 };
 
 // ─── Date filter helper ─────────────────────────────────────────────────────
@@ -103,33 +128,9 @@ function buildLeaderboardCTEs(dateFilter: ReturnType<typeof sql>) {
       WHERE u.banned_at IS NULL
       GROUP BY u.id, u.github_username, u.image, u.cooking_url, u.cooking_label, u.created_at
     ),
-    streak_days AS (
-      SELECT DISTINCT user_id, date::date AS d
-      FROM daily_aggregates
-    ),
-    streak_groups AS (
-      SELECT
-        user_id,
-        d,
-        d - (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d))::int AS grp
-      FROM streak_days
-    ),
-    streak_lengths AS (
-      SELECT
-        user_id,
-        grp,
-        COUNT(*) AS streak_len,
-        MAX(d) AS streak_end
-      FROM streak_groups
-      GROUP BY user_id, grp
-    ),
-    current_streaks AS (
-      SELECT
-        user_id,
-        MAX(streak_len) AS current_streak
-      FROM streak_lengths
-      WHERE streak_end >= CURRENT_DATE - 1
-      GROUP BY user_id
+    streaks AS (
+      SELECT user_id, ${streakSelect("user_streaks")}
+      FROM user_streaks
     )`;
 }
 
@@ -175,6 +176,7 @@ export async function getLeaderboardData(
 
   const dateFilter = getDateFilter(period, range);
   const ctes = buildLeaderboardCTEs(dateFilter);
+  await ensureStreakTable();
 
   const [rawRows, previousRanks] = await Promise.all([
     executeRows<RawRowWithCount>(sql`
@@ -189,10 +191,12 @@ export async function getLeaderboardData(
         f.total_cost,
         f.total_tokens,
         f.active_days::int,
-        COALESCE(cs.current_streak, 0)::int AS current_streak,
+        COALESCE(s.current_streak, 0)::int AS current_streak,
+        COALESCE(s.streak_passes, 0)::int AS streak_passes,
+        COALESCE(s.streak_frozen_for, 0)::int AS streak_frozen_for,
         COUNT(*) OVER() AS total_count
       FROM filtered f
-      LEFT JOIN current_streaks cs ON cs.user_id = f.user_id
+      LEFT JOIN streaks s ON s.user_id = f.user_id
       ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, f.user_id ASC
       LIMIT ${limit} OFFSET ${offset}
     `),
@@ -225,6 +229,7 @@ export async function getUserLeaderboardRow(
 
   const dateFilter = getDateFilter(period, range);
   const ctes = buildLeaderboardCTEs(dateFilter);
+  await ensureStreakTable();
 
   const [rows, previousRanks] = await Promise.all([
     executeRows<RawRowWithRank>(sql`
@@ -240,10 +245,12 @@ export async function getUserLeaderboardRow(
           f.total_cost,
           f.total_tokens,
           f.active_days::int,
-          COALESCE(cs.current_streak, 0)::int AS current_streak,
+          COALESCE(s.current_streak, 0)::int AS current_streak,
+          COALESCE(s.streak_passes, 0)::int AS streak_passes,
+          COALESCE(s.streak_frozen_for, 0)::int AS streak_frozen_for,
           ROW_NUMBER() OVER (ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, f.user_id ASC) AS rank
         FROM filtered f
-        LEFT JOIN current_streaks cs ON cs.user_id = f.user_id
+        LEFT JOIN streaks s ON s.user_id = f.user_id
       )
       SELECT * FROM ranked WHERE user_id = ${userId}
     `),
@@ -269,6 +276,8 @@ export interface RawRow {
   total_tokens: string | number | null;
   active_days: string | number | null;
   current_streak: string | number | null;
+  streak_passes: string | number | null;
+  streak_frozen_for: string | number | null;
 }
 
 interface RawRowWithCount extends RawRow {
@@ -296,6 +305,8 @@ function mapSingleRow(
     totalTokens: Number(row.total_tokens ?? 0),
     activeDays: Number(row.active_days ?? 0),
     currentStreak: Number(row.current_streak ?? 0),
+    streakPasses: Number(row.streak_passes ?? 0),
+    streakFrozenFor: Number(row.streak_frozen_for ?? 0),
     rankDelta:
       previousRanks !== undefined && prevRank !== undefined
         ? prevRank - rank

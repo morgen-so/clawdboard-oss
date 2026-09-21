@@ -145,7 +145,21 @@
     "top": "Top {percent}%",
     "on": "on",
     "noBadgesPinned": "No badges pinned.",
-    "pinBadgesInSettings": "Pin badges in settings"
+    "pinBadgesInSettings": "Pin badges in settings",
+    "passes": "Free passes",
+    "passesBanked": "{count, plural, =0 {none banked} one {# banked} other {# banked}}",
+    "passesEarnedTotal": "{count, plural, one {# earned} other {# earned}}",
+    "passesSpentTotal": "{count, plural, one {# used} other {# used}}",
+    "passesExplainer": "Every {days} days of streak earns a free pass. One pass covers one missed day, and unused ones stack up.",
+    "nextPassIn": "{days, plural, one {# day to your next free pass} other {# days to your next free pass}}",
+    "frozenNow": "{days, plural, one {A free pass is covering the last day.} other {Free passes are covering the last # days.}}",
+    "frozenHint": "Sync today and the streak carries on.",
+    "frozenDay": "covered by a free pass",
+    "frozenLegend": "Days a free pass covered",
+    "passEarnedTitle": "{count, plural, one {Free pass earned} other {# free passes earned}}",
+    "passEarnedBody": "A free pass covers one missed day, so a day off won't break your streak. You bank another every {days} days.",
+    "passEarnedDismiss": "Got it",
+    "passEarnedStreak": "{days} days without a break · {left, plural, =0 {all passes spent} one {# banked} other {# banked}}"
   },
   "settings": {
     "profile": "Profile",
@@ -244,14 +258,17 @@
     "activeDays": "Active Days",
     "cooking": "Cooking",
     "cookingTooltip": "Set your cooking link in Settings to show what you're building",
-    "streakTooltip": "Consecutive days with usage",
+    "streakTooltip": "Consecutive days with usage. Every 75 days banks a free pass that covers one missed day.",
     "noDataYet": "No data yet",
     "getStarted": "Run <command>npx clawdboard auth</command> to get started",
     "showingCount": "Showing {shown} of {total} users",
     "loadMore": "Load more",
     "loading": "Loading…",
     "you": "you",
-    "anonymous": "Anonymous"
+    "anonymous": "Anonymous",
+    "streakTitle": "{count}-day streak · {tier}",
+    "streakFrozenTitle": "{days, plural, one {held open by a free pass} other {held open by free passes (# days)}}",
+    "streakPassesTitle": "{count, plural, one {# free pass banked} other {# free passes banked}}"
   },
   "syncBanner": {
     "message": "Hey {username}, your stats aren't on the board yet. Run",
@@ -446,7 +463,7 @@
     "q10": "What does the \"cost\" number mean?",
     "a10": "It's the estimated cost of your token usage at published API rates (Anthropic, OpenAI, etc.). This is a calculated estimate, not an actual bill. Think of it as a proxy for how intensively you're using AI coding tools.",
     "q11": "How are streaks calculated?",
-    "a11": "A streak counts consecutive days where you used any supported AI coding tool. If you use it on Monday, Tuesday, and Wednesday, that's a 3-day streak. Missing a day resets it. The leaderboard shows your current active streak.",
+    "a11": "A streak counts consecutive days where you used any supported AI coding tool. If you use it on Monday, Tuesday, and Wednesday, that's a 3-day streak. Missing a day breaks it, unless you have a free pass banked to cover that day. The leaderboard shows your current active streak.",
     "q12": "How is ranking determined?",
     "a12": "By default, users are ranked by estimated cost (highest first). You can also sort by total tokens, number of active days, or current streak. Each column is sortable, and you can filter by time period (7d, 30d, this month, YTD, or a custom date range).",
     "q13": "Does clawdboard track API usage from my own apps?",
@@ -456,7 +473,9 @@
     "q15": "What is the clawdboard plugin?",
     "a15": "It's a Claude Code plugin that adds /sync, /stats, and /leaderboard slash commands directly inside Claude Code. It also auto-syncs your usage every 2 hours via a background hook -- so your stats stay up to date without manual effort.",
     "q16": "How do I install the plugin?",
-    "a16": "Install it from GitHub by running \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" in your terminal. You'll need a free clawdboard account first -- sign in at clawdboard.ai with GitHub, then run \"npx clawdboard auth\" to link your machine."
+    "a16": "Install it from GitHub by running \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" in your terminal. You'll need a free clawdboard account first -- sign in at clawdboard.ai with GitHub, then run \"npx clawdboard auth\" to link your machine.",
+    "q17": "What are streak free passes?",
+    "a17": "Every 75 days of an unbroken streak banks one free pass. A pass covers exactly one missed day: your streak survives, and the covered day shows in blue on your activity grid. Unused passes stack up, so three banked passes cover three missed days, together or spread apart. The day a pass covers doesn't add to your streak count -- the number stays a count of days you actually showed up. Passes count from your current streak and only cover days missed from launch day on, so a streak that had already broken stays broken. Your passes are private: only you see what you have banked or whether a pass is holding your streak open. Everyone else just sees the streak number."
   },
   "contribute": {
     "heading": "Contribute",
@@ -547,7 +566,7 @@
     "faqQ5": "How often is this data updated?",
     "faqA5": "Individual developers sync their usage every 2 hours by default. The aggregate statistics on this page are recalculated hourly. The data covers all usage since January 2024.",
     "faqQ6": "What is a streak and how is it calculated?",
-    "faqA6": "A streak counts consecutive calendar days where a developer used AI coding tools at least once. Missing a single day resets the streak. The longest active streak in the community is currently {longestStreak} days. You can see individual streaks on the leaderboard and profile pages.",
+    "faqA6": "A streak counts consecutive calendar days where a developer used AI coding tools at least once. Missing a day resets the streak unless a free pass covers it (one pass is banked for every 75 days of streak). The longest active streak in the community is currently {longestStreak} days. You can see individual streaks on the leaderboard and profile pages.",
     "faqQ7": "Can I access this data programmatically?",
     "faqA7": "Yes. clawdboard provides a free public API at {statsUrl} that returns community-wide aggregate statistics including total spend, token counts, model breakdowns, and methodology notes. The API is rate-limited to 15 requests per minute and returns JSON. The leaderboard API at {leaderboardUrl} is also public.",
     "faqQ8": "Is this data representative of all AI coding tool users?",

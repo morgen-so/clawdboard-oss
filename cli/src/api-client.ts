@@ -27,6 +27,12 @@ export interface DeviceTokenResponse {
 export interface SyncResponse {
   success: boolean;
   daysUpserted: number;
+  /** Your current streak in days. Absent on older servers. */
+  streak?: number;
+  /** Your banked free passes. Private to you; absent on older servers. */
+  streakPasses?: number;
+  /** Days a free pass is currently holding your streak open. */
+  streakFrozenFor?: number;
 }
 
 /**

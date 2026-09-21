@@ -2,6 +2,7 @@ import "server-only";
 
 import { db } from "@/lib/db";
 import { sql } from "drizzle-orm";
+import { ensureStreakTable, streakSelect } from "@/lib/db/streak-state";
 import type { RecapData } from "@/lib/db/schema";
 import { friendlyModelName } from "@/lib/models";
 
@@ -152,29 +153,11 @@ export async function generateAllRecaps(
     }
   }
 
-  // 3. Get current streaks (reuse the same window function pattern from leaderboard_mv)
+  // 3. Get current streaks from the stored snapshots (see streak-state.ts)
+  await ensureStreakTable();
   const streaks = await db.execute(sql`
-    WITH streak_days AS (
-      SELECT DISTINCT user_id, date::date AS d
-      FROM daily_aggregates
-    ),
-    streak_groups AS (
-      SELECT user_id, d,
-        d - (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d))::int AS grp
-      FROM streak_days
-    ),
-    streak_lengths AS (
-      SELECT user_id, grp, COUNT(*) AS streak_len, MAX(d) AS streak_end
-      FROM streak_groups
-      GROUP BY user_id, grp
-    ),
-    current_streaks AS (
-      SELECT user_id, MAX(streak_len)::int AS current_streak
-      FROM streak_lengths
-      WHERE streak_end >= CURRENT_DATE - 1
-      GROUP BY user_id
-    )
-    SELECT user_id, current_streak FROM current_streaks
+    SELECT user_id, ${streakSelect("user_streaks")}
+    FROM user_streaks
   `);
 
   for (const row of streaks.rows) {

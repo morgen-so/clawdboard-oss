@@ -77,7 +77,7 @@ export function revalidateTeamCaches() {
 
 // Re-export types and constants so pages only need one import source
 export type { Period, SortCol, SortOrder, LeaderboardRow, LeaderboardResult, DateRange } from "./leaderboard";
-export { VALID_PERIODS, VALID_SORTS, VALID_ORDERS, parseDateRange } from "./leaderboard";
+export { VALID_PERIODS, VALID_SORTS, VALID_ORDERS, parseDateRange, redactStreakPasses } from "./leaderboard";
 export { MIN_DATE } from "@/lib/constants";
 
 // ─── High priority (expensive, called on every navigation) ──────────────────

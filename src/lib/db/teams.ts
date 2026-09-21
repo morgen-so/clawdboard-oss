@@ -6,6 +6,7 @@ import { teams, teamMembers, users } from "./schema";
 import { eq, and, isNull, sql, count } from "drizzle-orm";
 import { getDateFilter, SQL_COL_MAP, getPreviousRanks, mapRawRows } from "./leaderboard";
 import type { Period, SortCol, SortOrder, LeaderboardRow, DateRange, RawRow } from "./leaderboard";
+import { ensureStreakTable, streakSelect } from "./streak-state";
 import crypto from "crypto";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -206,6 +207,7 @@ export async function getTeamLeaderboardData(
 ): Promise<LeaderboardRow[]> {
   const colName = SQL_COL_MAP[sortBy];
   const direction = order === "desc" ? "DESC" : "ASC";
+  await ensureStreakTable();
 
   const [rows, globalPrevRanks] = await Promise.all([
     executeRows<RawRow>(sql`
@@ -227,33 +229,9 @@ export async function getTeamLeaderboardData(
         WHERE ${getDateFilter(period, range)}
         GROUP BY da.user_id, u.github_username, u.image, u.cooking_url, u.cooking_label
       ),
-      streak_days AS (
-        SELECT DISTINCT user_id, date::date AS d
-        FROM daily_aggregates
-      ),
-      streak_groups AS (
-        SELECT
-          user_id,
-          d,
-          d - (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d))::int AS grp
-        FROM streak_days
-      ),
-      streak_lengths AS (
-        SELECT
-          user_id,
-          grp,
-          COUNT(*) AS streak_len,
-          MAX(d) AS streak_end
-        FROM streak_groups
-        GROUP BY user_id, grp
-      ),
-      current_streaks AS (
-        SELECT
-          user_id,
-          MAX(streak_len) AS current_streak
-        FROM streak_lengths
-        WHERE streak_end >= CURRENT_DATE - 1
-        GROUP BY user_id
+      streaks AS (
+        SELECT user_id, ${streakSelect("user_streaks")}
+        FROM user_streaks
       )
       SELECT
         tc.user_id,
@@ -264,9 +242,11 @@ export async function getTeamLeaderboardData(
         tc.total_cost,
         tc.total_tokens,
         tc.active_days::int,
-        COALESCE(cs.current_streak, 0)::int AS current_streak
+        COALESCE(s.current_streak, 0)::int AS current_streak,
+        COALESCE(s.streak_passes, 0)::int AS streak_passes,
+        COALESCE(s.streak_frozen_for, 0)::int AS streak_frozen_for
       FROM team_contributions tc
-      LEFT JOIN current_streaks cs ON cs.user_id = tc.user_id
+      LEFT JOIN streaks s ON s.user_id = tc.user_id
       ORDER BY ${sql.raw(colName)} ${sql.raw(direction)}, tc.user_id ASC
     `),
     getPreviousRanks(),

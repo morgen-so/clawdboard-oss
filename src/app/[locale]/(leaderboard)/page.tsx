@@ -9,6 +9,7 @@ import { getTranslations } from "next-intl/server";
 import {
   getLeaderboardData,
   getUserLeaderboardRow,
+  redactStreakPasses,
   getVibeCoderCount,
   getCommunityStatsCached,
   VALID_PERIODS,
@@ -104,7 +105,7 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     ? parseDateRange(params.from ?? saved?.from, params.to ?? saved?.to)
     : undefined;
 
-  const [{ rows, totalCount }, session, vibeCoderCount, communityStats, weeklyTop] = await Promise.all([
+  const [{ rows: allRows, totalCount }, session, vibeCoderCount, communityStats, weeklyTop] = await Promise.all([
     getLeaderboardData(period, sort, order, range),
     cachedAuth(),
     getVibeCoderCount(),
@@ -112,6 +113,9 @@ export default async function LeaderboardPage({ searchParams }: PageProps) {
     // Always fetch 7d top cost for the hero headline (independent of current filter)
     getLeaderboardData("7d", "cost", "desc"),
   ]);
+
+  // Free passes are private — keep other people's out of the page payload.
+  const rows = redactStreakPasses(allRows, session?.user?.id);
 
   // Only query for authenticated users (simple indexed lookups)
   let hasSynced = false;

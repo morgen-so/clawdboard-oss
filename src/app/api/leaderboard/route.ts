@@ -45,6 +45,8 @@ export async function GET(req: NextRequest) {
       totalTokens: row.totalTokens,
       activeDays: row.activeDays,
       streak: row.currentStreak,
+      // Free-pass state is deliberately absent: it's private to each user and
+      // this endpoint is unauthenticated.
     }));
 
     return NextResponse.json({ period, sort, order, entries });

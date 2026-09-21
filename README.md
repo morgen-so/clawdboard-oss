@@ -16,6 +16,7 @@ The open-source leaderboard for AI coding agents. Track and compare usage, costs
 ## Features
 
 - **Leaderboard** — sort by cost, tokens, or streaks across 7d / 30d / YTD
+- **Streaks with free passes** — every 75 unbroken days banks a pass that covers one missed day; unused passes stack up
 - **Profiles** — usage chart, activity heatmap, model breakdown, earned badges
 - **Teams** — create a team, invite via link, compete and track AI adoption
 - **Shareable cards** — OG images and social sharing for profiles and teams

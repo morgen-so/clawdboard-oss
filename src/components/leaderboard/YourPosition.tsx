@@ -138,6 +138,11 @@ function SyncedStatBar({ row, period, rangeFrom, rangeTo, labels, locale }: { ro
           <span className="hidden sm:inline text-foreground/20 select-none">·</span>
           <span className={`hidden sm:inline font-mono text-sm tabular-nums font-semibold ${streakTier.textColor}`}>
             {streakTier.icon ? `${streakTier.icon} ` : ""}{row.currentStreak}d{streakTier.tier >= 2 ? ` ${streakTier.name}` : ` ${labels.streak}`}
+            {row.streakFrozenFor > 0 && (
+              <span className="ml-1 text-sky-400" aria-hidden="true">
+                &#10052;&#65039;
+              </span>
+            )}
           </span>
         </>
       )}
