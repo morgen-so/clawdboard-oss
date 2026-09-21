@@ -145,7 +145,21 @@
     "top": "Top {percent}%",
     "on": "dans",
     "noBadgesPinned": "Aucun badge épinglé.",
-    "pinBadgesInSettings": "Épingler des badges dans les paramètres"
+    "pinBadgesInSettings": "Épingler des badges dans les paramètres",
+    "passes": "Jokers",
+    "passesBanked": "{count, plural, =0 {aucun en réserve} one {# en réserve} other {# en réserve}}",
+    "passesEarnedTotal": "{count, plural, one {# gagné} other {# gagnés}}",
+    "passesSpentTotal": "{count, plural, one {# utilisé} other {# utilisés}}",
+    "passesExplainer": "Tous les {days} jours de série, vous gagnez un joker. Un joker couvre un jour manqué, et ceux que vous n'utilisez pas s'accumulent.",
+    "nextPassIn": "{days, plural, one {# jour avant votre prochain joker} other {# jours avant votre prochain joker}}",
+    "frozenNow": "{days, plural, one {Un joker couvre le dernier jour.} other {Des jokers couvrent les # derniers jours.}}",
+    "frozenHint": "Synchronisez aujourd'hui et la série continue.",
+    "frozenDay": "couvert par un joker",
+    "frozenLegend": "Jours couverts par un joker",
+    "passEarnedTitle": "{count, plural, one {Joker gagné} other {# jokers gagnés}}",
+    "passEarnedBody": "Un joker couvre un jour manqué, donc un jour de pause ne casse pas votre série. Vous en gagnez un autre tous les {days} jours.",
+    "passEarnedDismiss": "Compris",
+    "passEarnedStreak": "{days} jours sans interruption · {left, plural, =0 {tous les jokers utilisés} one {# en réserve} other {# en réserve}}"
   },
   "settings": {
     "profile": "Profil",
@@ -244,14 +258,17 @@
     "activeDays": "Jours actifs",
     "cooking": "En cuisine",
     "cookingTooltip": "Définissez votre lien en cuisine dans les paramètres pour montrer ce que vous construisez",
-    "streakTooltip": "Jours consécutifs d'utilisation",
+    "streakTooltip": "Jours consécutifs d'utilisation. Tous les 75 jours, vous gagnez un joker qui couvre un jour manqué.",
     "noDataYet": "Pas encore de données",
     "getStarted": "Exécutez <command>npx clawdboard auth</command> pour commencer",
     "showingCount": "Affichage de {shown} sur {total} utilisateurs",
     "loadMore": "Charger plus",
     "loading": "Chargement…",
     "you": "vous",
-    "anonymous": "Anonyme"
+    "anonymous": "Anonyme",
+    "streakTitle": "Série de {count} jours · {tier}",
+    "streakFrozenTitle": "{days, plural, one {maintenue par un joker} other {maintenue par des jokers (# jours)}}",
+    "streakPassesTitle": "{count, plural, one {# joker en réserve} other {# jokers en réserve}}"
   },
   "syncBanner": {
     "message": "Salut {username}, vos stats ne sont pas encore au classement. Exécutez",
@@ -446,7 +463,7 @@
     "q10": "Que signifie le chiffre \"coût\" ?",
     "a10": "C'est le coût estimé de votre utilisation de tokens aux tarifs API publiés (Anthropic, OpenAI, etc.). C'est une estimation calculée, pas une facture réelle. Considérez-le comme un indicateur de l'intensité de votre utilisation des outils de codage IA.",
     "q11": "Comment les séries sont-elles calculées ?",
-    "a11": "Une série compte les jours consécutifs où vous avez utilisé des outils de codage IA. Si vous les utilisez lundi, mardi et mercredi, c'est une série de 3 jours. Manquer un jour la réinitialise. Le classement affiche votre série active actuelle.",
+    "a11": "Une série compte les jours consécutifs où vous avez utilisé des outils de codage IA. Si vous les utilisez lundi, mardi et mercredi, c'est une série de 3 jours. Manquer un jour la casse, sauf si vous avez un joker en réserve pour couvrir ce jour-là. Le classement affiche votre série active actuelle.",
     "q12": "Comment le classement est-il déterminé ?",
     "a12": "Par défaut, les utilisateurs sont classés par coût estimé (le plus élevé en premier). Vous pouvez aussi trier par tokens totaux, nombre de jours actifs ou série actuelle. Chaque colonne est triable, et vous pouvez filtrer par période (7j, 30j, ce mois, depuis le début de l'année ou une plage personnalisée).",
     "q13": "clawdboard suit-il l'utilisation API de mes propres applications ?",
@@ -456,7 +473,9 @@
     "q15": "Qu'est-ce que le plugin clawdboard ?",
     "a15": "C'est un plugin Claude Code qui ajoute les commandes /sync, /stats et /leaderboard directement dans Claude Code. Il synchronise aussi automatiquement votre utilisation toutes les 2 heures via un hook en arrière-plan -- pour que vos statistiques restent à jour sans effort manuel.",
     "q16": "Comment installer le plugin ?",
-    "a16": "Installez-le depuis GitHub en exécutant \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" dans votre terminal. Vous aurez d'abord besoin d'un compte clawdboard gratuit -- connectez-vous sur clawdboard.ai avec GitHub, puis exécutez \"npx clawdboard auth\" pour lier votre machine."
+    "a16": "Installez-le depuis GitHub en exécutant \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" dans votre terminal. Vous aurez d'abord besoin d'un compte clawdboard gratuit -- connectez-vous sur clawdboard.ai avec GitHub, puis exécutez \"npx clawdboard auth\" pour lier votre machine.",
+    "q17": "Que sont les jokers de série ?",
+    "a17": "Tous les 75 jours de série ininterrompue, vous gagnez un joker. Un joker couvre exactement un jour manqué : votre série survit, et le jour couvert apparaît en bleu sur votre grille d'activité. Les jokers non utilisés s'accumulent, donc trois jokers en réserve couvrent trois jours manqués, groupés ou espacés. Le jour couvert par un joker n'augmente pas votre compteur -- le nombre reste un décompte des jours où vous étiez vraiment là. Les jokers se comptent à partir de votre série en cours et ne couvrent que les jours manqués depuis le lancement : une série déjà interrompue le reste. Vos jokers sont privés : vous seul voyez ce que vous avez en réserve ou si un joker maintient votre série. Les autres ne voient que le nombre de jours."
   },
   "contribute": {
     "heading": "Contribuer",
@@ -547,7 +566,7 @@
     "faqQ5": "À quelle fréquence ces données sont-elles mises à jour ?",
     "faqA5": "Les développeurs synchronisent leur utilisation toutes les 2 heures par défaut. Les statistiques agrégées de cette page sont recalculées toutes les heures. Les données couvrent toute l'utilisation depuis janvier 2024.",
     "faqQ6": "Qu'est-ce qu'une série et comment est-elle calculée ?",
-    "faqA6": "Une série compte les jours calendaires consécutifs où un développeur a utilisé des outils de codage IA au moins une fois. Manquer un seul jour réinitialise la série. La plus longue série active de la communauté est actuellement de {longestStreak} jours. Vous pouvez voir les séries individuelles sur le classement et les pages de profil.",
+    "faqA6": "Une série compte les jours calendaires consécutifs où un développeur a utilisé des outils de codage IA au moins une fois. Manquer un jour réinitialise la série, sauf si un joker le couvre (un joker est gagné tous les 75 jours de série). La plus longue série active de la communauté est actuellement de {longestStreak} jours. Vous pouvez voir les séries individuelles sur le classement et les pages de profil.",
     "faqQ7": "Puis-je accéder à ces données de manière programmatique ?",
     "faqA7": "Oui. clawdboard fournit une API publique gratuite à {statsUrl} qui retourne les statistiques agrégées de la communauté, y compris la dépense totale, les comptages de tokens, les répartitions par modèle et les notes méthodologiques. L'API est limitée à 15 requêtes par minute et retourne du JSON. L'API du classement à {leaderboardUrl} est également publique.",
     "faqQ8": "Ces données sont-elles représentatives de tous les utilisateurs d'outils de codage IA ?",

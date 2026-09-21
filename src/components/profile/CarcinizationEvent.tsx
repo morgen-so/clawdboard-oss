@@ -297,6 +297,7 @@ export function CarcinizationEvent({
 
   return createPortal(
     <div
+      data-celebration="carcinization"
       className="fixed inset-0 z-[9999] flex items-center justify-center overflow-hidden bg-black"
       role="dialog"
       aria-modal="true"

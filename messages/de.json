@@ -119,14 +119,17 @@
     "activeDays": "Aktive Tage",
     "cooking": "Am Kochen",
     "cookingTooltip": "Setze deinen Cooking-Link in den Einstellungen, um zu zeigen, woran du arbeitest",
-    "streakTooltip": "Aufeinanderfolgende Nutzungstage",
+    "streakTooltip": "Aufeinanderfolgende Nutzungstage. Alle 75 Tage gibt es ein Freiticket, das einen verpassten Tag abdeckt.",
     "noDataYet": "Noch keine Daten",
     "getStarted": "Führe <command>npx clawdboard auth</command> aus, um zu beginnen",
     "showingCount": "Zeige {shown} von {total} Benutzern",
     "loadMore": "Mehr laden",
     "loading": "Laden…",
     "you": "du",
-    "anonymous": "Anonym"
+    "anonymous": "Anonym",
+    "streakTitle": "{count}-Tage-Serie · {tier}",
+    "streakFrozenTitle": "{days, plural, one {durch ein Freiticket gehalten} other {durch Freitickets gehalten (# Tage)}}",
+    "streakPassesTitle": "{count, plural, one {# Freiticket übrig} other {# Freitickets übrig}}"
   },
   "syncBanner": {
     "message": "Hey {username}, deine Statistiken sind noch nicht in der Rangliste. Führe",
@@ -234,7 +237,21 @@
     "top": "Top {percent}%",
     "on": "in",
     "noBadgesPinned": "Keine Abzeichen angepinnt.",
-    "pinBadgesInSettings": "Abzeichen in den Einstellungen anpinnen"
+    "pinBadgesInSettings": "Abzeichen in den Einstellungen anpinnen",
+    "passes": "Freitickets",
+    "passesBanked": "{count, plural, =0 {keins übrig} one {# übrig} other {# übrig}}",
+    "passesEarnedTotal": "{count, plural, one {# verdient} other {# verdient}}",
+    "passesSpentTotal": "{count, plural, one {# eingelöst} other {# eingelöst}}",
+    "passesExplainer": "Alle {days} Tage Serie gibt es ein Freiticket. Ein Ticket deckt einen verpassten Tag ab, und ungenutzte sammeln sich an.",
+    "nextPassIn": "{days, plural, one {noch # Tag bis zum nächsten Freiticket} other {noch # Tage bis zum nächsten Freiticket}}",
+    "frozenNow": "{days, plural, one {Ein Freiticket deckt den letzten Tag ab.} other {Freitickets decken die letzten # Tage ab.}}",
+    "frozenHint": "Heute synchronisieren, dann läuft die Serie weiter.",
+    "frozenDay": "durch ein Freiticket abgedeckt",
+    "frozenLegend": "Tage, die ein Freiticket abgedeckt hat",
+    "passEarnedTitle": "{count, plural, one {Freiticket verdient} other {# Freitickets verdient}}",
+    "passEarnedBody": "Ein Freiticket deckt einen verpassten Tag ab, ein freier Tag reißt die Serie also nicht. Alle {days} Tage kommt eins dazu.",
+    "passEarnedDismiss": "Verstanden",
+    "passEarnedStreak": "{days} Tage ohne Unterbrechung · {left, plural, =0 {alle Tickets eingelöst} one {# übrig} other {# übrig}}"
   },
   "settings": {
     "profile": "Profil",
@@ -446,7 +463,7 @@
     "q10": "Was bedeutet die Zahl \"Kosten\"?",
     "a10": "Es sind die geschätzten Kosten deiner Token-Nutzung zu veröffentlichten API-Tarifen (Anthropic, OpenAI usw.). Dies ist eine berechnete Schätzung, keine tatsächliche Rechnung. Betrachte es als Indikator dafür, wie intensiv du KI-Coding-Tools nutzt.",
     "q11": "Wie werden Serien berechnet?",
-    "a11": "Eine Serie zahlt aufeinanderfolgende Tage, an denen du KI-Coding-Tools genutzt hast. Wenn du sie am Montag, Dienstag und Mittwoch nutzt, ist das eine 3-Tage-Serie. Ein fehlender Tag setzt sie zurück. Die Rangliste zeigt deine aktuelle aktive Serie.",
+    "a11": "Eine Serie zählt aufeinanderfolgende Tage, an denen du KI-Coding-Tools genutzt hast. Wenn du sie am Montag, Dienstag und Mittwoch nutzt, ist das eine 3-Tage-Serie. Ein fehlender Tag reißt sie, es sei denn, du hast ein Freiticket übrig, das diesen Tag abdeckt. Die Rangliste zeigt deine aktuelle aktive Serie.",
     "q12": "Wie wird das Ranking bestimmt?",
     "a12": "Standardmäßig werden Benutzer nach geschätzten Kosten sortiert (höchste zuerst). Du kannst auch nach Gesamt-Tokens, Anzahl aktiver Tage oder aktueller Serie sortieren. Jede Spalte ist sortierbar, und du kannst nach Zeitraum filtern (7T, 30T, dieser Monat, seit Jahresbeginn oder ein benutzerdefinierter Zeitraum).",
     "q13": "Verfolgt clawdboard die API-Nutzung meiner eigenen Apps?",
@@ -456,7 +473,9 @@
     "q15": "Was ist das clawdboard-Plugin?",
     "a15": "Es ist ein Claude Code Plugin, das die Slash-Befehle /sync, /stats und /leaderboard direkt in Claude Code hinzufugt. Es synchronisiert auch automatisch deine Nutzung alle 2 Stunden über einen Hintergrund-Hook -- damit deine Statistiken ohne manuellen Aufwand aktuell bleiben.",
     "q16": "Wie installiere ich das Plugin?",
-    "a16": "Installiere es von GitHub, indem du \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" in deinem Terminal ausführst. Du brauchst zuerst ein kostenloses clawdboard-Konto -- melde dich auf clawdboard.ai mit GitHub an und führe dann \"npx clawdboard auth\" aus, um deinen Rechner zu verknüpfen."
+    "a16": "Installiere es von GitHub, indem du \"claude plugin add --from https://github.com/jim540/clawdboard-plugin\" in deinem Terminal ausführst. Du brauchst zuerst ein kostenloses clawdboard-Konto -- melde dich auf clawdboard.ai mit GitHub an und führe dann \"npx clawdboard auth\" aus, um deinen Rechner zu verknüpfen.",
+    "q17": "Was sind Freitickets für die Serie?",
+    "a17": "Alle 75 Tage einer ungebrochenen Serie gibt es ein Freiticket. Ein Ticket deckt genau einen verpassten Tag ab: die Serie hält, und der abgedeckte Tag erscheint blau in deinem Aktivitätsraster. Ungenutzte Tickets sammeln sich an, drei übrige Tickets decken also drei verpasste Tage ab, zusammenhängend oder verteilt. Der abgedeckte Tag zählt nicht zur Serie -- die Zahl bleibt ein Zähler der Tage, an denen du wirklich da warst. Tickets zählen ab deiner aktuellen Serie und decken nur Tage ab, die seit dem Start verpasst wurden: eine bereits gerissene Serie bleibt gerissen. Deine Tickets sind privat: nur du siehst, was du übrig hast oder ob ein Ticket deine Serie gerade hält. Alle anderen sehen nur die Zahl."
   },
   "contribute": {
     "heading": "Beitragen",
@@ -547,7 +566,7 @@
     "faqQ5": "Wie oft werden diese Daten aktualisiert?",
     "faqA5": "Einzelne Entwickler synchronisieren ihre Nutzung standardmäßig alle 2 Stunden. Die aggregierten Statistiken auf dieser Seite werden stundlich neu berechnet. Die Daten decken die gesamte Nutzung seit Januar 2024 ab.",
     "faqQ6": "Was ist eine Serie und wie wird sie berechnet?",
-    "faqA6": "Eine Serie zahlt aufeinanderfolgende Kalendertage, an denen ein Entwickler KI-Coding-Tools mindestens einmal genutzt hat. Ein einziger fehlender Tag setzt die Serie zurück. Die längste aktive Serie in der Community beträgt derzeit {longestStreak} Tage. Du kannst die einzelnen Serien auf der Rangliste und den Profilseiten sehen.",
+    "faqA6": "Eine Serie zahlt aufeinanderfolgende Kalendertage, an denen ein Entwickler KI-Coding-Tools mindestens einmal genutzt hat. Ein fehlender Tag setzt die Serie zurück, es sei denn, ein Freiticket deckt ihn ab (alle 75 Tage Serie gibt es ein Ticket). Die längste aktive Serie in der Community beträgt derzeit {longestStreak} Tage. Du kannst die einzelnen Serien auf der Rangliste und den Profilseiten sehen.",
     "faqQ7": "Kann ich programmatisch auf diese Daten zugreifen?",
     "faqA7": "Ja. clawdboard bietet eine kostenlose öffentliche API unter {statsUrl}, die community-weite aggregierte Statistiken einschließlich Gesamtausgaben, Token-Zahlen, Modellaufschlüsselungen und Methodik-Hinweise zurückgibt. Die API ist auf 15 Anfragen pro Minute begrenzt und gibt JSON zurück. Die Ranglisten-API unter {leaderboardUrl} ist ebenfalls öffentlich.",
     "faqQ8": "Sind diese Daten repräsentativ für alle KI-Coding-Tool-Nutzer?",

@@ -257,7 +257,11 @@ function LeaderboardRowItem({
       {/* Streak */}
       <td className="px-3 py-3 sm:px-4 text-right">
         {row.currentStreak > 0 ? (
-          <StreakBadge count={row.currentStreak} />
+          <StreakBadge
+            count={row.currentStreak}
+            passes={row.streakPasses}
+            frozenFor={row.streakFrozenFor}
+          />
         ) : (
           <span className="text-dim">&mdash;</span>
         )}

@@ -135,6 +135,27 @@ export async function runSync(
   console.log(
     `Total: ${formatTokens(totalTokens)} tokens, $${totalCost.toFixed(2)} cost`
   );
+
+  // Your own streak and free-pass state. The server only returns this to the
+  // token holder — pass balances are never public.
+  if (result.streak) {
+    const parts = [`${result.streak} day streak`];
+    if (result.streakFrozenFor) {
+      parts.push(
+        `held open by a free pass (${result.streakFrozenFor} day${
+          result.streakFrozenFor === 1 ? "" : "s"
+        })`
+      );
+    }
+    if (result.streakPasses) {
+      parts.push(
+        `${result.streakPasses} free pass${
+          result.streakPasses === 1 ? "" : "es"
+        } banked`
+      );
+    }
+    console.log(chalk.gray(parts.join(" \u00B7 ")));
+  }
 }
 
 /**

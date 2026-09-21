@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   alternates: seoAlternates("/faq"),
 };
 
-const FAQ_COUNT = 16;
+const FAQ_COUNT = 17;
 
 export default async function FaqPage() {
   const t = await getTranslations("faq");

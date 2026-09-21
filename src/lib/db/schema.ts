@@ -6,6 +6,7 @@ import {
   integer,
   bigint,
   decimal,
+  date,
   jsonb,
   uniqueIndex,
   index,
@@ -316,6 +317,32 @@ export const feedback = pgTable("feedback", {
   resolvedAt: timestamp("resolved_at"),
 });
 
+// ─── Streak state (with free passes) ────────────────────────────────────────
+// One row per user, rewritten on every sync and rebuilt hourly by the cron.
+// Streaks with free passes are a fold over the user's active days rather than
+// something a window function can express, so the fold lives in
+// src/lib/streak.ts and its result is stored here. The snapshot is
+// clock-independent; queries age it to CURRENT_DATE via streakSelect().
+
+export const userStreaks = pgTable("user_streaks", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  /** First active day of the live run. */
+  runStart: date("run_start"),
+  /** Most recent active day. */
+  lastActive: date("last_active"),
+  /** Active days in the run, as of `lastActive`. */
+  streakDays: integer("streak_days").notNull().default(0),
+  /** Unspent free passes, as of `lastActive`. */
+  passesLeft: integer("passes_left").notNull().default(0),
+  passesEarned: integer("passes_earned").notNull().default(0),
+  passesSpent: integer("passes_spent").notNull().default(0),
+  /** Days inside the run a pass covered ("YYYY-MM-DD"), ascending. */
+  frozenDays: jsonb("frozen_days").$type<string[]>().notNull().default([]),
+  computedAt: timestamp("computed_at").defaultNow().notNull(),
+});
+
 // ─── Leaderboard materialized view ──────────────────────────────────────────
 // NOTE: Create via db.execute() — drizzle-kit does not generate mat view migrations.
 // See src/app/api/cron/refresh/route.ts for initial creation.
@@ -342,33 +369,16 @@ export const leaderboardView = pgMaterializedView("leaderboard_mv", {
     WHERE u.banned_at IS NULL
     GROUP BY u.id, u.github_username, u.image
   ),
-  streak_days AS (
-    SELECT DISTINCT user_id, date::date AS d
-    FROM daily_aggregates
-  ),
-  streak_groups AS (
-    SELECT
-      user_id,
-      d,
-      d - (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d))::int AS grp
-    FROM streak_days
-  ),
-  streak_lengths AS (
-    SELECT
-      user_id,
-      grp,
-      COUNT(*) AS streak_len,
-      MAX(d) AS streak_end
-    FROM streak_groups
-    GROUP BY user_id, grp
-  ),
+  -- Ages each stored snapshot to the refresh time; mirrors streakSelect()
+  -- in src/lib/db/streak-state.ts. Only the streak number: pass state is
+  -- private and this view feeds public stats.
   current_streaks AS (
     SELECT
       user_id,
-      MAX(streak_len) AS current_streak
-    FROM streak_lengths
-    WHERE streak_end >= CURRENT_DATE - 1
-    GROUP BY user_id
+      last_active IS NOT NULL
+        AND GREATEST(0, (CURRENT_DATE - last_active) - 1) <= passes_left AS alive,
+      streak_days
+    FROM user_streaks
   )
   SELECT
     ut.user_id,
@@ -377,7 +387,7 @@ export const leaderboardView = pgMaterializedView("leaderboard_mv", {
     ut.total_cost,
     ut.total_tokens,
     ut.active_days::int,
-    COALESCE(cs.current_streak, 0)::int AS current_streak
+    COALESCE(CASE WHEN cs.alive THEN cs.streak_days END, 0)::int AS current_streak
   FROM user_totals ut
   LEFT JOIN current_streaks cs ON cs.user_id = ut.user_id
 `);

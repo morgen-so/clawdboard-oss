@@ -10,7 +10,9 @@ import {
   type SortCol,
   type SortOrder,
   type LeaderboardResult,
+  redactStreakPasses,
 } from "@/lib/db/cached";
+import { auth } from "@/lib/auth";
 
 export async function loadMoreRows(
   period: string,
@@ -39,5 +41,14 @@ export async function loadMoreRows(
     ? parseDateRange(rangeFrom, rangeTo)
     : undefined;
 
-  return getLeaderboardData(validPeriod, validSort, validOrder, range, safeLimit, safeOffset);
+  const [result, session] = await Promise.all([
+    getLeaderboardData(validPeriod, validSort, validOrder, range, safeLimit, safeOffset),
+    auth(),
+  ]);
+
+  // Free passes are private — the same redaction the first page gets.
+  return {
+    ...result,
+    rows: redactStreakPasses(result.rows, session?.user?.id),
+  };
 }

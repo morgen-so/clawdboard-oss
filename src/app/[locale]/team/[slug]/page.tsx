@@ -18,6 +18,7 @@ import {
 import {
   getTeamStats,
   getTeamLeaderboardData,
+  redactStreakPasses,
   VALID_PERIODS,
   VALID_SORTS,
   VALID_ORDERS,
@@ -129,11 +130,14 @@ export default async function TeamProfilePage({ params, searchParams }: PageProp
   const t = await getTranslations("team");
 
   // Parallel data fetch (no separate getActiveMemberCount — derived from members)
-  const [stats, members, memberStats] = await Promise.all([
+  const [stats, members, allMemberStats] = await Promise.all([
     getTeamStats(team.id, period, range),
     getTeamMembers(team.id),
     getTeamLeaderboardData(team.id, period, sort, order, range),
   ]);
+
+  // Free passes are private, even between teammates.
+  const memberStats = redactStreakPasses(allMemberStats, session?.user?.id);
 
   const activeMembers = members.filter((m) => !m.leftAt && m.status === "active");
   const pendingMembers = members.filter((m) => !m.leftAt && m.status === "pending");

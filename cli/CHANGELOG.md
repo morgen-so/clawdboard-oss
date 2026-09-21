@@ -4,6 +4,17 @@ All notable changes to the `clawdboard` CLI are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses semver loosely while pre-1.0.
 
+## [Unreleased]
+
+### Added
+
+- **Streak line after `clawdboard sync`.** A successful sync now prints your
+  current streak, how many free passes you have banked, and whether a pass
+  is holding the streak open right now (`89 day streak · 2 free passes
+  banked`). The server returns this only to the token holder: pass balances
+  are private and aren't part of the public leaderboard API. Older servers
+  don't send the fields and the line is skipped.
+
 ## [0.3.6] - 2026-08-27
 
 ### Added

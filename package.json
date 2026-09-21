@@ -8,6 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "node --test src/lib/*.test.ts",
     "seed": "node scripts/seed.mjs",
     "db:push": "drizzle-kit push",
     "db:setup": "docker compose up -d --wait && npm run db:push && npm run seed"

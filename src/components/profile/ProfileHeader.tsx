@@ -5,13 +5,14 @@ import type { ProfileUser, UserSummary, UserRank } from "@/lib/db/profile";
 import { safeHostname } from "@/lib/url";
 import { StreakAura } from "@/components/ui/StreakAura";
 import { getStreakTier } from "@/lib/streak-tiers";
+import { DAYS_PER_PASS, type StreakState } from "@/lib/streak";
 import { formatMonthYear, formatTokensCompact, formatUsd } from "@/lib/format";
 
 interface ProfileHeaderProps {
   user: ProfileUser;
   summary: UserSummary;
   rank: UserRank;
-  currentStreak: number;
+  streak: StreakState;
   teams?: Array<{ teamName: string; teamSlug: string }>;
   children?: React.ReactNode;
 }
@@ -30,7 +31,7 @@ export async function ProfileHeader({
   user,
   summary,
   rank,
-  currentStreak,
+  streak,
   teams,
   children,
 }: ProfileHeaderProps) {
@@ -41,6 +42,7 @@ export async function ProfileHeader({
     summary.totalCacheCreation +
     summary.totalCacheRead;
 
+  const currentStreak = streak.current;
   const streakTier = getStreakTier(currentStreak);
 
   return (
@@ -138,14 +140,31 @@ export async function ProfileHeader({
               <>
                 <span className="text-accent">{streakTier.icon || "\uD83D\uDD25"}</span>{" "}
                 {currentStreak}d
+                {streak.frozen && (
+                  <span
+                    className="ml-1 text-sm text-sky-400"
+                    title={t("frozenNow", { days: streak.frozenFor })}
+                  >
+                    &#10052;&#65039;
+                  </span>
+                )}
               </>
             ) : (
               <span className="text-muted">0d</span>
             )}
           </p>
-          {streakTier.tier >= 2 && (
+          {(streakTier.tier >= 2 || streak.passesLeft > 0) && (
             <p className="text-[10px] font-medium text-muted mt-0.5">
-              {streakTier.name}
+              {streakTier.tier >= 2 && streakTier.name}
+              {streakTier.tier >= 2 && streak.passesLeft > 0 && " \u00B7 "}
+              {streak.passesLeft > 0 && (
+                <span
+                  className="tabular-nums"
+                  title={`${t("passesBanked", { count: streak.passesLeft })} \u00B7 ${t("passesExplainer", { days: DAYS_PER_PASS })}`}
+                >
+                  &#127903; {streak.passesLeft}
+                </span>
+              )}
             </p>
           )}
         </div>

@@ -14,6 +14,9 @@
 
 import { createHash } from "node:crypto";
 import pg from "pg";
+// Node strips the types on import — the streak fold has exactly one
+// implementation and the seed uses it rather than a SQL copy.
+import { computeStreakSnapshot } from "../src/lib/streak.ts";
 
 const DATABASE_URL =
   process.env.DATABASE_URL ||
@@ -272,6 +275,174 @@ console.log(
   `  Added ${streakRows} filler rows — dev-alice now has a 205-day streak`
 );
 
+// ─── Seed a free-pass streak for dev-bob ────────────────────────────────────
+// 89 active days ending today, with one day missing three days ago. Bob banks
+// his first pass at day 75 of the run, so by the time the gap arrives he can
+// pay for it: a live streak with a bridged day on the activity grid, which is
+// the case the feature exists for.
+
+console.log("Seeding a free-pass streak for dev-bob...");
+const bob = seedUsers[1];
+const BOB_GAP_DAYS_AGO = 3; // missed three days ago, bridged by a banked pass
+let bobRows = 0;
+for (let daysAgo = 0; daysAgo < 90; daysAgo++) {
+  if (daysAgo === BOB_GAP_DAYS_AGO) continue;
+  const inputTokens = 40000 + (daysAgo % 6) * 4000;
+  const outputTokens = 9000 + (daysAgo % 4) * 2500;
+  const cost = ((inputTokens * 0.003 + outputTokens * 0.015) / 1000).toFixed(4);
+  const res = await client.query(
+    `INSERT INTO daily_aggregates
+     (id, user_id, date, source, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_cost, models_used, model_breakdowns, synced_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+     ON CONFLICT (user_id, date, source, machine_id) DO NOTHING`,
+    [
+      uuid(),
+      bob.id,
+      dateStr(daysAgo),
+      "claude-code",
+      inputTokens,
+      outputTokens,
+      0,
+      0,
+      cost,
+      JSON.stringify([models[0]]),
+      JSON.stringify([
+        {
+          modelName: models[0],
+          inputTokens,
+          outputTokens,
+          cacheCreationTokens: 0,
+          cacheReadTokens: 0,
+          cost: parseFloat(cost),
+        },
+      ]),
+    ]
+  );
+  bobRows += res.rowCount;
+}
+// The generic 30-day loop above may already have filled the gap day, so clear
+// it explicitly rather than just skipping the insert.
+await client.query(
+  `DELETE FROM daily_aggregates WHERE user_id = $1 AND date = $2`,
+  [bob.id, dateStr(BOB_GAP_DAYS_AGO)]
+);
+console.log(
+  `  Added ${bobRows} rows — dev-bob's streak survives a gap on ${dateStr(BOB_GAP_DAYS_AGO)}`
+);
+
+// ─── Seed a frozen streak for dev-carol ─────────────────────────────────────
+// 76 active days that stopped two days ago. She banked a pass at day 75, so
+// the pass is holding the streak open right now: the ❄️ state, live, without
+// anyone having to edit rows by hand.
+
+console.log("Seeding a frozen streak for dev-carol...");
+const carol = seedUsers[2];
+const CAROL_LAST_ACTIVE = 2; // days ago
+let carolRows = 0;
+for (let daysAgo = CAROL_LAST_ACTIVE; daysAgo < CAROL_LAST_ACTIVE + 76; daysAgo++) {
+  const inputTokens = 30000 + (daysAgo % 5) * 3000;
+  const outputTokens = 7000 + (daysAgo % 3) * 2000;
+  const cost = ((inputTokens * 0.003 + outputTokens * 0.015) / 1000).toFixed(4);
+  const res = await client.query(
+    `INSERT INTO daily_aggregates
+     (id, user_id, date, source, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, total_cost, models_used, model_breakdowns, synced_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+     ON CONFLICT (user_id, date, source, machine_id) DO NOTHING`,
+    [
+      uuid(),
+      carol.id,
+      dateStr(daysAgo),
+      "claude-code",
+      inputTokens,
+      outputTokens,
+      0,
+      0,
+      cost,
+      JSON.stringify([models[1]]),
+      JSON.stringify([
+        {
+          modelName: models[1],
+          inputTokens,
+          outputTokens,
+          cacheCreationTokens: 0,
+          cacheReadTokens: 0,
+          cost: parseFloat(cost),
+        },
+      ]),
+    ]
+  );
+  carolRows += res.rowCount;
+}
+// The generic 30-day loop may have given her today/yesterday; clear those or
+// the streak isn't frozen at all.
+await client.query(
+  `DELETE FROM daily_aggregates WHERE user_id = $1 AND date > $2`,
+  [carol.id, dateStr(CAROL_LAST_ACTIVE)]
+);
+console.log(
+  `  Added ${carolRows} rows — dev-carol's streak is frozen on a pass since ${dateStr(CAROL_LAST_ACTIVE)}`
+);
+
+// ─── Streak snapshots ───────────────────────────────────────────────────────
+// Streaks with free passes are a fold over each user's active days, not a
+// window function, so the result is stored per user. Mirrors
+// recomputeAllStreaks() in src/lib/db/streak-state.ts.
+
+console.log("Computing streak snapshots...");
+await client.query(`
+  CREATE TABLE IF NOT EXISTS user_streaks (
+    user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    run_start DATE,
+    last_active DATE,
+    streak_days INTEGER NOT NULL DEFAULT 0,
+    passes_left INTEGER NOT NULL DEFAULT 0,
+    passes_earned INTEGER NOT NULL DEFAULT 0,
+    passes_spent INTEGER NOT NULL DEFAULT 0,
+    frozen_days JSONB NOT NULL DEFAULT '[]'::jsonb,
+    computed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )
+`);
+const streakDayRows = await client.query(
+  `SELECT user_id, ARRAY_AGG(DISTINCT date ORDER BY date) AS days
+   FROM daily_aggregates GROUP BY user_id`
+);
+for (const row of streakDayRows.rows) {
+  const snap = computeStreakSnapshot(row.days.map((date) => ({ date })));
+  await client.query(
+    `INSERT INTO user_streaks
+       (user_id, run_start, last_active, streak_days, passes_left,
+        passes_earned, passes_spent, frozen_days, computed_at)
+     VALUES ($1, $2::date, $3::date, $4, $5, $6, $7, $8::jsonb, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET
+       run_start = EXCLUDED.run_start,
+       last_active = EXCLUDED.last_active,
+       streak_days = EXCLUDED.streak_days,
+       passes_left = EXCLUDED.passes_left,
+       passes_earned = EXCLUDED.passes_earned,
+       passes_spent = EXCLUDED.passes_spent,
+       frozen_days = EXCLUDED.frozen_days,
+       computed_at = NOW()`,
+    [
+      row.user_id,
+      snap.runStart,
+      snap.lastActive,
+      snap.streakDays,
+      snap.passesLeft,
+      snap.passesEarned,
+      snap.passesSpent,
+      JSON.stringify(snap.frozenDays),
+    ]
+  );
+}
+console.log(`  Stored ${streakDayRows.rows.length} streak snapshots`);
+if (!process.env.STREAK_PASSES_LIVE_FROM) {
+  console.log(
+    "  Note: passes can't cover days before the launch date, so dev-bob's and\n" +
+      "  dev-carol's seeded gaps read as breaks. To demo passes in use, run the\n" +
+      "  seed and the dev server with STREAK_PASSES_LIVE_FROM=2000-01-01."
+  );
+}
+
 // ─── Create views ────────────────────────────────────────────────────────────
 
 // Community-wide stats read through this view so banned users never reach the
@@ -301,33 +472,13 @@ await client.query(`
     LEFT JOIN daily_aggregates da ON da.user_id = u.id
     GROUP BY u.id, u.github_username, u.image
   ),
-  streak_days AS (
-    SELECT DISTINCT user_id, date::date AS d
-    FROM daily_aggregates
-  ),
-  streak_groups AS (
-    SELECT
-      user_id,
-      d,
-      d - (ROW_NUMBER() OVER (PARTITION BY user_id ORDER BY d))::int AS grp
-    FROM streak_days
-  ),
-  streak_lengths AS (
-    SELECT
-      user_id,
-      grp,
-      COUNT(*) AS streak_len,
-      MAX(d) AS streak_end
-    FROM streak_groups
-    GROUP BY user_id, grp
-  ),
   current_streaks AS (
     SELECT
       user_id,
-      MAX(streak_len) AS current_streak
-    FROM streak_lengths
-    WHERE streak_end >= CURRENT_DATE - 1
-    GROUP BY user_id
+      last_active IS NOT NULL
+        AND GREATEST(0, (CURRENT_DATE - last_active) - 1) <= passes_left AS alive,
+      streak_days
+    FROM user_streaks
   )
   SELECT
     ut.user_id,
@@ -336,7 +487,7 @@ await client.query(`
     ut.total_cost,
     ut.total_tokens,
     ut.active_days::int,
-    COALESCE(cs.current_streak, 0)::int AS current_streak
+    COALESCE(CASE WHEN cs.alive THEN cs.streak_days END, 0)::int AS current_streak
   FROM user_totals ut
   LEFT JOIN current_streaks cs ON cs.user_id = ut.user_id
   WITH DATA
@@ -453,4 +604,13 @@ console.log("\nDone! Dev users: dev-alice, dev-bob, dev-carol, dev-dave, dev-eve
 console.log("Sign in at http://localhost:3001/signin with any username above.");
 console.log(
   "dev-alice has a 205-day streak — visit her profile logged-in as her to witness the Carcinization Event."
+);
+console.log(
+  "dev-bob's streak survives a missed day on a banked free pass — check his activity grid."
+);
+console.log(
+  "dev-carol's streak is frozen right now, held open by a pass — check the snowflake."
+);
+console.log(
+  "Add ?passes=1 to any profile URL to replay the free-pass modal."
 );

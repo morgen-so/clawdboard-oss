@@ -8,6 +8,8 @@ import { SyncPayloadSchema } from "@/lib/sync/validate";
 import { rateLimit } from "@/lib/rate-limit";
 import { authenticateApiToken } from "@/lib/api-auth";
 import { isOrgDataStale, syncUserGitHubOrgs } from "@/lib/db/github-orgs";
+import { recomputeUserStreak } from "@/lib/db/streak-state";
+import { resolveStreak } from "@/lib/streak";
 
 // Sources whose extractors double-counted cached tokens before CLI 0.3.5:
 // OpenAI, Gemini, and Copilot report cached tokens as a SUBSET of
@@ -291,6 +293,26 @@ export async function POST(req: NextRequest) {
       .set({ lastSyncAt: new Date(), ...(syncIntervalMs != null && { syncIntervalMs }) })
       .where(eq(users.id, user.id));
 
+    // 5b. Refold this user's streak (and free-pass balance) from the days we
+    //     just wrote. The leaderboard reads the stored snapshot, so this has
+    //     to land before the caches below are dropped. A failure here must not
+    //     fail the sync — the hourly cron rebuilds every row anyway.
+    let streakInfo: {
+      streak: number;
+      streakPasses: number;
+      streakFrozenFor: number;
+    } | null = null;
+    try {
+      const state = resolveStreak(await recomputeUserStreak(user.id));
+      streakInfo = {
+        streak: state.current,
+        streakPasses: state.passesLeft,
+        streakFrozenFor: state.frozenFor,
+      };
+    } catch (err) {
+      console.error(`[sync] streak recompute failed for user=${user.id}:`, err);
+    }
+
     // 6. Invalidate all cached data so the next page visit shows fresh results.
     revalidateAllCaches();
     revalidatePath("/");
@@ -307,6 +329,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       success: true,
       daysUpserted: days.length,
+      // The caller's own streak and free-pass state. Only ever returned to
+      // the token holder; nothing about passes is public.
+      ...(streakInfo ?? {}),
       ...(droppedLegacyDays > 0 && {
         warning:
           `${droppedLegacyDays} day(s) were not stored: this CLI version ` +

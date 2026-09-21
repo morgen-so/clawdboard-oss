@@ -12,6 +12,17 @@ export interface LogEntry {
 
 export const logEntries: LogEntry[] = [
   {
+    date: "2026-09-21",
+    items: [
+      {
+        title: "Streaks now come with free passes",
+        type: "feature",
+        description:
+          "Every 75 days of an unbroken streak banks a free pass. A pass covers one missed day, so a travel day or a weekend off no longer wipes out months of work, and unused passes stack up -- three banked passes cover three missed days, together or spread apart. The day a pass covers doesn't add to the number, so a 200-day streak still means 200 days you actually showed up. Your passes are yours alone: your profile shows what you have banked and how far off the next one is, covered days show in blue on your activity grid, and a snowflake marks your own leaderboard row when a pass is holding the streak open. Nobody else sees any of it -- to everyone else your streak is just a number. Nothing to enable and nothing to claim, either: passes are counted from your current streak, so if it's already past day 75 you have one waiting. They start covering missed days today, so a streak that had already broken stays broken.",
+      },
+    ],
+  },
+  {
     date: "2026-08-27",
     items: [
       {
