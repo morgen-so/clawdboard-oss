@@ -28,6 +28,19 @@ const SUBSET_SEMANTICS_SOURCES = new Set([
 ]);
 const MIN_CLI_VERSION_FOR_SUBSET_SOURCES = [0, 3, 5] as const;
 
+// Codex before CLI 0.3.7 counted a forked session's copied history again:
+// a fork or sub-agent's rollout starts with a copy of the parent's
+// token_count events, and the extractor took each file's last running total.
+// Heavy multi-agent users came out several times above Codex's own counter.
+// Days from older CLIs are dropped (a re-sync would re-inflate a corrected
+// row through GREATEST), and Codex rows last written before
+// CODEX_FORK_FIX_LIVE_AT are replaced outright by the first fixed sync rather
+// than merged with GREATEST, which would keep the inflated value forever.
+// Must be at or after the deploy; after it, every Codex row is from a fixed
+// CLI. Bump it if the deploy slips.
+const MIN_CLI_VERSION_FOR_CODEX = [0, 3, 7] as const;
+const CODEX_FORK_FIX_LIVE_AT = "2026-09-25T12:00:00Z";
+
 /** Parse "clawdboard/x.y.z" from the User-Agent; unknown clients count as old. */
 function cliVersionAtLeast(
   userAgent: string | null,
@@ -100,6 +113,19 @@ export async function POST(req: NextRequest) {
           `[sync] Dropped ${droppedLegacyDays} day(s) from outdated CLI ` +
             `(${req.headers.get("user-agent") ?? "no UA"}) for user=${user.id}: ` +
             `codex/gemini/copilot/antigravity data from CLIs < 0.3.5 double-counts cached tokens`
+        );
+      }
+    }
+    if (!cliVersionAtLeast(req.headers.get("user-agent"), MIN_CLI_VERSION_FOR_CODEX)) {
+      const before = days.length;
+      days = days.filter((d) => d.source !== "codex");
+      const dropped = before - days.length;
+      droppedLegacyDays += dropped;
+      if (dropped > 0) {
+        console.log(
+          `[sync] Dropped ${dropped} codex day(s) from outdated CLI ` +
+            `(${req.headers.get("user-agent") ?? "no UA"}) for user=${user.id}: ` +
+            `codex data from CLIs < 0.3.7 counts forked sessions' history again`
         );
       }
     }
@@ -229,6 +255,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 4b-bis. Clear this machine's Codex rows written by pre-0.3.7 CLIs for
+    // the dates being synced, so the fixed numbers replace them instead of
+    // losing to them under GREATEST (see CODEX_FORK_FIX_LIVE_AT). Runs after
+    // 4b so migrated legacy NULL-machine rows are included.
+    const codexDates = [...new Set(days.filter((d) => d.source === "codex").map((d) => d.date))];
+    if (codexDates.length > 0) {
+      await db
+        .delete(dailyAggregates)
+        .where(
+          and(
+            eq(dailyAggregates.userId, user.id),
+            eq(dailyAggregates.source, "codex"),
+            inArray(dailyAggregates.date, codexDates),
+            machineId
+              ? eq(dailyAggregates.machineId, machineId)
+              : isNull(dailyAggregates.machineId),
+            sql`${dailyAggregates.syncedAt} < ${CODEX_FORK_FIX_LIVE_AT}::timestamptz`
+          )
+        );
+    }
+
     // 4c. Upsert the actual data — uses (user_id, date, source, machine_id)
     // so each machine's data is stored independently.
     //
@@ -335,7 +382,7 @@ export async function POST(req: NextRequest) {
       ...(droppedLegacyDays > 0 && {
         warning:
           `${droppedLegacyDays} day(s) were not stored: this CLI version ` +
-          `double-counts cached tokens for codex/gemini/copilot/antigravity. ` +
+          `overcounts tokens for codex/gemini/copilot/antigravity. ` +
           `Update with: npm i -g clawdboard@latest (npx users update automatically).`,
       }),
     });
