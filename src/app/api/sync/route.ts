@@ -39,7 +39,7 @@ const MIN_CLI_VERSION_FOR_SUBSET_SOURCES = [0, 3, 5] as const;
 // Must be at or after the deploy; after it, every Codex row is from a fixed
 // CLI. Bump it if the deploy slips.
 const MIN_CLI_VERSION_FOR_CODEX = [0, 3, 7] as const;
-const CODEX_FORK_FIX_LIVE_AT = "2026-09-28T00:00:00Z";
+const CODEX_FORK_FIX_LIVE_AT = "2026-09-25T12:00:00Z";
 
 /** Parse "clawdboard/x.y.z" from the User-Agent; unknown clients count as old. */
 function cliVersionAtLeast(
