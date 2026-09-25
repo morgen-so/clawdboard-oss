@@ -30,7 +30,7 @@
  * Prompts, code, file paths, and conversation content are never read.
  */
 
-import type Database from "better-sqlite3";
+import { openReadonlySqlite, type SqliteDb } from "./sqlite.js";
 import { randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, unlinkSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -132,15 +132,11 @@ export async function extractCursorData(since?: string): Promise<SyncDay[]> {
     return [];
   }
 
-  let db: Database.Database;
-  try {
-    // Lazy-load the native module so it is never required unless this machine
-    // actually has Cursor data. If the optional native binary is missing or
-    // failed to build (e.g. unsupported Node ABI, no build tools), skip Cursor
-    // extraction gracefully instead of crashing the whole CLI.
-    const { default: BetterSqlite3 } = await import("better-sqlite3");
-    db = new BetterSqlite3(tmpPath, { readonly: true, fileMustExist: true });
-  } catch {
+  // Loaded lazily so no SQLite driver is touched unless this machine actually
+  // has Cursor data. If neither better-sqlite3 nor node:sqlite is available,
+  // skip Cursor extraction instead of crashing the whole CLI.
+  const db = await openReadonlySqlite(tmpPath);
+  if (!db) {
     cleanupTempFile(tmpPath);
     return [];
   }
@@ -192,7 +188,7 @@ function cleanupTempFile(p: string): void {
  * Skips rows where the value is NULL or fails to parse as JSON.
  */
 function buildComposerMeta(
-  db: Database.Database
+  db: SqliteDb
 ): Map<string, ComposerMeta> {
   const out = new Map<string, ComposerMeta>();
 
@@ -275,7 +271,7 @@ function buildComposerMeta(
  * resolvable date. Returns one record per qualifying bubble.
  */
 function collectBubbleRecords(
-  db: Database.Database,
+  db: SqliteDb,
   composers: Map<string, ComposerMeta>,
   since?: string
 ): BubbleRecord[] {

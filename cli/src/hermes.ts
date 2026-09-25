@@ -46,7 +46,7 @@
  * titles, cwd, git metadata, or session ids.
  */
 
-import type Database from "better-sqlite3";
+import { openReadonlySqlite, type SqliteDb } from "./sqlite.js";
 import { randomUUID } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
@@ -152,7 +152,7 @@ function cleanupTempDir(dir: string): void {
   }
 }
 
-function tableExists(db: Database.Database, name: string): boolean {
+function tableExists(db: SqliteDb, name: string): boolean {
   const row = db
     .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")
     .get(name);
@@ -192,14 +192,11 @@ export async function extractHermesData(since?: string): Promise<SyncDay[]> {
     return [];
   }
 
-  let db: Database.Database;
-  try {
-    // Lazy-load the native module so it is never required unless this machine
-    // actually has Hermes data. If the optional native binary is missing or
-    // failed to build, skip Hermes extraction instead of crashing the CLI.
-    const { default: BetterSqlite3 } = await import("better-sqlite3");
-    db = new BetterSqlite3(tmpDb, { readonly: true, fileMustExist: true });
-  } catch {
+  // Loaded lazily so no SQLite driver is touched unless this machine actually
+  // has Hermes data. If neither better-sqlite3 nor node:sqlite is available,
+  // skip Hermes extraction instead of crashing the CLI.
+  const db = await openReadonlySqlite(tmpDb);
+  if (!db) {
     cleanupTempDir(tmpDir);
     return [];
   }
