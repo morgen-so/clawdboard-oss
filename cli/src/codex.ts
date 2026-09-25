@@ -248,8 +248,14 @@ async function listRolloutFiles(
           continue;
         }
 
+        const plain = new Set(files.filter((f) => f.endsWith(".jsonl")));
         for (const file of files) {
-          if (!file.endsWith(".jsonl") && !file.endsWith(".jsonl.zst")) continue;
+          if (file.endsWith(".jsonl.zst")) {
+            // Mid-compression both copies exist; read the plain one only.
+            if (plain.has(file.slice(0, -".zst".length))) continue;
+          } else if (!file.endsWith(".jsonl")) {
+            continue;
+          }
           out.push({ path: join(dayDir, file), date: `${year}-${month}-${day}` });
         }
       }

@@ -525,6 +525,21 @@ describe("extractCodexData", () => {
       expect(result[0].inputTokens).toBe(4000);
       expect(result[0].outputTokens).toBe(400);
     });
+
+    it.skipIf(typeof zstd !== "function")("reads a rollout once while both copies exist", async () => {
+      // Codex writes the .zst before removing the plain file.
+      const lines = [turnContext("gpt-5.6-sol"), tokenCount({ input_tokens: 4000, output_tokens: 400 })];
+      writeRollout(tmpDir, "2026-07-14", "rollout-mid.jsonl", lines);
+      const text = lines.map((l) => JSON.stringify(l)).join("\n") + "\n";
+      writeFileSync(
+        join(tmpDir, "sessions", "2026", "07", "14", "rollout-mid.jsonl.zst"),
+        zstd!(Buffer.from(text))
+      );
+
+      const result = await extractCodexData();
+      expect(result[0].inputTokens).toBe(4000);
+      expect(result[0].outputTokens).toBe(400);
+    });
   });
 
   describe("privacy enforcement", () => {
