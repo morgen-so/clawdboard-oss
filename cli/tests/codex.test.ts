@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import * as zlib from "node:zlib";
 import { extractCodexData } from "../src/codex.js";
 
 function createTempCodexDir(): string {
@@ -58,6 +59,53 @@ function tokenCount(totals: {
       },
     },
   };
+}
+
+/** Build a session_meta JSONL line (a fork's first line names its parent). */
+function sessionMeta(id: string, forkedFromId?: string): Record<string, unknown> {
+  return {
+    timestamp: new Date().toISOString(),
+    type: "session_meta",
+    payload: { id, ...(forkedFromId ? { forked_from_id: forkedFromId } : {}) },
+  };
+}
+
+/**
+ * The token_count lines of a session that made one response per entry,
+ * each with its own usage, as Codex writes them: a running total plus the
+ * response's own usage as last_token_usage.
+ */
+function responses(
+  usages: { input_tokens: number; cached_input_tokens?: number; output_tokens: number }[],
+  start = { input_tokens: 0, cached_input_tokens: 0, output_tokens: 0 }
+): Record<string, unknown>[] {
+  const total = { ...start };
+  return usages.map((u) => {
+    total.input_tokens += u.input_tokens;
+    total.cached_input_tokens += u.cached_input_tokens ?? 0;
+    total.output_tokens += u.output_tokens;
+    const line = tokenCount(total);
+    const info = (line.payload as { info: Record<string, unknown> }).info;
+    info.last_token_usage = {
+      input_tokens: u.input_tokens,
+      cached_input_tokens: u.cached_input_tokens ?? 0,
+      output_tokens: u.output_tokens,
+      reasoning_output_tokens: 0,
+      total_tokens: u.input_tokens + u.output_tokens,
+    };
+    return line;
+  });
+}
+
+function sumTokens(days: { inputTokens: number; outputTokens: number; cacheReadTokens: number }[]) {
+  return days.reduce(
+    (acc, d) => ({
+      input: acc.input + d.inputTokens,
+      output: acc.output + d.outputTokens,
+      cacheRead: acc.cacheRead + d.cacheReadTokens,
+    }),
+    { input: 0, output: 0, cacheRead: 0 }
+  );
 }
 
 describe("extractCodexData", () => {
@@ -254,6 +302,229 @@ describe("extractCodexData", () => {
 
     const result = await extractCodexData();
     expect(result).toHaveLength(1);
+  });
+
+  describe("forks and sub-agents", () => {
+    // A fork (or a sub-agent spawned with the parent's history) gets its own
+    // rollout that starts with a verbatim copy of the parent's lines, and its
+    // running total continues from the parent's. Taking each file's last
+    // total counted the parent once per fork: one heavy multi-agent user
+    // came out ~5x above Codex's own lifetime counter.
+    const parentTurns = responses([
+      { input_tokens: 1000, cached_input_tokens: 600, output_tokens: 100 },
+      { input_tokens: 2000, cached_input_tokens: 1500, output_tokens: 200 },
+    ]);
+    const parentTotal = { input_tokens: 3000, cached_input_tokens: 2100, output_tokens: 300 };
+
+    function forkOf(
+      parentId: string,
+      childId: string,
+      own: { input_tokens: number; cached_input_tokens?: number; output_tokens: number }[],
+      opts: { legacy?: boolean } = {}
+    ): Record<string, unknown>[] {
+      return [
+        // Current Codex marks the fork on the child's own first line; older
+        // versions only give it away by copying the parent's session_meta.
+        opts.legacy ? sessionMeta(childId) : sessionMeta(childId, parentId),
+        sessionMeta(parentId),
+        turnContext("gpt-5.6-sol"),
+        ...parentTurns,
+        turnContext("gpt-5.6-sol"),
+        ...responses(own, parentTotal),
+      ];
+    }
+
+    it("counts a forked session's copied history once", async () => {
+      writeRollout(tmpDir, "2026-07-14", "rollout-2026-07-14T10-00-00-parent.jsonl", [
+        sessionMeta("parent"),
+        turnContext("gpt-5.6-sol"),
+        ...parentTurns,
+      ]);
+      writeRollout(
+        tmpDir,
+        "2026-07-14",
+        "rollout-2026-07-14T11-00-00-child.jsonl",
+        forkOf("parent", "child", [{ input_tokens: 500, cached_input_tokens: 400, output_tokens: 50 }])
+      );
+
+      const totals = sumTokens(await extractCodexData());
+      // parent 3000 in (2100 cached) / 300 out, plus the child's own 500 (400) / 50
+      expect(totals.cacheRead).toBe(2100 + 400);
+      expect(totals.input).toBe(3000 - 2100 + (500 - 400));
+      expect(totals.output).toBe(300 + 50);
+    });
+
+    it("recognises forks from older Codex by the copied session_meta", async () => {
+      writeRollout(tmpDir, "2026-07-14", "rollout-2026-07-14T10-00-00-parent.jsonl", [
+        sessionMeta("parent"),
+        turnContext("gpt-5.6-sol"),
+        ...parentTurns,
+      ]);
+      writeRollout(
+        tmpDir,
+        "2026-07-14",
+        "rollout-2026-07-14T11-00-00-child.jsonl",
+        forkOf("parent", "child", [{ input_tokens: 500, output_tokens: 50 }], { legacy: true })
+      );
+
+      const totals = sumTokens(await extractCodexData());
+      expect(totals.output).toBe(300 + 50);
+    });
+
+    it("counts each of several sub-agents' own usage, and the parent once", async () => {
+      writeRollout(tmpDir, "2026-07-14", "rollout-2026-07-14T10-00-00-parent.jsonl", [
+        sessionMeta("parent"),
+        turnContext("gpt-5.6-sol"),
+        ...parentTurns,
+      ]);
+      for (const n of [1, 2, 3, 4]) {
+        writeRollout(
+          tmpDir,
+          "2026-07-14",
+          `rollout-2026-07-14T11-00-0${n}-agent${n}.jsonl`,
+          forkOf("parent", `agent${n}`, [{ input_tokens: 100, output_tokens: 10 }])
+        );
+      }
+
+      const totals = sumTokens(await extractCodexData());
+      expect(totals.output).toBe(300 + 4 * 10);
+      expect(totals.input + totals.cacheRead).toBe(3000 + 4 * 100);
+    });
+
+    it("counts a fork of a fork once per level", async () => {
+      writeRollout(tmpDir, "2026-07-14", "rollout-2026-07-14T10-00-00-parent.jsonl", [
+        sessionMeta("parent"),
+        turnContext("gpt-5.6-sol"),
+        ...parentTurns,
+      ]);
+      const child = forkOf("parent", "child", [{ input_tokens: 500, output_tokens: 50 }]);
+      writeRollout(tmpDir, "2026-07-14", "rollout-2026-07-14T11-00-00-child.jsonl", child);
+      writeRollout(tmpDir, "2026-07-14", "rollout-2026-07-14T12-00-00-grandchild.jsonl", [
+        sessionMeta("grandchild", "child"),
+        ...child,
+        ...responses([{ input_tokens: 70, output_tokens: 7 }], {
+          input_tokens: 3500,
+          cached_input_tokens: 2100,
+          output_tokens: 350,
+        }),
+      ]);
+
+      const totals = sumTokens(await extractCodexData());
+      expect(totals.output).toBe(300 + 50 + 7);
+    });
+
+    it("attributes a fork's own usage to the fork's date", async () => {
+      writeRollout(tmpDir, "2026-07-13", "rollout-2026-07-13T23-00-00-parent.jsonl", [
+        sessionMeta("parent"),
+        turnContext("gpt-5.6-sol"),
+        ...parentTurns,
+      ]);
+      writeRollout(
+        tmpDir,
+        "2026-07-14",
+        "rollout-2026-07-14T09-00-00-child.jsonl",
+        forkOf("parent", "child", [{ input_tokens: 500, output_tokens: 50 }])
+      );
+
+      const result = await extractCodexData();
+      const byDate = Object.fromEntries(result.map((d) => [d.date, d]));
+      expect(byDate["2026-07-13"].outputTokens).toBe(300);
+      expect(byDate["2026-07-14"].outputTokens).toBe(50);
+    });
+
+    it("counts the copied history when the parent's rollout is gone", async () => {
+      // Deleted parent: the fork's copy is the only record of that usage.
+      writeRollout(
+        tmpDir,
+        "2026-07-14",
+        "rollout-2026-07-14T11-00-00-child.jsonl",
+        forkOf("parent", "child", [{ input_tokens: 500, output_tokens: 50 }])
+      );
+
+      const totals = sumTokens(await extractCodexData());
+      expect(totals.output).toBe(300 + 50);
+    });
+
+    it("does not count a parent from before --since through its later fork", async () => {
+      writeRollout(tmpDir, "2026-07-10", "rollout-2026-07-10T10-00-00-parent.jsonl", [
+        sessionMeta("parent"),
+        turnContext("gpt-5.6-sol"),
+        ...parentTurns,
+      ]);
+      writeRollout(
+        tmpDir,
+        "2026-07-14",
+        "rollout-2026-07-14T11-00-00-child.jsonl",
+        forkOf("parent", "child", [{ input_tokens: 500, output_tokens: 50 }])
+      );
+
+      const result = await extractCodexData("2026-07-12");
+      expect(result).toHaveLength(1);
+      expect(result[0].date).toBe("2026-07-14");
+      expect(result[0].outputTokens).toBe(50);
+    });
+
+    it("leaves a regular session that happens to repeat a total alone", async () => {
+      // Only forks skip already-seen events; two unrelated sessions with an
+      // identical first response both count.
+      for (const name of ["a", "b"]) {
+        writeRollout(tmpDir, "2026-07-14", `rollout-2026-07-14T10-00-00-${name}.jsonl`, [
+          sessionMeta(name),
+          turnContext("gpt-5.6-sol"),
+          ...responses([{ input_tokens: 1000, output_tokens: 100 }]),
+        ]);
+      }
+
+      const totals = sumTokens(await extractCodexData());
+      expect(totals.output).toBe(200);
+    });
+  });
+
+  describe("running-total edge cases", () => {
+    it("ignores token_count events re-sent with no new usage", async () => {
+      // Codex re-emits token_count on rate-limit updates with the same totals.
+      const [first] = responses([{ input_tokens: 1000, output_tokens: 100 }]);
+      writeRollout(tmpDir, "2026-07-14", "rollout-test.jsonl", [
+        turnContext("gpt-5.6-sol"),
+        first,
+        first,
+        first,
+      ]);
+
+      const result = await extractCodexData();
+      expect(result[0].inputTokens).toBe(1000);
+      expect(result[0].outputTokens).toBe(100);
+    });
+
+    it("keeps usage from before and after a counter reset", async () => {
+      // On a context-window overflow Codex overwrites the running total with
+      // zeroed fields, then keeps adding. The last total alone loses
+      // everything before the reset.
+      writeRollout(tmpDir, "2026-07-14", "rollout-test.jsonl", [
+        turnContext("gpt-5.6-sol"),
+        tokenCount({ input_tokens: 5000, output_tokens: 500 }),
+        tokenCount({ input_tokens: 0, output_tokens: 0 }),
+        tokenCount({ input_tokens: 800, output_tokens: 80 }),
+      ]);
+
+      const result = await extractCodexData();
+      expect(result[0].inputTokens).toBe(5800);
+      expect(result[0].outputTokens).toBe(580);
+    });
+
+    const zstd = (zlib as unknown as { zstdCompressSync?: (b: Buffer) => Buffer }).zstdCompressSync;
+    it.skipIf(typeof zstd !== "function")("reads compressed .jsonl.zst rollouts", async () => {
+      const [year, month, day] = ["2026", "07", "14"];
+      const dayDir = join(tmpDir, "sessions", year, month, day);
+      mkdirSync(dayDir, { recursive: true });
+      const lines = [turnContext("gpt-5.6-sol"), tokenCount({ input_tokens: 4000, output_tokens: 400 })];
+      const text = lines.map((l) => JSON.stringify(l)).join("\n") + "\n";
+      writeFileSync(join(dayDir, "rollout-cold.jsonl.zst"), zstd!(Buffer.from(text)));
+
+      const result = await extractCodexData();
+      expect(result[0].inputTokens).toBe(4000);
+      expect(result[0].outputTokens).toBe(400);
+    });
   });
 
   describe("privacy enforcement", () => {

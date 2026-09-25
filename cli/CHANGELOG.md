@@ -15,6 +15,27 @@ project uses semver loosely while pre-1.0.
   are private and aren't part of the public leaderboard API. Older servers
   don't send the fields and the line is skipped.
 
+### Fixed
+
+- **Codex forks and sub-agents were counted more than once.** A forked
+  session, or a sub-agent spawned with its parent's history, gets its own
+  rollout file that starts with a copy of the parent's token counts, and its
+  running total carries on from the parent's. The extractor took each file's
+  last total, so the parent was counted again for every fork: one heavy
+  multi-agent user came out about 5x above Codex's own lifetime counter. It
+  now sums each file's own usage and skips the copied block, matched against
+  the parent's rollout (or counted once if the parent is gone). Sessions
+  without forks come out exactly as before.
+- **Codex usage before a context-window reset was dropped.** When the context
+  overflows, Codex resets its running total; only the part after the reset
+  was being counted.
+- **Compressed Codex rollouts (`.jsonl.zst`) are now read** on Node 22.15+ /
+  23.8+. Codex compresses older sessions in place, and they were skipped.
+
+The server drops Codex days from CLIs before this release, and the first sync
+from it replaces Codex rows written by older versions instead of keeping the
+larger value.
+
 ## [0.3.6] - 2026-08-27
 
 ### Added
