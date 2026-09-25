@@ -16,7 +16,8 @@
     "node": ">=18.0.0"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run && npm run test:node-sqlite",
+    "test:node-sqlite": "CLAWDBOARD_SQLITE_DRIVER=node:sqlite vitest run tests/cursor.test.ts tests/hermes.test.ts",
     "test:watch": "vitest",
     "build": "tsc",
     "dev": "tsx src/index.ts",

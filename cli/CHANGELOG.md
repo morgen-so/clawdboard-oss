@@ -4,6 +4,18 @@ All notable changes to the `clawdboard` CLI are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses semver loosely while pre-1.0.
 
+## [Unreleased]
+
+### Fixed
+
+- **Cursor and Hermes usage stopped syncing for anyone who installed with
+  npm 12.** Both read a SQLite database through `better-sqlite3`, an optional
+  dependency with a native build, and npm 12 doesn't run dependency install
+  scripts by default. The module never built, and both extractors skipped
+  themselves without a word. They now fall back to Node's built-in
+  `node:sqlite` (Node 22.13+ / 23.4+) when `better-sqlite3` can't load.
+  Installs where `better-sqlite3` works are unchanged.
+
 ## [0.3.7] - 2026-09-25
 
 ### Added
