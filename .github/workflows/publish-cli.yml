@@ -35,8 +35,10 @@ jobs:
           cache-dependency-path: cli/package-lock.json
 
       # Trusted publishing needs npm 11.5.1+; make sure we're not on an older bundled npm.
+      # Pinned to 11: npm 12 runs no dependency install scripts by default
+      # (allow-scripts), so better-sqlite3 never builds and the Hermes tests fail.
       - name: Update npm
-        run: npm install -g npm@latest && npm --version
+        run: npm install -g npm@11 && npm --version
 
       - name: Check tag matches package version
         if: github.ref_type == 'tag'
