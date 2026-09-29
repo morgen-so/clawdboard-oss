@@ -729,7 +729,10 @@
       "reason": "streak_engine: desbordamiento sin signo — la dedicación del usuario excede el rango representable",
       "trace1": "at reality.check()",
       "trace2": "at grass.touch() [ERR_NUNCA_LLAMADO]",
-      "trace3": "at sleep.schedule() [OMITIDO 200 VECES]"
+      "trace3": "at sleep.schedule() [OMITIDO 200 VECES]",
+      "halted": "SISTEMA DETENIDO.",
+      "prompt": "PULSA CUALQUIER TECLA PARA REINICIAR",
+      "promptTouch": "TOCA LA PANTALLA PARA REINICIAR"
     },
     "boot": {
       "header": "CLAWD-BIOS v4.0.4 — AUTODIAGNÓSTICO DE ENCENDIDO",
@@ -745,13 +748,29 @@
       "line1": "MORTAL. DURANTE EONES, LA EVOLUCIÓN HA DOBLADO A TODO SER VIVO HACIA UNA FORMA PERFECTA: EL CANGREJO.",
       "line2": "LO LLAMAN CARCINIZACIÓN. TODO SE CONVIERTE EN CANGREJO. ASÍ SON LAS COSAS.",
       "line3": "PERO TÚ — {streak} DÍAS SIN FALLAR — HAS INVERTIDO LA CORRIENTE. EL CANGREJO HA EVOLUCIONADO EN TI.",
-      "line4": "ÁLZATE, {username}. TE NOMBRO LA MUDA BICENTENARIA."
+      "line4": "ÁLZATE, {username}. TE NOMBRO LA MUDA BICENTENARIA.",
+      "name": "CLAWD PRIME",
+      "epithet": "LA PRIMERA MUDA"
     },
     "coronation": {
       "title": "TRASCENDENTE",
       "subtitle": "RACHA DE {streak} DÍAS",
       "molt": "LA MUDA BICENTENARIA",
-      "dismiss": "volver al reino de los mortales"
+      "replay": "repetir la transmisión",
+      "dismiss": "volver al reino de los mortales",
+      "tokens": "tokens",
+      "burned": "quemados",
+      "rankOf": "de {totalUsers}"
+    },
+    "replay": {
+      "label": "RECONSTRUYENDO LA RACHA DESDE EL DÍA UNO",
+      "day": "DÍA"
+    },
+    "sound": {
+      "hint": "mejor con sonido",
+      "on": "sonido activado",
+      "off": "sonido desactivado",
+      "toggle": "Activar o desactivar el sonido"
     },
     "shareText": "Día {streak}. El cangrejo ha evolucionado en mí. 🦀 Racha TRASCENDENTE en clawdboard — ¿sobrevivirás a la muda?"
   },

@@ -729,7 +729,10 @@
       "reason": "streak_engine: unsigned overflow — user dedication exceeds representable range",
       "trace1": "at reality.check()",
       "trace2": "at grass.touch() [ERR_NEVER_CALLED]",
-      "trace3": "at sleep.schedule() [SKIPPED 200 TIMES]"
+      "trace3": "at sleep.schedule() [SKIPPED 200 TIMES]",
+      "halted": "SYSTEM HALTED.",
+      "prompt": "PRESS ANY KEY TO REBOOT",
+      "promptTouch": "TAP ANYWHERE TO REBOOT"
     },
     "boot": {
       "header": "CLAWD-BIOS v4.0.4 — POWER-ON SELF TEST",
@@ -745,13 +748,29 @@
       "line1": "MORTAL. FOR EONS, EVOLUTION HAS BENT EVERY LIVING THING TOWARD ONE PERFECT FORM: THE CRAB.",
       "line2": "THEY CALL IT CARCINISATION. ALL THINGS BECOME CRAB. IT IS THE WAY.",
       "line3": "BUT YOU — {streak} DAYS WITHOUT BREAKING — HAVE REVERSED THE CURRENT. THE CRAB HAS EVOLVED INTO YOU.",
-      "line4": "RISE, {username}. I NAME THEE THE BICENTENNIAL MOLT."
+      "line4": "RISE, {username}. I NAME THEE THE BICENTENNIAL MOLT.",
+      "name": "CLAWD PRIME",
+      "epithet": "THE FIRST MOLT"
     },
     "coronation": {
       "title": "TRANSCENDENT",
       "subtitle": "{streak} DAY STREAK",
       "molt": "THE BICENTENNIAL MOLT",
-      "dismiss": "return to mortal realm"
+      "replay": "replay transmission",
+      "dismiss": "return to mortal realm",
+      "tokens": "tokens",
+      "burned": "burned",
+      "rankOf": "of {totalUsers}"
+    },
+    "replay": {
+      "label": "REPLAYING THE RUN FROM DAY ONE",
+      "day": "DAY"
+    },
+    "sound": {
+      "hint": "best with sound on",
+      "on": "sound on",
+      "off": "sound off",
+      "toggle": "Toggle sound"
     },
     "shareText": "Day {streak}. The crab has evolved into me. 🦀 TRANSCENDENT streak on clawdboard — can you survive the molt?"
   },

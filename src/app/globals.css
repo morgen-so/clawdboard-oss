@@ -248,6 +248,74 @@ body {
 
 /* ── Carcinization Event (200-day streak takeover) ── */
 
+/* Anomaly: the live page jolts. Brief hue shifts over a mostly dark page,
+   five hits in 1.6s, each a single frame pair: well under the three-flashes-
+   a-second line (photosensitivity). */
+@keyframes carc-page-glitch {
+  0%, 100% { transform: none; filter: none; }
+  12% { transform: translateX(-7px) skewX(-1.5deg); filter: hue-rotate(50deg) saturate(1.8); }
+  15% { transform: none; filter: none; }
+  41% { transform: translate(9px, 2px); filter: hue-rotate(-70deg) contrast(1.25); }
+  44% { transform: none; filter: none; }
+  68% { transform: translateX(-14px) skewX(2.5deg); filter: hue-rotate(110deg) saturate(2.4); }
+  71% { transform: translateX(5px); filter: hue-rotate(200deg); }
+  74% { transform: none; filter: none; }
+  90% { transform: translate(-4px, -2px) scaleY(1.015); filter: hue-rotate(260deg) saturate(2); }
+  93% { transform: none; filter: none; }
+}
+
+html[data-carc="glitch"] body > :not([data-celebration="carcinization"]) {
+  animation: carc-page-glitch 1.6s steps(1, end) both;
+}
+
+/* Any other celebration that opened on the same page view waits its turn
+   (it sits behind the takeover's black once the page has switched off). */
+html[data-carc] [data-celebration]:not([data-celebration="carcinization"]) {
+  visibility: hidden;
+}
+
+/* ...then switches off like a CRT: squashed to a line, the line to a dot.
+   --carc-oy (set per element) puts the origin at the middle of the viewport. */
+@keyframes carc-crt-off {
+  0% { transform: scale(1, 1); filter: brightness(1); }
+  60% { transform: scale(1, 0.004); filter: brightness(2.5); }
+  100% { transform: scale(0, 0.004); filter: brightness(4); }
+}
+
+html[data-carc="crt"] body > :not([data-celebration="carcinization"]) {
+  transform-origin: 50% var(--carc-oy, 50vh);
+  animation: carc-crt-off 0.55s cubic-bezier(0.7, 0, 0.9, 0.5) forwards;
+}
+
+/* Thin corrupted scanlines drifting over the page. */
+@keyframes carc-band {
+  0% { opacity: 1; top: 18%; height: 6px; transform: translateX(0); }
+  14% { top: 62%; height: 14px; transform: translateX(-12px); }
+  27% { opacity: 0; }
+  38% { opacity: 1; top: 34%; height: 4px; transform: translateX(8px); }
+  52% { top: 81%; height: 12px; }
+  61% { opacity: 0; }
+  70% { opacity: 1; top: 8%; height: 16px; transform: translateX(-20px); }
+  84% { top: 47%; height: 5px; transform: none; }
+  100% { opacity: 0; }
+}
+
+.carc-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  opacity: 0;
+  background: rgba(34, 211, 238, 0.07);
+  -webkit-backdrop-filter: hue-rotate(160deg) saturate(3) brightness(1.2);
+  backdrop-filter: hue-rotate(160deg) saturate(3) brightness(1.2);
+  animation: carc-band 1.1s steps(1, end) infinite;
+  animation-delay: calc(var(--b, 0) * -0.23s);
+}
+
+html[data-carc="crt"] .carc-band {
+  display: none;
+}
+
 /* Chromatic-aberration jitter — 1.4s cycle keeps hits ≤2/sec (photosensitivity). */
 @keyframes carc-glitch {
   0%, 88%, 100% {
@@ -268,7 +336,19 @@ body {
   animation: carc-glitch 1.4s steps(1, end) infinite;
 }
 
-/* Stacked-span scramble frames: each span visible for its 0.5s slot, then gone.
+/* The streak counter breaking arithmetic, inverted over the page. */
+.carc-scramble {
+  font-size: clamp(96px, 24vw, 340px);
+  color: #fff;
+  mix-blend-mode: difference;
+  transition: opacity 0.2s ease;
+}
+
+html[data-carc="crt"] .carc-scramble {
+  opacity: 0;
+}
+
+/* Stacked-span scramble frames: each span visible for its 0.3s slot, then gone.
    Explicit 20% off-stop — a step-end easing would hold the frame visible
    through the tail of the animation and stack every frame at once. */
 @keyframes carc-frame {
@@ -278,8 +358,8 @@ body {
 }
 
 .carc-frame {
-  animation: carc-frame 2.5s linear both;
-  animation-delay: calc(var(--i, 0) * 0.5s);
+  animation: carc-frame 1.5s linear both;
+  animation-delay: calc(0.1s + var(--i, 0) * 0.3s);
 }
 
 /* Final frame appears at its slot and holds. */
@@ -290,8 +370,74 @@ body {
 
 .carc-frame-last {
   opacity: 0;
-  animation: carc-frame-hold 0.2s linear forwards;
-  animation-delay: calc(var(--i, 0) * 0.5s);
+  animation: carc-frame-hold 0.15s linear forwards;
+  animation-delay: calc(0.1s + var(--i, 0) * 0.3s);
+}
+
+/* The beam: a white line as the page flattens, shrinking to a dot. */
+@keyframes carc-crt-line {
+  0%, 50% { opacity: 0; transform: scaleX(1); }
+  62% { opacity: 1; transform: scaleX(1); }
+  100% { opacity: 1; transform: scaleX(0.003); }
+}
+
+.carc-crt-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  opacity: 0;
+  background: #fff;
+  box-shadow: 0 0 10px 2px rgba(255, 255, 255, 0.8), 0 0 40px 8px rgba(125, 211, 252, 0.3);
+  animation: carc-crt-line 0.55s cubic-bezier(0.7, 0, 0.9, 0.5) 1.6s forwards;
+}
+
+@keyframes carc-crt-dot {
+  0% { opacity: 1; transform: scale(1.8); }
+  25% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.15); }
+}
+
+.carc-crt-dot {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 9999px;
+  opacity: 0;
+  background: #fff;
+  box-shadow: 0 0 12px 4px rgba(255, 255, 255, 0.9), 0 0 60px 20px rgba(125, 211, 252, 0.35);
+  animation: carc-crt-dot 0.6s ease-out 2.15s forwards;
+}
+
+/* CRT glass for the terminal beats: scanlines, vignette, a rolling refresh band. */
+.carc-crt {
+  background:
+    repeating-linear-gradient(to bottom, transparent 0 2px, rgba(0, 0, 0, 0.3) 2px 3px),
+    radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.75) 100%);
+}
+
+@keyframes carc-roll {
+  to { transform: translateY(140vh); }
+}
+
+.carc-crt::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -20vh;
+  height: 20vh;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.04), transparent);
+  animation: carc-roll 5s linear infinite;
+}
+
+.carc-phosphor {
+  text-shadow: 0 0 4px currentColor, 0 0 16px color-mix(in srgb, currentColor 45%, transparent);
 }
 
 /* Whole-line CSS typewriter — no per-character JS. */
@@ -302,27 +448,239 @@ body {
 
 .carc-bootline {
   animation: carc-typeline 0.45s steps(24, end) both;
-  animation-delay: calc(var(--line-index, 0) * var(--line-gap, 0.85s));
+  animation-delay: calc(var(--line-base, 0s) + var(--line-index, 0) * var(--line-gap, 0.85s));
 }
 
-@keyframes carc-crabline {
+@keyframes carc-armed {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0.35; }
+}
+
+.carc-armed {
+  animation: carc-armed 0.5s steps(1, end) infinite;
+}
+
+/* "Press any key" is a lie on a phone. */
+.carc-prompt-touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .carc-prompt-key {
+    display: none;
+  }
+  .carc-prompt-touch {
+    display: inline;
+  }
+}
+
+/* Boot: the tube warms up (a line, then the picture), and at the end the
+   camera falls into the screen. */
+@keyframes carc-crt-on {
+  0% { transform: scale(0, 0.004); filter: brightness(4); }
+  40% { transform: scale(1, 0.004); filter: brightness(3); }
+  100% { transform: none; filter: none; }
+}
+
+@keyframes carc-tunnel {
+  to { transform: scale(1.35); opacity: 0; filter: blur(8px); }
+}
+
+.carc-boot {
+  animation:
+    carc-crt-on 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both,
+    carc-tunnel 0.5s cubic-bezier(0.6, 0, 1, 0.4) 5.15s forwards;
+}
+
+/* Replay HUD: the day counter, falling into the singularity with the grid. */
+@keyframes carc-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.carc-crabline {
-  animation: carc-crabline 0.12s linear both;
-  animation-delay: calc(var(--line-index, 0) * 90ms);
+@keyframes carc-hud-implode {
+  to { transform: translateY(22vh) scale(0.05); opacity: 0; filter: blur(6px); }
 }
 
-@keyframes carc-twinkle {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.9; }
+.carc-hud {
+  animation:
+    carc-fade-in 0.5s ease-out both,
+    carc-hud-implode 0.8s cubic-bezier(0.55, 0, 1, 0.45) var(--implode-at, 99s) forwards;
 }
 
-.carc-star {
-  animation: carc-twinkle 3s ease-in-out infinite;
-  animation-delay: var(--twinkle-delay, 0s);
+.carc-counter {
+  --tier-color: #d97706;
+  font-size: clamp(88px, 17vw, 180px);
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow:
+    0 0 24px color-mix(in srgb, var(--tier-color) 75%, transparent),
+    0 0 70px color-mix(in srgb, var(--tier-color) 40%, transparent);
+  transition: text-shadow 0.3s ease;
+}
+
+.carc-tier[data-redacted="true"] {
+  animation: carc-glitch 0.7s steps(1, end) infinite;
+}
+
+/* Summon: CLAWD PRIME's name card and lines. */
+@keyframes carc-rise {
+  from { opacity: 0; transform: translateY(12px); filter: blur(8px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+.carc-namecard {
+  animation: carc-rise 1.4s cubic-bezier(0.2, 0.8, 0.2, 1) 0.3s both;
+}
+
+.carc-summon {
+  transition: opacity 0.5s ease;
+}
+
+.carc-summon[data-leaving="true"] {
+  opacity: 0;
+}
+
+@keyframes carc-word {
+  from { opacity: 0; filter: blur(10px); transform: translateY(8px) scale(1.12); }
+  to { opacity: 1; filter: blur(0); transform: none; }
+}
+
+.carc-word {
+  display: inline-block;
+  animation: carc-word 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--w, 0) * 45ms);
+}
+
+.carc-infernal {
+  text-shadow: 0 0 12px rgba(239, 68, 68, 0.7), 0 0 40px rgba(220, 38, 38, 0.45);
+}
+
+.carc-sub-final {
+  text-shadow: 0 0 18px rgba(249, 166, 21, 0.55);
+}
+
+/* Crown. Everything waits, invisible but laid out, until data-live flips. */
+.carc-crown > * {
+  opacity: 0;
+}
+
+@keyframes carc-pop {
+  0% { opacity: 0; transform: scale(0.3); }
+  60% { opacity: 1; transform: scale(1.12); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes carc-slam {
+  0% { opacity: 0; transform: scale(2.8); filter: blur(14px) drop-shadow(0 0 18px rgba(249, 166, 21, 0)); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0) drop-shadow(0 0 18px rgba(249, 166, 21, 0.45)); }
+}
+
+/* One full tile of a 200%-wide gradient: the loop is seamless. */
+@keyframes carc-sheen {
+  from { background-position: 0% 50%; }
+  to { background-position: 200% 50%; }
+}
+
+.carc-crown-title {
+  background: linear-gradient(100deg, #FBC15B 0%, #FFF4D6 10%, #F9A615 22%, #f43f5e 38%, #a855f7 52%, #22d3ee 66%, #F9A615 82%, #FBC15B 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  letter-spacing: 0.02em;
+}
+
+.carc-crown[data-live="true"] .carc-crown-avatar {
+  animation: carc-pop 0.8s cubic-bezier(0.2, 1.5, 0.35, 1) both;
+}
+
+.carc-crown[data-live="true"] .carc-crown-molt {
+  animation: carc-rise 0.8s ease-out 0.3s both;
+}
+
+.carc-crown[data-live="true"] .carc-crown-title {
+  animation:
+    carc-slam 0.45s cubic-bezier(0.55, 0, 0.8, 0.3) 0.45s both,
+    carc-sheen 6s linear 1s infinite;
+}
+
+.carc-crown[data-live="true"] .carc-crown-sub {
+  animation: carc-rise 0.7s ease-out 1s both;
+}
+
+.carc-crown[data-live="true"] .carc-crown-stats {
+  animation: carc-rise 0.7s ease-out 1.15s both;
+}
+
+.carc-crown[data-live="true"] .carc-crown-share {
+  animation: carc-rise 0.7s ease-out 1.5s both;
+}
+
+.carc-crown[data-live="true"] .carc-crown-dismiss {
+  animation: carc-rise 0.7s ease-out 1.7s both;
+}
+
+/* The crab rave: sideways, obviously. */
+.carc-rave {
+  animation: carc-fade-in 1s ease-out 2.2s both;
+}
+
+@keyframes carc-scuttle {
+  from { transform: translateX(-100px); }
+  to { transform: translateX(calc(100vw + 100px)); }
+}
+
+.carc-dancer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 56px;
+  animation: carc-scuttle 22s linear infinite;
+  animation-delay: calc(var(--i, 0) * -2.44s);
+}
+
+@keyframes carc-bop {
+  from { transform: translateY(0) rotate(-5deg); }
+  to { transform: translateY(-10px) rotate(5deg); }
+}
+
+.carc-dancer > svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  animation: carc-bop 0.48s cubic-bezier(0.3, 0, 0.7, 1) infinite alternate;
+  animation-delay: calc(var(--i, 0) * -0.16s);
+}
+
+@keyframes carc-snap-l {
+  to { transform: rotate(-16deg); }
+}
+
+@keyframes carc-snap-r {
+  to { transform: rotate(16deg); }
+}
+
+.carc-dancer .carc-claw-l,
+.carc-dancer .carc-claw-r {
+  transform-box: fill-box;
+  animation: carc-snap-l 0.24s ease-in-out infinite alternate;
+}
+
+.carc-dancer .carc-claw-l {
+  transform-origin: 100% 100%;
+}
+
+.carc-dancer .carc-claw-r {
+  transform-origin: 0% 100%;
+  animation-name: carc-snap-r;
+}
+
+/* Reduced motion gets the coronation as a still. */
+.carc-static-bg {
+  background:
+    radial-gradient(circle at 50% 30%, rgba(249, 166, 21, 0.22), transparent 55%),
+    #000;
 }
 
 /* ── Row stagger animation ───────────────────────── */
@@ -373,12 +731,28 @@ body {
   .carc-frame,
   .carc-frame-last,
   .carc-bootline,
-  .carc-crabline,
-  .carc-star {
+  .carc-armed,
+  .carc-hud,
+  .carc-namecard,
+  .carc-word,
+  .carc-crown > *,
+  .carc-rave,
+  .carc-dancer,
+  .carc-dancer > svg,
+  .carc-dancer .carc-claw-l,
+  .carc-dancer .carc-claw-r {
     animation: none !important;
     opacity: 1 !important;
     clip-path: none !important;
     transform: none !important;
-    text-shadow: none !important;
+    filter: none !important;
+  }
+  .carc-rave {
+    text-align: center;
+  }
+  .carc-dancer {
+    position: relative;
+    display: inline-block;
+    margin: 0 8px;
   }
 }
