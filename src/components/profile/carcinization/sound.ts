@@ -81,7 +81,9 @@ export class CarcSound {
 
   private now(): Ctx | null {
     const { ctx, master, wet } = this;
-    if (!ctx || !master || !wet || ctx.state !== "running") return null;
+    // A context still "suspended" while resume() settles (Safari) is fine to
+    // schedule on: the sound plays the moment it resumes.
+    if (!ctx || !master || !wet || ctx.state === "closed") return null;
     return { ctx, t: ctx.currentTime + 0.005, out: master, wet };
   }
 

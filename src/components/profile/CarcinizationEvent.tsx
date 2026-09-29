@@ -620,6 +620,8 @@ export function CarcinizationEvent({
     if (!show || beat === "crown") return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape" || e.repeat) return;
+      // Enter/Space on the skip or sound button should press the button.
+      if ((e.target as Element | null)?.closest?.("button, a, input")) return;
       if (beat === "panic" || e.key === " " || e.key === "Enter") {
         e.preventDefault();
         advance();
