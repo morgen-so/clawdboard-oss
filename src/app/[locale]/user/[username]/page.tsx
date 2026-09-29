@@ -30,6 +30,7 @@ import { BadgeSnippet } from "@/components/profile/BadgeSnippet";
 import { TimeFilter } from "@/components/leaderboard/TimeFilter";
 import { computeStreakState } from "@/lib/streak";
 import { TRANSCENDENT_MIN_DAYS } from "@/lib/streak-tiers";
+import { buildCarcinizationRun } from "@/lib/carcinization-run";
 import { computeFullBadgeState } from "@/lib/badges";
 import { PinnedBadges } from "@/components/profile/PinnedBadges";
 import { BadgeUnlockModal } from "@/components/profile/BadgeUnlockModal";
@@ -228,14 +229,20 @@ export default async function UserProfilePage({
         frozenDays: [],
       };
 
-  // The Carcinization Event — dev preview via ?carcinize=1 (never in prod)
+  // The Carcinization Event — dev preview via ?carcinize=1, or ?carcinize=<beat>
+  // (e.g. replay, summon, crown) to start partway through. Never in prod.
   const forceCarcinize =
-    process.env.NODE_ENV === "development" && sp.carcinize === "1";
+    process.env.NODE_ENV === "development" && !!sp.carcinize;
   // Free-pass celebration — dev preview via ?passes=1 (never in prod)
   const forcePasses =
     process.env.NODE_ENV === "development" && sp.passes === "1";
   const showCarcinization =
     isOwner && (currentStreak >= TRANSCENDENT_MIN_DAYS || forceCarcinize);
+  // The takeover replays the live run a day at a time, and its stats cover the
+  // run rather than whatever period the page is filtered to.
+  const carcinizationRun = showCarcinization
+    ? buildCarcinizationRun(allDailyData, streak.runStart, streak.lastActive)
+    : null;
 
   // Fetch team data for streak celebration invite CTA (owner only)
   const userTeams = isOwner && session?.user?.id
@@ -351,13 +358,16 @@ export default async function UserProfilePage({
           username={user.githubUsername ?? username}
           image={user.image}
           currentStreak={currentStreak}
+          run={carcinizationRun}
           stats={{
-            totalTokens,
-            totalCost: summary.totalCost,
+            totalTokens: carcinizationRun?.totalTokens ?? totalTokens,
+            totalCost:
+              carcinizationRun?.totalCost ?? Number(summary.totalCost ?? 0),
             rank: rank.rank,
             totalUsers: rank.totalUsers,
           }}
           force={forceCarcinize}
+          startAt={forceCarcinize ? sp.carcinize : undefined}
         />
       )}
 

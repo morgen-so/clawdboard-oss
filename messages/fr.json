@@ -729,7 +729,10 @@
       "reason": "streak_engine : dépassement non signé — la dévotion de l'utilisateur dépasse la plage représentable",
       "trace1": "at reality.check()",
       "trace2": "at grass.touch() [ERR_JAMAIS_APPELE]",
-      "trace3": "at sleep.schedule() [IGNORÉ 200 FOIS]"
+      "trace3": "at sleep.schedule() [IGNORÉ 200 FOIS]",
+      "halted": "SYSTÈME ARRÊTÉ.",
+      "prompt": "APPUYEZ SUR UNE TOUCHE POUR REDÉMARRER",
+      "promptTouch": "TOUCHEZ L'ÉCRAN POUR REDÉMARRER"
     },
     "boot": {
       "header": "CLAWD-BIOS v4.0.4 — AUTOTEST AU DÉMARRAGE",
@@ -745,13 +748,29 @@
       "line1": "MORTEL. DEPUIS DES ÉONS, L'ÉVOLUTION PLIE CHAQUE ÊTRE VIVANT VERS UNE FORME PARFAITE : LE CRABE.",
       "line2": "ILS APPELLENT CELA LA CARCINISATION. TOUTE CHOSE DEVIENT CRABE. AINSI VA LE MONDE.",
       "line3": "MAIS TOI — {streak} JOURS SANS FAILLIR — TU AS INVERSÉ LE COURANT. LE CRABE A ÉVOLUÉ EN TOI.",
-      "line4": "LÈVE-TOI, {username}. JE TE NOMME LA MUE BICENTENAIRE."
+      "line4": "LÈVE-TOI, {username}. JE TE NOMME LA MUE BICENTENAIRE.",
+      "name": "CLAWD PRIME",
+      "epithet": "LA PREMIÈRE MUE"
     },
     "coronation": {
       "title": "TRANSCENDANT",
       "subtitle": "SÉRIE DE {streak} JOURS",
       "molt": "LA MUE BICENTENAIRE",
-      "dismiss": "retourner au monde des mortels"
+      "replay": "rejouer la transmission",
+      "dismiss": "retourner au monde des mortels",
+      "tokens": "tokens",
+      "burned": "partis en fumée",
+      "rankOf": "sur {totalUsers}"
+    },
+    "replay": {
+      "label": "RECONSTITUTION DE LA SÉRIE DEPUIS LE PREMIER JOUR",
+      "day": "JOUR"
+    },
+    "sound": {
+      "hint": "à vivre avec le son",
+      "on": "son activé",
+      "off": "son coupé",
+      "toggle": "Activer ou couper le son"
     },
     "shareText": "Jour {streak}. Le crabe a évolué en moi. 🦀 Série TRANSCENDANTE sur clawdboard — survivrez-vous à la mue ?"
   },

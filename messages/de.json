@@ -729,7 +729,10 @@
       "reason": "streak_engine: vorzeichenloser Überlauf — Hingabe des Nutzers überschreitet den darstellbaren Bereich",
       "trace1": "at reality.check()",
       "trace2": "at grass.touch() [ERR_NIE_AUFGERUFEN]",
-      "trace3": "at sleep.schedule() [200 MAL ÜBERSPRUNGEN]"
+      "trace3": "at sleep.schedule() [200 MAL ÜBERSPRUNGEN]",
+      "halted": "SYSTEM ANGEHALTEN.",
+      "prompt": "BELIEBIGE TASTE ZUM NEUSTART DRÜCKEN",
+      "promptTouch": "ZUM NEUSTART BILDSCHIRM ANTIPPEN"
     },
     "boot": {
       "header": "CLAWD-BIOS v4.0.4 — SELBSTTEST BEIM EINSCHALTEN",
@@ -745,13 +748,29 @@
       "line1": "STERBLICHER. SEIT ÄONEN BEUGT DIE EVOLUTION ALLES LEBENDIGE EINER PERFEKTEN FORM ENTGEGEN: DER KRABBE.",
       "line2": "SIE NENNEN ES CARCINISIERUNG. ALLES WIRD KRABBE. SO IST DER LAUF DER DINGE.",
       "line3": "DOCH DU — {streak} TAGE OHNE UNTERBRECHUNG — HAST DIE STRÖMUNG UMGEKEHRT. DIE KRABBE IST ZU DIR EVOLVIERT.",
-      "line4": "ERHEBE DICH, {username}. ICH TAUFE DICH DIE ZWEIHUNDERTJÄHRIGE HÄUTUNG."
+      "line4": "ERHEBE DICH, {username}. ICH TAUFE DICH DIE ZWEIHUNDERTJÄHRIGE HÄUTUNG.",
+      "name": "CLAWD PRIME",
+      "epithet": "DIE ERSTE HÄUTUNG"
     },
     "coronation": {
       "title": "TRANSZENDENT",
       "subtitle": "{streak} TAGE SERIE",
       "molt": "DIE ZWEIHUNDERTJÄHRIGE HÄUTUNG",
-      "dismiss": "zurück ins reich der sterblichen"
+      "replay": "übertragung wiederholen",
+      "dismiss": "zurück ins reich der sterblichen",
+      "tokens": "Tokens",
+      "burned": "verbrannt",
+      "rankOf": "von {totalUsers}"
+    },
+    "replay": {
+      "label": "REKONSTRUIERE DIE SERIE AB TAG EINS",
+      "day": "TAG"
+    },
+    "sound": {
+      "hint": "am besten mit Ton",
+      "on": "Ton an",
+      "off": "Ton aus",
+      "toggle": "Ton ein- oder ausschalten"
     },
     "shareText": "Tag {streak}. Die Krabbe ist zu mir evolviert. 🦀 TRANSZENDENTE Serie auf clawdboard — überlebst du die Häutung?"
   },
