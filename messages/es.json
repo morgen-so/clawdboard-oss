@@ -774,6 +774,23 @@
     },
     "shareText": "Día {streak}. El cangrejo ha evolucionado en mí. 🦀 Racha TRASCENDENTE en clawdboard — ¿sobrevivirás a la muda?"
   },
+  "eternal": {
+    "a11yLabel": "Eterno: celebración de una racha de 100 días",
+    "days": "días",
+    "eyebrow": "tres cifras",
+    "title": "Eterno",
+    "body": "{streak} días sin parar. Tu aura se ha vuelto dorada.",
+    "teaser": "Algo se agita en el día 200…",
+    "inviteTeam": "invitar a compañeros a {teamName}",
+    "replay": "repetir",
+    "dismiss": "seguir",
+    "sound": {
+      "on": "sonido activado",
+      "off": "sonido desactivado",
+      "toggle": "Activar o desactivar el sonido"
+    },
+    "shareText": "{streak} días sin parar. ✦ Racha ETERNA en clawdboard, y mi aura se ha vuelto dorada. ¿Puedes seguirme el ritmo?"
+  },
   "feedback": {
     "button": "Feedback",
     "title": "feedback",

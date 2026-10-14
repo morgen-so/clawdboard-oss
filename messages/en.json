@@ -774,6 +774,23 @@
     },
     "shareText": "Day {streak}. The crab has evolved into me. 🦀 TRANSCENDENT streak on clawdboard — can you survive the molt?"
   },
+  "eternal": {
+    "a11yLabel": "Eternal: 100 day streak celebration",
+    "days": "days",
+    "eyebrow": "triple digits",
+    "title": "Eternal",
+    "body": "{streak} days without a break. Your aura has turned gold.",
+    "teaser": "Something stirs at day 200…",
+    "inviteTeam": "invite teammates to {teamName}",
+    "replay": "replay",
+    "dismiss": "keep going",
+    "sound": {
+      "on": "sound on",
+      "off": "sound off",
+      "toggle": "Toggle sound"
+    },
+    "shareText": "{streak} days without a break. ✦ ETERNAL streak on clawdboard, and my aura has turned gold. Can you keep up?"
+  },
   "feedback": {
     "button": "Feedback",
     "title": "feedback",

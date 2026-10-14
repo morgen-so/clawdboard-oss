@@ -774,6 +774,23 @@
     },
     "shareText": "Tag {streak}. Die Krabbe ist zu mir evolviert. 🦀 TRANSZENDENTE Serie auf clawdboard — überlebst du die Häutung?"
   },
+  "eternal": {
+    "a11yLabel": "Ewig: Feier einer 100-Tage-Serie",
+    "days": "Tage",
+    "eyebrow": "dreistellig",
+    "title": "Ewig",
+    "body": "{streak} Tage ohne Unterbrechung. Deine Aura ist jetzt golden.",
+    "teaser": "An Tag 200 regt sich etwas…",
+    "inviteTeam": "Teammitglieder zu {teamName} einladen",
+    "replay": "nochmal",
+    "dismiss": "weitermachen",
+    "sound": {
+      "on": "Ton an",
+      "off": "Ton aus",
+      "toggle": "Ton ein- oder ausschalten"
+    },
+    "shareText": "{streak} Tage ohne Unterbrechung. ✦ EWIGE Serie auf clawdboard, und meine Aura ist jetzt golden. Hältst du mit?"
+  },
   "feedback": {
     "button": "Feedback",
     "title": "feedback",
