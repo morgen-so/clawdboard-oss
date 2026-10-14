@@ -683,6 +683,161 @@ html[data-carc="crt"] .carc-scramble {
     #000;
 }
 
+/* ── Eternal (100-day streak celebration) ─────────── */
+
+/* Other celebrations from the same page view (the 100-day badge) wait behind
+   the show, then appear once it's dismissed. */
+html[data-eternal] [data-celebration]:not([data-celebration="eternal"]) {
+  visibility: hidden;
+}
+
+@keyframes eternal-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.eternal-root {
+  --dial: clamp(190px, min(62vw, 38vh), 340px);
+  animation: eternal-fade-in 0.35s ease-out both;
+}
+
+.eternal-dial {
+  width: var(--dial);
+  height: var(--dial);
+  flex-shrink: 0;
+}
+
+.eternal-count {
+  display: block;
+  font-size: calc(var(--dial) * 0.23);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.eternal-count.eternal-live {
+  text-shadow: 0 0 0.3em color-mix(in srgb, currentColor 55%, transparent);
+}
+
+.eternal-tier {
+  display: block;
+  min-height: 1.3em;
+  margin-top: calc(var(--dial) * 0.035);
+  padding-left: 0.42em; /* balances the tracking after the last letter */
+  font-size: max(11px, calc(var(--dial) * 0.044));
+  font-weight: 600;
+  letter-spacing: 0.42em;
+  text-transform: uppercase;
+  text-shadow: 0 0 0.8em currentColor;
+}
+
+/* The live counter runs the count; the gold 100 takes over on the burst. */
+.eternal-final {
+  display: none;
+}
+
+.eternal-root:is([data-phase="burst"], [data-phase="crown"]) .eternal-live {
+  display: none;
+}
+
+.eternal-root:is([data-phase="burst"], [data-phase="crown"]) .eternal-final {
+  display: block;
+}
+
+/* 99: the counter strains against the hold. */
+@keyframes eternal-strain {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(-1.5px, 1px); }
+  50% { transform: translate(1px, -1.5px); }
+  75% { transform: translate(1.5px, 1px); }
+}
+
+.eternal-root[data-phase="hold"] .eternal-count.eternal-live {
+  animation: eternal-strain 0.09s steps(1, end) infinite;
+}
+
+.eternal-gold {
+  background: linear-gradient(100deg, #fde047 0%, #fffbeb 10%, #facc15 22%, #F9A615 36%, #fde047 50%, #c084fc 62%, #facc15 76%, #fde047 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@keyframes eternal-slam {
+  0% { opacity: 0; transform: scale(2.6); filter: blur(12px) drop-shadow(0 0 24px rgba(250, 204, 21, 0)); }
+  55% { opacity: 1; transform: scale(0.94); filter: blur(0) drop-shadow(0 0 30px rgba(250, 204, 21, 0.8)); }
+  100% { opacity: 1; transform: scale(1); filter: blur(0) drop-shadow(0 0 22px rgba(250, 204, 21, 0.45)); }
+}
+
+.eternal-root:is([data-phase="burst"], [data-phase="crown"]) .eternal-count.eternal-final {
+  animation:
+    eternal-slam 0.55s cubic-bezier(0.2, 0.9, 0.25, 1.15) both,
+    carc-sheen 5s linear 0.6s infinite;
+}
+
+.eternal-root:is([data-phase="burst"], [data-phase="crown"]) .eternal-tier.eternal-final {
+  animation: carc-fade-in 0.6s ease-out 0.25s both;
+}
+
+/* The card: laid out from the start (the dial's place depends on it), but
+   invisible and out of reach until the crown. */
+.eternal-reveal {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@keyframes eternal-rise {
+  from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: none; }
+}
+
+.eternal-root[data-phase="crown"] .eternal-reveal {
+  visibility: visible;
+  animation: eternal-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-delay: calc(var(--d, 0) * 1ms);
+}
+
+/* The title condenses out of the light. */
+@keyframes eternal-condense {
+  0% { opacity: 0; letter-spacing: 0.8em; transform: scale(1.2); filter: blur(14px) drop-shadow(0 0 18px rgba(250, 204, 21, 0)); }
+  100% { opacity: 1; letter-spacing: 0.04em; transform: scale(1); filter: blur(0) drop-shadow(0 0 18px rgba(250, 204, 21, 0.35)); }
+}
+
+.eternal-title {
+  letter-spacing: 0.04em;
+  filter: drop-shadow(0 0 18px rgba(250, 204, 21, 0.35));
+}
+
+.eternal-root[data-phase="crown"] .eternal-title {
+  animation:
+    eternal-condense 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both,
+    carc-sheen 6s linear 1s infinite;
+}
+
+/* Reduced motion: the crown as a still. */
+.eternal-root[data-static] {
+  animation: none;
+}
+
+.eternal-root[data-static] .eternal-reveal,
+.eternal-root[data-static] .eternal-count.eternal-final,
+.eternal-root[data-static] .eternal-tier.eternal-final {
+  animation: none;
+  opacity: 1;
+}
+
+.eternal-static-bg {
+  background: radial-gradient(circle at 50% 30%, rgba(250, 204, 21, 0.2), transparent 55%);
+}
+
+.eternal-static-ring {
+  border-radius: 9999px;
+  background: conic-gradient(#facc15, #fde047, #F9A615, #c084fc, #facc15);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  box-shadow: 0 0 32px rgba(250, 204, 21, 0.35);
+}
+
 /* ── Row stagger animation ───────────────────────── */
 
 .row-stagger {

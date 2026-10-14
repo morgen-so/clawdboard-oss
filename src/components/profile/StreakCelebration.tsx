@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState, useRef, useCallback } from "react";
-import { getStreakTier, TRANSCENDENT_TIER } from "@/lib/streak-tiers";
+import dynamic from "next/dynamic";
+import {
+  getStreakTier,
+  ETERNAL_TIER,
+  TRANSCENDENT_TIER,
+} from "@/lib/streak-tiers";
 import {
   buildStreakShareText,
   buildTwitterIntentUrl,
@@ -12,6 +17,13 @@ import { env } from "@/lib/env";
 import { CheckIcon, LinkIcon, LinkedInIcon, XIcon } from "@/components/icons/CommonIcons";
 import { useCopyToClipboard } from "@/components/ui/useCopyToClipboard";
 
+// The 100-day show is heavier than everything else on the page: load it only
+// for the visit that plays it.
+const EternalCelebration = dynamic(
+  () => import("./EternalCelebration").then((m) => m.EternalCelebration),
+  { ssr: false }
+);
+
 interface StreakCelebrationProps {
   username: string;
   currentStreak: number;
@@ -21,6 +33,8 @@ interface StreakCelebrationProps {
     teamSlug: string;
     inviteToken: string;
   };
+  /** Dev preview (?eternal=1): play the 100-day show, never persist. */
+  forceEternal?: boolean;
 }
 
 // ─── localStorage helpers ───────────────────────────────────────────────────
@@ -56,8 +70,10 @@ export function StreakCelebration({
   currentStreak,
   isOwner,
   team,
+  forceEternal = false,
 }: StreakCelebrationProps) {
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showEternal, setShowEternal] = useState(false);
   const { copied, copy: copyProfileUrl } = useCopyToClipboard();
   const { copied: inviteCopied, copy: copyInviteUrl } = useCopyToClipboard();
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -103,6 +119,10 @@ export function StreakCelebration({
   }, [inviteUrl, copyInviteUrl]);
 
   useEffect(() => {
+    if (forceEternal) {
+      setShowEternal(true);
+      return;
+    }
     if (!isOwner) return;
 
     const currentTier = getStreakTier(currentStreak);
@@ -120,6 +140,26 @@ export function StreakCelebration({
     // No celebration for tier 0 or if tier hasn't increased
     if (currentTier.tier === 0) return;
     if (currentTier.tier <= lastSeenTierNum) return;
+
+    // Eternal (100 days) gets its own show. Opened in a background tab, it
+    // waits until someone's watching, and only then counts as seen.
+    if (currentTier.tier === ETERNAL_TIER) {
+      const open = () => {
+        setLastSeenTier(username, currentTier.tier);
+        setShowEternal(true);
+      };
+      if (!document.hidden) {
+        open();
+        return;
+      }
+      const onVisible = () => {
+        if (document.hidden) return;
+        document.removeEventListener("visibilitychange", onVisible);
+        open();
+      };
+      document.addEventListener("visibilitychange", onVisible);
+      return () => document.removeEventListener("visibilitychange", onVisible);
+    }
 
     // Only persist when the tier is new (higher) — never downgrade,
     // so a temporary streak dip won't re-trigger celebrations later.
@@ -189,7 +229,18 @@ export function StreakCelebration({
       cancelled = true;
       clearTimeout(burstTimer);
     };
-  }, [isOwner, username, currentStreak]);
+  }, [isOwner, username, currentStreak, forceEternal]);
+
+  if (showEternal) {
+    return (
+      <EternalCelebration
+        username={username}
+        currentStreak={forceEternal ? Math.max(currentStreak, 100) : currentStreak}
+        team={team}
+        onClose={() => setShowEternal(false)}
+      />
+    );
+  }
 
   if (!showCelebration) return null;
 

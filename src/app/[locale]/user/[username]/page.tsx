@@ -117,6 +117,7 @@ interface PageProps {
     vs?: string;
     carcinize?: string;
     passes?: string;
+    eternal?: string;
   }>;
 }
 
@@ -236,6 +237,9 @@ export default async function UserProfilePage({
   // Free-pass celebration — dev preview via ?passes=1 (never in prod)
   const forcePasses =
     process.env.NODE_ENV === "development" && sp.passes === "1";
+  // 100-day celebration — dev preview via ?eternal=1 (never in prod)
+  const forceEternal =
+    process.env.NODE_ENV === "development" && sp.eternal === "1";
   const showCarcinization =
     isOwner && (currentStreak >= TRANSCENDENT_MIN_DAYS || forceCarcinize);
   // The takeover replays the live run a day at a time, and its stats cover the
@@ -350,6 +354,7 @@ export default async function UserProfilePage({
         currentStreak={currentStreak}
         isOwner={isOwner}
         team={celebrationTeam}
+        forceEternal={forceEternal}
       />
 
       {/* The Carcinization Event — 200-day streak takeover (owner only) */}

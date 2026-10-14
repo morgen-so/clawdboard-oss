@@ -190,6 +190,8 @@ const TIERS: StreakTier[] = [
   },
 ];
 
+/** Tier number of the 100-day "Eternal" tier — it gets its own celebration. */
+export const ETERNAL_TIER = 6;
 /** Tier number of the top "Transcendent" tier — owned by the Carcinization Event. */
 export const TRANSCENDENT_TIER = 7;
 /** Streak days required to reach the Transcendent tier. */

@@ -774,6 +774,23 @@
     },
     "shareText": "Jour {streak}. Le crabe a évolué en moi. 🦀 Série TRANSCENDANTE sur clawdboard — survivrez-vous à la mue ?"
   },
+  "eternal": {
+    "a11yLabel": "Éternel : célébration d'une série de 100 jours",
+    "days": "jours",
+    "eyebrow": "trois chiffres",
+    "title": "Éternel",
+    "body": "{streak} jours sans interruption. Votre aura est passée à l'or.",
+    "teaser": "Quelque chose remue au jour 200…",
+    "inviteTeam": "inviter des coéquipiers dans {teamName}",
+    "replay": "rejouer",
+    "dismiss": "continuer",
+    "sound": {
+      "on": "son activé",
+      "off": "son coupé",
+      "toggle": "Activer ou couper le son"
+    },
+    "shareText": "{streak} jours sans interruption. ✦ Série ÉTERNELLE sur clawdboard, et mon aura est passée à l'or. Vous suivez ?"
+  },
   "feedback": {
     "button": "Feedback",
     "title": "feedback",
