@@ -5,6 +5,11 @@ import { db } from "@/lib/db";
 import { dailyAggregates, users } from "@/lib/db/schema";
 import { eq, and, or, isNull, inArray, sql } from "drizzle-orm";
 import { SyncPayloadSchema } from "@/lib/sync/validate";
+import {
+  MAX_DAY_COST_USD,
+  MAX_DAY_TOKENS,
+  isImplausibleDay,
+} from "@/lib/sync-plausibility";
 import { rateLimit } from "@/lib/rate-limit";
 import { authenticateApiToken } from "@/lib/api-auth";
 import { isOrgDataStale, syncUserGitHubOrgs } from "@/lib/db/github-orgs";
@@ -128,6 +133,21 @@ export async function POST(req: NextRequest) {
             `codex data from CLIs < 0.3.7 counts forked sessions' history again`
         );
       }
+    }
+
+    // Drop days beyond any real usage (see sync-plausibility.ts). Before the
+    // cleanup steps below, so a dropped day can't clear other rows either.
+    const implausibleDays = days.filter(isImplausibleDay);
+    if (implausibleDays.length > 0) {
+      days = days.filter((d) => !isImplausibleDay(d));
+      console.log(
+        `[sync] Dropped ${implausibleDays.length} implausible day(s) for user=${user.id} ` +
+          `(${req.headers.get("user-agent") ?? "no UA"}): ` +
+          implausibleDays
+            .slice(0, 5)
+            .map((d) => `${d.date}/${d.source ?? "null"} $${d.totalCost}`)
+            .join(", ")
+      );
     }
 
     // 4a. Clean up legacy null-source rows that would cause double-counting.
@@ -373,18 +393,24 @@ export async function POST(req: NextRequest) {
       }
     });
 
+    const warnings = [
+      droppedLegacyDays > 0 &&
+        `${droppedLegacyDays} day(s) were not stored: this CLI version ` +
+          `overcounts tokens for codex/gemini/copilot/antigravity. ` +
+          `Update with: npm i -g clawdboard@latest (npx users update automatically).`,
+      implausibleDays.length > 0 &&
+        `${implausibleDays.length} day(s) were not stored: over $${MAX_DAY_COST_USD.toLocaleString("en-US")} ` +
+          `or ${MAX_DAY_TOKENS / 1e9}B tokens in one day is beyond real usage. ` +
+          `If this is a CLI bug, please open an issue.`,
+    ].filter(Boolean);
+
     return NextResponse.json({
       success: true,
       daysUpserted: days.length,
       // The caller's own streak and free-pass state. Only ever returned to
       // the token holder; nothing about passes is public.
       ...(streakInfo ?? {}),
-      ...(droppedLegacyDays > 0 && {
-        warning:
-          `${droppedLegacyDays} day(s) were not stored: this CLI version ` +
-          `overcounts tokens for codex/gemini/copilot/antigravity. ` +
-          `Update with: npm i -g clawdboard@latest (npx users update automatically).`,
-      }),
+      ...(warnings.length > 0 && { warning: warnings.join(" ") }),
     });
   } catch (error) {
     console.error("Sync error:", error);
