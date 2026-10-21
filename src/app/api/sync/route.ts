@@ -9,6 +9,7 @@ import {
   MAX_DAY_COST_USD,
   MAX_DAY_TOKENS,
   isImplausibleDay,
+  stripMockModels,
 } from "@/lib/sync-plausibility";
 import { rateLimit } from "@/lib/rate-limit";
 import { authenticateApiToken } from "@/lib/api-auth";
@@ -133,6 +134,21 @@ export async function POST(req: NextRequest) {
             `codex data from CLIs < 0.3.7 counts forked sessions' history again`
         );
       }
+    }
+
+    // Take mock models out (see sync-plausibility.ts), dropping days with
+    // nothing real left. Before the checks and cleanup steps below.
+    let mockDays = 0;
+    days = days.flatMap((d) => {
+      const stripped = stripMockModels(d);
+      if (stripped !== d) mockDays++;
+      return stripped ? [stripped] : [];
+    });
+    if (mockDays > 0) {
+      console.log(
+        `[sync] Stripped mock models from ${mockDays} day(s) for user=${user.id} ` +
+          `(${req.headers.get("user-agent") ?? "no UA"})`
+      );
     }
 
     // Drop days beyond any real usage (see sync-plausibility.ts). Before the
@@ -402,6 +418,8 @@ export async function POST(req: NextRequest) {
         `${implausibleDays.length} day(s) were not stored: over $${MAX_DAY_COST_USD.toLocaleString("en-US")} ` +
           `or ${MAX_DAY_TOKENS / 1e9}B tokens in one day is beyond real usage. ` +
           `If this is a CLI bug, please open an issue.`,
+      mockDays > 0 &&
+        `Mock models were left out of ${mockDays} day(s): they aren't real usage.`,
     ].filter(Boolean);
 
     return NextResponse.json({
