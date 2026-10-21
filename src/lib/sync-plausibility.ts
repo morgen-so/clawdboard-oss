@@ -40,3 +40,40 @@ export function isImplausibleDay(day: PlausibilityDay): boolean {
     Math.max(tokens(day), breakdownTokens) > MAX_DAY_TOKENS
   );
 }
+
+// ─── Mock models ───────────────────────────────────────────────────────────
+// A model with "mock" in its name is a test harness or a fake provider, not
+// paid usage. The CLI faithfully reads whatever a session file says, so on
+// 2026-10-20 one account's fake pi sessions for "clawdboard-mock" put $867K
+// on the board. No real model on the platform matches.
+
+const MOCK_MODEL = /mock/i;
+
+export interface MockStrippableDay extends PlausibilityDay {
+  modelsUsed: string[];
+  modelBreakdowns: (TokenCounts & { cost: number; modelName: string })[];
+}
+
+/**
+ * The day without its mock models: their breakdowns are removed and their
+ * tokens and cost taken off the day totals. Null when nothing real is left.
+ * Returns the same object when the day has no mock model.
+ */
+export function stripMockModels<T extends MockStrippableDay>(day: T): T | null {
+  const mock = day.modelBreakdowns.filter((m) => MOCK_MODEL.test(m.modelName));
+  if (mock.length === 0) return day;
+  const kept = day.modelBreakdowns.filter((m) => !MOCK_MODEL.test(m.modelName));
+  if (kept.length === 0) return null;
+  const minus = (k: keyof TokenCounts) =>
+    Math.max(0, day[k] - mock.reduce((s, m) => s + m[k], 0));
+  return {
+    ...day,
+    inputTokens: minus("inputTokens"),
+    outputTokens: minus("outputTokens"),
+    cacheCreationTokens: minus("cacheCreationTokens"),
+    cacheReadTokens: minus("cacheReadTokens"),
+    totalCost: Math.max(0, day.totalCost - mock.reduce((s, m) => s + m.cost, 0)),
+    modelsUsed: day.modelsUsed.filter((name) => !MOCK_MODEL.test(name)),
+    modelBreakdowns: kept,
+  };
+}

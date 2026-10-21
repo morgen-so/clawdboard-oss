@@ -6,6 +6,7 @@ import {
   MAX_DAY_COST_USD,
   MAX_DAY_TOKENS,
   isImplausibleDay,
+  stripMockModels,
 } from "./sync-plausibility.ts";
 
 const model = (cost: number, inputTokens: number) => ({
@@ -70,4 +71,50 @@ test("breakdowns can't carry more than the ceiling under a small day total", () 
     isImplausibleDay(day(10, 1_000, [model(5, 100), model(5, MAX_DAY_TOKENS)])),
     true
   );
+});
+
+const named = (modelName: string, cost: number, inputTokens: number) => ({
+  ...model(cost, inputTokens),
+  modelName,
+});
+
+const syncDay = (breakdowns: ReturnType<typeof named>[]) => ({
+  date: "2026-10-20",
+  source: "pi",
+  totalCost: breakdowns.reduce((s, m) => s + m.cost, 0),
+  inputTokens: breakdowns.reduce((s, m) => s + m.inputTokens, 0),
+  outputTokens: 0,
+  cacheCreationTokens: 0,
+  cacheReadTokens: 0,
+  modelsUsed: breakdowns.map((m) => m.modelName),
+  modelBreakdowns: breakdowns,
+});
+
+test("a day without mock models comes back untouched", () => {
+  const d = syncDay([named("claude-opus-5", 12, 1_000)]);
+  assert.equal(stripMockModels(d), d);
+});
+
+test("a day of nothing but mock models is dropped", () => {
+  assert.equal(
+    stripMockModels(syncDay([named("clawdboard-mock", 6028.37, 803_783_000)])),
+    null
+  );
+  assert.equal(stripMockModels(syncDay([named("Mock-Provider/x", 1, 1)])), null);
+});
+
+test("mock models come out of a mixed day, real usage stays", () => {
+  const out = stripMockModels(
+    syncDay([named("claude-opus-5", 12, 1_000), named("clawdboard-mock", 6000, 800_000)])
+  );
+  assert.ok(out);
+  assert.equal(out.totalCost, 12);
+  assert.equal(out.inputTokens, 1_000);
+  assert.deepEqual(out.modelsUsed, ["claude-opus-5"]);
+  assert.deepEqual(
+    out.modelBreakdowns.map((m) => m.modelName),
+    ["claude-opus-5"]
+  );
+  assert.equal(out.date, "2026-10-20");
+  assert.equal(out.source, "pi");
 });
