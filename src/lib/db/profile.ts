@@ -92,14 +92,25 @@ export const getUserByUsername = cache(async function getUserByUsername(
 /**
  * Persist earned badge IDs to the user record.
  * Called when new badges are earned to ensure they can never be lost.
+ *
+ * Adds to the stored list rather than replacing it: a profile view computes
+ * allEarnedIds from the public snapshot's copy of the user, which can predate
+ * a badge another page has since saved.
  */
 export async function persistEarnedBadges(
   userId: string,
   allEarnedIds: string[]
 ): Promise<void> {
+  const stored = sql`COALESCE(${users.earnedBadges}, '[]'::jsonb)`;
   await db
     .update(users)
-    .set({ earnedBadges: allEarnedIds })
+    .set({
+      earnedBadges: sql`${stored} || COALESCE((
+        SELECT jsonb_agg(e.id)
+        FROM jsonb_array_elements(${JSON.stringify(allEarnedIds)}::jsonb) AS e(id)
+        WHERE NOT ${stored} @> jsonb_build_array(e.id)
+      ), '[]'::jsonb)`,
+    })
     .where(eq(users.id, userId));
 }
 
