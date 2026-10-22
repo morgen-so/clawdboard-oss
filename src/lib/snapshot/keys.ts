@@ -29,16 +29,24 @@ export function snapshotKey(name: string, args: readonly unknown[]): string {
 const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
 
 /**
- * Young enough to serve. A build time in the future beyond clock skew is
- * treated as bad too, or that file could never be replaced.
+ * Young enough to serve. Entries for "today" and "last 7 days" are computed
+ * against the UTC date at build time, so a file from yesterday (UTC) is never
+ * served, even a minute after midnight; reads go live until the midnight cron
+ * has rebuilt it. A build time in the future beyond clock skew is treated as
+ * bad too, or that file could never be replaced.
  */
 export function isFresh(file: SnapshotFile, now = Date.now()): boolean {
   const built = Date.parse(file.builtAt);
   return (
     Number.isFinite(built) &&
     now - built <= SNAPSHOT_MAX_AGE_MS &&
-    built - now <= MAX_CLOCK_SKEW_MS
+    built - now <= MAX_CLOCK_SKEW_MS &&
+    utcDay(built) === utcDay(now)
   );
+}
+
+function utcDay(ms: number): string {
+  return new Date(ms).toISOString().slice(0, 10);
 }
 
 /** JSON turns Dates into strings; give the named fields their Dates back. */
