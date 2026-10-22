@@ -54,7 +54,11 @@ export async function readSnapshotFile(name: string): Promise<SnapshotFile | nul
   if (!where) return null;
 
   const last = held.get(name);
-  if (last && Date.now() - last.at < REUSE_MS) return usable(last.file);
+  if (last && Date.now() - last.at < REUSE_MS) {
+    held.delete(name); // keep the most read files at the end, away from eviction
+    held.set(name, last);
+    return usable(last.file);
+  }
 
   let request = pending.get(name);
   if (!request) {
@@ -68,10 +72,16 @@ function usable(file: SnapshotFile | null): SnapshotFile | null {
   return file && isFresh(file) ? file : null;
 }
 
+/**
+ * Fetch a file, or null when it doesn't exist. A failed read also gives null
+ * (the page reads live instead) unless `strict`, where it throws: a write
+ * must never mistake an unreadable file for a missing one.
+ */
 async function fetchFile(
   where: Backend,
   name: string,
-  last: Held | undefined
+  last: Held | undefined,
+  strict = false
 ): Promise<SnapshotFile | null> {
   try {
     if (where === "dir") {
@@ -90,9 +100,9 @@ async function fetchFile(
     const raw = await new Response(result.stream).text();
     return hold(name, result.blob.etag, JSON.parse(raw) as SnapshotFile);
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code !== "ENOENT") {
-      console.error(`[snapshot] read ${name} failed:`, err);
-    }
+    if ((err as NodeJS.ErrnoException).code === "ENOENT") return hold(name, null, null);
+    if (strict) throw err;
+    console.error(`[snapshot] read ${name} failed:`, err);
     return hold(name, null, null);
   }
 }
@@ -123,7 +133,7 @@ export async function writeSnapshotFile(
 
   for (let attempt = 0; attempt < 3; attempt++) {
     // Sends the held ETag, so an unchanged file costs a 304, not a download.
-    const current = await fetchFile(where, name, held.get(name));
+    const current = await fetchFile(where, name, held.get(name), true);
     if (current && isFresh(current) && Date.parse(current.builtAt) > Date.parse(builtAt)) {
       return false;
     }

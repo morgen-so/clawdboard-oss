@@ -96,6 +96,7 @@ export const SNAP = {
     revive: (user) => (user ? reviveDates(user, PROFILE_USER_DATES) : user),
   }),
   userRank: spec({ name: "userRank", file: leaderboardFile, load: getUserRank }),
+  sitemapPaths: spec({ name: "sitemapPaths", file: leaderboardFile, load: getSitemapPaths }),
 
   // users/<id>.json — rebuilt after that user syncs
   userSummary: spec({ name: "userSummary", file: userFile, load: getUserSummary }),
@@ -118,7 +119,7 @@ export const SNAP = {
   sourceDetail: spec({ name: "sourceDetail", file: statsFile, load: getSourceDetailStats }),
   sourceModels: spec({ name: "sourceModels", file: statsFile, load: getSourceModelBreakdown }),
   sourceComparison: spec({ name: "sourceComparison", file: statsFile, load: getSourceComparisonTrends }),
-  sitemapPaths: spec({ name: "sitemapPaths", file: statsFile, load: getSitemapPaths }),
+
   modelDetail: spec({ name: "modelDetail", file: modelsFile, load: getModelDetailStats }),
   modelDailyTrends: spec({ name: "modelDailyTrends", file: modelsFile, load: getModelDailyTrends }),
 };

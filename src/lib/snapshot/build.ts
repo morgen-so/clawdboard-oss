@@ -18,11 +18,12 @@ import {
 //
 //   leaderboard.json  leaderboard and team leaderboard per period, community
 //                     totals, vibe coder count, every profile-able user and
-//                     their rank. Rebuilt after every sync and every hour.
+//                     their rank, the sitemap's lists. Rebuilt after every
+//                     sync and every hour.
 //   users/<id>.json   one user's summary, daily rows and models per period,
 //                     all-time summary and daily rows, public teams, recaps. Rebuilt after
 //                     that user syncs and every hour.
-//   stats.json        the /stats and /stats/tools pages and the sitemap.
+//   stats.json        the /stats and /stats/tools pages.
 //   models.json       every /stats/models/<slug> page. Both rebuilt hourly.
 
 const PERIODS = VALID_PERIODS.filter(
@@ -32,10 +33,22 @@ const PERIODS = VALID_PERIODS.filter(
 /** Parallel queries per rebuild; Neon's HTTP driver opens one request each. */
 const CONCURRENCY = 6;
 
+/**
+ * Run jobs a few at a time. A job that fails is logged and skipped: its entry
+ * or file is missing from this rebuild, so those reads go live (or keep the
+ * previous file) instead of one bad query sinking the whole run.
+ */
 async function inBatches(jobs: Array<() => Promise<unknown>>): Promise<void> {
   let next = 0;
   async function worker() {
-    while (next < jobs.length) await jobs[next++]();
+    while (next < jobs.length) {
+      const job = jobs[next++];
+      try {
+        await job();
+      } catch (err) {
+        console.error("[snapshot] rebuild step failed:", err);
+      }
+    }
   }
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, jobs.length) }, worker));
 }
@@ -103,6 +116,7 @@ async function addLeaderboard(build: SnapshotBuild): Promise<string[]> {
     ...PERIODS.map((p) => () => build.add(SNAP.teamLeaderboard, p)),
     () => build.add(SNAP.vibeCoderCount),
     () => build.add(SNAP.communityStats),
+    () => build.add(SNAP.sitemapPaths),
   ]);
 
   return [...profiles.values()].map((user) => user.id);
@@ -134,7 +148,6 @@ async function addStats(build: SnapshotBuild): Promise<void> {
     () => build.add(SNAP.modelStats),
     () => build.add(SNAP.weeklyGrowth),
     () => build.add(SNAP.sourceComparison),
-    () => build.add(SNAP.sitemapPaths),
     // The tools page asks for a tool's models only when it has details.
     ...getActiveTools(breakdown).map((tool) => async () => {
       if (await build.add(SNAP.sourceDetail, tool.slug)) {
@@ -148,12 +161,34 @@ async function addStats(build: SnapshotBuild): Promise<void> {
   ]);
 }
 
-/** The leaderboard file, after a sync or a change to someone's public profile. */
-export async function rebuildLeaderboardSnapshot(): Promise<void> {
-  if (!snapshotEnabled()) return;
-  const build = new SnapshotBuild();
-  await addLeaderboard(build);
-  await writeFiles(build);
+let leaderboardRun: Promise<void> | null = null;
+let leaderboardAgain = false;
+
+/**
+ * The leaderboard file, after a sync or a change to someone's public profile.
+ * Requests that arrive while a rebuild runs share one more pass after it,
+ * so a burst (several syncs, or crawlers saving badges after a reset) costs
+ * two rebuilds per instance, not one each.
+ */
+export function rebuildLeaderboardSnapshot(): Promise<void> {
+  if (!snapshotEnabled()) return Promise.resolve();
+  if (leaderboardRun) {
+    leaderboardAgain = true;
+    return leaderboardRun;
+  }
+  leaderboardRun = (async () => {
+    try {
+      do {
+        leaderboardAgain = false;
+        const build = new SnapshotBuild();
+        await addLeaderboard(build);
+        await writeFiles(build);
+      } while (leaderboardAgain);
+    } finally {
+      leaderboardRun = null;
+    }
+  })();
+  return leaderboardRun;
 }
 
 /** One user's file, after they sync or change what their profile shows. */
@@ -172,10 +207,7 @@ export async function rebuildAllUserSnapshots(): Promise<void> {
 /** After a sync: the leaderboard moved and so did this user's profile. */
 export async function rebuildAfterSync(userId: string): Promise<void> {
   if (!snapshotEnabled()) return;
-  const build = new SnapshotBuild();
-  await addLeaderboard(build);
-  await inBatches(userJobs(build, userId));
-  await writeFiles(build);
+  await Promise.all([rebuildLeaderboardSnapshot(), rebuildUsers([userId])]);
 }
 
 /**
