@@ -2,7 +2,7 @@ import "server-only";
 
 import { promises as fs } from "node:fs";
 import path from "node:path";
-import { del, get, list, put } from "@vercel/blob";
+import { BlobPreconditionFailedError, del, get, list, put } from "@vercel/blob";
 import { env } from "@/lib/env";
 import { isFresh, type SnapshotFile } from "./keys";
 
@@ -106,8 +106,9 @@ function hold(name: string, etag: string | null, file: SnapshotFile | null) {
 
 /**
  * Write a file built from data read at `builtAt`. Rebuilds can overlap (two
- * syncs, or the refresh and recaps crons at 07:00), so a build never replaces
- * a file built from newer data. Returns whether it wrote.
+ * syncs, or a sync and the hourly cron), so a build never replaces a file
+ * built from newer data. The write is conditional on the file it checked:
+ * if another build lands in between, it checks again. Returns whether it wrote.
  */
 export async function writeSnapshotFile(
   name: string,
@@ -117,28 +118,40 @@ export async function writeSnapshotFile(
   const where = backend();
   if (!where) return false;
 
-  const current = await fetchFile(where, name, undefined);
-  if (current && isFresh(current) && Date.parse(current.builtAt) > Date.parse(builtAt)) {
-    return false;
-  }
-
   const file: SnapshotFile = { builtAt, entries };
   const body = JSON.stringify(file);
 
-  if (where === "dir") {
-    await fs.mkdir(path.dirname(dirPath(name)), { recursive: true });
-    await fs.writeFile(dirPath(name), body);
-  } else {
-    await put(blobPath(name), body, {
-      access: "private",
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      contentType: "application/json",
-    });
+  for (let attempt = 0; attempt < 3; attempt++) {
+    // Sends the held ETag, so an unchanged file costs a 304, not a download.
+    const current = await fetchFile(where, name, held.get(name));
+    if (current && isFresh(current) && Date.parse(current.builtAt) > Date.parse(builtAt)) {
+      return false;
+    }
+
+    if (where === "dir") {
+      await fs.mkdir(path.dirname(dirPath(name)), { recursive: true });
+      await fs.writeFile(dirPath(name), body);
+      hold(name, null, file);
+      return true;
+    }
+
+    try {
+      const written = await put(blobPath(name), body, {
+        access: "private",
+        addRandomSuffix: false,
+        allowOverwrite: true,
+        contentType: "application/json",
+        ifMatch: current ? (held.get(name)?.etag ?? undefined) : undefined,
+      });
+      // This instance sees its own write straight away.
+      hold(name, written.etag, file);
+      return true;
+    } catch (err) {
+      if (err instanceof BlobPreconditionFailedError) continue;
+      throw err;
+    }
   }
-  // This instance sees its own write straight away.
-  hold(name, null, file);
-  return true;
+  return false;
 }
 
 export async function removeSnapshotFile(name: string): Promise<void> {
