@@ -149,6 +149,8 @@ export function snapshotFirst<A extends unknown[], R>(
 /** Collects entries for a rebuild, grouped by the file each one belongs in. */
 export class SnapshotBuild {
   readonly files = new Map<string, Record<string, unknown>>();
+  /** When the reads began; a file only replaces one built from older data. */
+  readonly startedAt = new Date().toISOString();
 
   /** Run the live query and keep its result. */
   async add<A extends unknown[], R>(s: SnapshotSpec<A, R>, ...args: A): Promise<R> {

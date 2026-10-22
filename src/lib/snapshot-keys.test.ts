@@ -37,6 +37,9 @@ test("a file is fresh up to the max age and stale after it", () => {
   assert.equal(isFresh(at(SNAPSHOT_MAX_AGE_MS), now), true);
   assert.equal(isFresh(at(SNAPSHOT_MAX_AGE_MS + 1), now), false);
   assert.equal(isFresh({ builtAt: "not a date", entries: {} }, now), false);
+  // A build time in the future: fine within clock skew, bad beyond it.
+  assert.equal(isFresh(at(-60_000), now), true);
+  assert.equal(isFresh(at(-60 * 60 * 1000), now), false);
 });
 
 test("reviveDates restores the named fields and leaves the rest", () => {

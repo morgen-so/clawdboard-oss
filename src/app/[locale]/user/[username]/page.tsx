@@ -116,6 +116,9 @@ function claimBadgeSave(userId: string): boolean {
   const now = Date.now();
   const last = badgeSavedAt.get(userId);
   if (last !== undefined && now - last < BADGE_SAVE_WINDOW_MS) return false;
+  for (const [id, at] of badgeSavedAt) {
+    if (now - at >= BADGE_SAVE_WINDOW_MS) badgeSavedAt.delete(id);
+  }
   badgeSavedAt.set(userId, now);
   return true;
 }

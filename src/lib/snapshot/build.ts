@@ -1,10 +1,16 @@
 import "server-only";
 
+import { after } from "next/server";
 import { VALID_PERIODS, type Period } from "@/lib/constants";
 import { getAllProfileUsers, getAllUserRanks } from "@/lib/db/profile";
 import { getActiveTools } from "@/lib/tools";
 import { SNAP, SnapshotBuild, userFile } from "./index";
-import { removeSnapshotFile, snapshotEnabled, writeSnapshotFile } from "./store";
+import {
+  listSnapshotFiles,
+  removeSnapshotFile,
+  snapshotEnabled,
+  writeSnapshotFile,
+} from "./store";
 
 // What each file holds. Only the calls public pages make by default are
 // built (default sort, every period but custom); anything else reads live.
@@ -34,10 +40,52 @@ async function inBatches(jobs: Array<() => Promise<unknown>>): Promise<void> {
 }
 
 async function writeFiles(build: SnapshotBuild): Promise<number> {
+  let written = 0;
   await inBatches(
-    [...build.files].map(([name, entries]) => () => writeSnapshotFile(name, entries))
+    [...build.files].map(([name, entries]) => async () => {
+      if (await writeSnapshotFile(name, entries, build.startedAt)) written++;
+    })
   );
-  return build.files.size;
+  return written;
+}
+
+/**
+ * Build and write users' files one user at a time, so a run that gets cut
+ * short keeps every file it finished.
+ */
+async function rebuildUsers(userIds: string[]): Promise<number> {
+  let written = 0;
+  await inBatches(
+    userIds.map((id) => async () => {
+      const build = new SnapshotBuild();
+      for (const job of userJobs(build, id)) await job();
+      const files = await writeFiles(build);
+      written += files;
+    })
+  );
+  return written;
+}
+
+/**
+ * Users who went away while a run was building (account deleted, banned)
+ * lose their files, and the leaderboard is rebuilt without them. Files left
+ * from earlier departures go too.
+ */
+async function dropDepartedUsers(built: string[]): Promise<number> {
+  const current = new Set([...(await getAllProfileUsers()).values()].map((u) => u.id));
+
+  let written = 0;
+  if (built.some((id) => !current.has(id))) {
+    const build = new SnapshotBuild();
+    await addLeaderboard(build);
+    written = await writeFiles(build);
+  }
+
+  const departed = (await listSnapshotFiles("users")).filter(
+    (name) => !current.has(name.slice("users/".length))
+  );
+  await inBatches(departed.map((name) => () => removeSnapshotFile(name)));
+  return written;
 }
 
 /** Fill leaderboard.json and return the ids of every profile-able user. */
@@ -110,9 +158,19 @@ export async function rebuildLeaderboardSnapshot(): Promise<void> {
 /** One user's file, after they sync or change what their profile shows. */
 export async function rebuildUserSnapshot(userId: string): Promise<void> {
   if (!snapshotEnabled()) return;
+  await rebuildUsers([userId]);
+}
+
+/**
+ * The leaderboard and every user's file, after a team change: team names,
+ * visibility and membership show on the team board and on members' profiles.
+ */
+export async function rebuildPeopleSnapshots(): Promise<void> {
+  if (!snapshotEnabled()) return;
   const build = new SnapshotBuild();
-  await inBatches(userJobs(build, userId));
+  const userIds = await addLeaderboard(build);
   await writeFiles(build);
+  await rebuildUsers(userIds);
 }
 
 /** After a sync: the leaderboard moved and so did this user's profile. */
@@ -122,6 +180,14 @@ export async function rebuildAfterSync(userId: string): Promise<void> {
   await addLeaderboard(build);
   await inBatches(userJobs(build, userId));
   await writeFiles(build);
+}
+
+/**
+ * For team actions: team names, visibility and membership are public on the
+ * team board and members' profiles, so rebuild once the response is sent.
+ */
+export function scheduleTeamRebuild(): void {
+  after(() => runSnapshotJob("team change", rebuildPeopleSnapshots));
 }
 
 export async function removeUserSnapshot(userId: string): Promise<void> {
@@ -136,9 +202,10 @@ export async function rebuildAllSnapshots(): Promise<{ files: number; ms: number
 
   const userIds = await addLeaderboard(build);
   await addStats(build);
-  await inBatches(userIds.flatMap((id) => userJobs(build, id)));
+  let files = await writeFiles(build);
+  files += await rebuildUsers(userIds);
+  files += await dropDepartedUsers(userIds);
 
-  const files = await writeFiles(build);
   return { files, ms: Date.now() - started };
 }
 

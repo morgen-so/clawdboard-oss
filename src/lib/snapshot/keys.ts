@@ -25,9 +25,20 @@ export function snapshotKey(name: string, args: readonly unknown[]): string {
   return `${name}:${JSON.stringify(args.slice(0, end))}`;
 }
 
+/** Clock skew between instances that a build time may show. */
+const MAX_CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+/**
+ * Young enough to serve. A build time in the future beyond clock skew is
+ * treated as bad too, or that file could never be replaced.
+ */
 export function isFresh(file: SnapshotFile, now = Date.now()): boolean {
   const built = Date.parse(file.builtAt);
-  return Number.isFinite(built) && now - built <= SNAPSHOT_MAX_AGE_MS;
+  return (
+    Number.isFinite(built) &&
+    now - built <= SNAPSHOT_MAX_AGE_MS &&
+    built - now <= MAX_CLOCK_SKEW_MS
+  );
 }
 
 /** JSON turns Dates into strings; give the named fields their Dates back. */
