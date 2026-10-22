@@ -85,8 +85,7 @@ async function fetchFile(
 ): Promise<SnapshotFile | null> {
   try {
     if (where === "dir") {
-      const raw = await fs.readFile(dirPath(name), "utf8");
-      return hold(name, null, JSON.parse(raw) as SnapshotFile);
+      return hold(name, null, parseFile(await fs.readFile(dirPath(name), "utf8")));
     }
 
     const result = await get(blobPath(name), {
@@ -98,12 +97,24 @@ async function fetchFile(
     if (result.statusCode === 304 && last) return hold(name, last.etag, last.file);
     if (!result.stream) return hold(name, null, null);
     const raw = await new Response(result.stream).text();
-    return hold(name, result.blob.etag, JSON.parse(raw) as SnapshotFile);
+    return hold(name, result.blob.etag, parseFile(raw));
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === "ENOENT") return hold(name, null, null);
     if (strict) throw err;
     console.error(`[snapshot] read ${name} failed:`, err);
     return hold(name, null, null);
+  }
+}
+
+/** A file that doesn't parse counts as missing, so the next build replaces it. */
+function parseFile(raw: string): SnapshotFile | null {
+  try {
+    const file = JSON.parse(raw) as SnapshotFile;
+    return typeof file?.builtAt === "string" && file.entries && typeof file.entries === "object"
+      ? file
+      : null;
+  } catch {
+    return null;
   }
 }
 

@@ -22,10 +22,11 @@ export async function deleteAccount(): Promise<ActionResult> {
 
   await db.delete(users).where(eq(users.id, user.id));
 
-  // Take them out of the public snapshot now rather than at the next cron.
-  await runSnapshotJob("account delete", () =>
-    Promise.all([removeUserSnapshot(user.id), rebuildLeaderboardSnapshot()])
-  );
+  // Take them out of the public snapshot now rather than at the next cron:
+  // their profile file goes before the action returns, and the leaderboard
+  // file follows once the response is sent.
+  await runSnapshotJob("account delete", () => removeUserSnapshot(user.id));
+  after(() => runSnapshotJob("account delete", rebuildLeaderboardSnapshot));
 
   // User removal affects leaderboards, team stats, and all aggregate caches
   revalidateAllCaches();

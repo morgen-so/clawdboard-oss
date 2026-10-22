@@ -232,19 +232,55 @@ export async function removeUserSnapshot(userId: string): Promise<void> {
   await removeSnapshotFile(userFile(userId));
 }
 
-/** Every file, from the hourly cron. */
-export async function rebuildAllSnapshots(): Promise<{ files: number; ms: number } | null> {
+/**
+ * Every file, from the hourly cron. Each stage stands alone, so a failed
+ * query in one (the stats, say) doesn't cost the others their rebuild.
+ */
+export async function rebuildAllSnapshots(): Promise<{
+  files: number;
+  ms: number;
+  failed: string[];
+} | null> {
   if (!snapshotEnabled()) return null;
   const started = Date.now();
-  const build = new SnapshotBuild();
+  const failed: string[] = [];
+  let files = 0;
 
-  const userIds = await addLeaderboard(build);
-  await addStats(build);
-  let files = await writeFiles(build);
-  files += await rebuildUsers(userIds);
-  files += await dropDepartedUsers(userIds);
+  async function stage<T>(label: string, run: () => Promise<T>): Promise<T | null> {
+    try {
+      return await run();
+    } catch (err) {
+      console.error(`[snapshot] ${label} rebuild failed:`, err);
+      failed.push(label);
+      return null;
+    }
+  }
 
-  return { files, ms: Date.now() - started };
+  const userIds =
+    (await stage("leaderboard", async () => {
+      const build = new SnapshotBuild();
+      const ids = await addLeaderboard(build);
+      files += await writeFiles(build);
+      return ids;
+    })) ??
+    (await stage("user list", async () =>
+      [...(await getAllProfileUsers()).values()].map((user) => user.id)
+    )) ??
+    [];
+
+  await stage("stats", async () => {
+    const build = new SnapshotBuild();
+    await addStats(build);
+    files += await writeFiles(build);
+  });
+  await stage("users", async () => {
+    files += await rebuildUsers(userIds);
+  });
+  await stage("departed users", async () => {
+    files += await dropDepartedUsers(userIds);
+  });
+
+  return { files, ms: Date.now() - started, failed };
 }
 
 /**
