@@ -2,7 +2,10 @@ import { db } from "@/lib/db";
 import { users, teams } from "@/lib/db/schema";
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 
-/** The usernames and public team slugs the sitemap lists. */
+/**
+ * The usernames and public team slugs the sitemap lists. Banned users are
+ * left out: their profiles 404.
+ */
 export async function getSitemapPaths(): Promise<{
   usernames: string[];
   teamSlugs: string[];
@@ -11,7 +14,7 @@ export async function getSitemapPaths(): Promise<{
     db
       .select({ githubUsername: users.githubUsername })
       .from(users)
-      .where(isNotNull(users.githubUsername)),
+      .where(and(isNotNull(users.githubUsername), isNull(users.bannedAt))),
     db
       .select({ slug: teams.slug })
       .from(teams)
