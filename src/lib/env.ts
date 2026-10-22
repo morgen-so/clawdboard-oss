@@ -19,6 +19,9 @@ export const env = createEnv({
       : z.string().min(1),
     CRON_SECRET: z.string().min(1).optional(),
     ADMIN_PASSWORD: z.string().min(1).optional(),
+    // Public-data snapshot (src/lib/snapshot). Unset means every read is live.
+    BLOB_READ_WRITE_TOKEN: z.string().min(1).optional(),
+    SNAPSHOT_DIR: z.string().min(1).optional(),
   },
   client: {
     NEXT_PUBLIC_BASE_URL: z.string().url().default("http://localhost:3001"),

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { generateAllRecaps } from "@/lib/recaps/generate";
+import { rebuildAllSnapshots, runSnapshotJob } from "@/lib/snapshot/build";
 
 export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { key: "cron-recaps", limit: 2 });
@@ -77,6 +78,9 @@ export async function GET(req: NextRequest) {
         reason: `Not a recap day (UTC day=${utcDay}, date=${utcDate})`,
       });
     }
+
+    // New recaps show on profiles, which read the public snapshot.
+    await runSnapshotJob("recaps rebuild", rebuildAllSnapshots);
 
     return NextResponse.json({
       ok: true,

@@ -8,6 +8,7 @@ import {
   getDailyTrendsCached,
   getModelStatsCached,
   getWeeklyGrowthCached,
+  getSourceBreakdownCached,
 } from "@/lib/db/cached";
 import { CommunityTrendChart } from "@/components/stats/CommunityTrendChart";
 import { ModelShareChart } from "@/components/stats/ModelShareChart";
@@ -68,13 +69,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function StatsPage() {
   const t = await getTranslations("statsPage");
   const locale = await getLocale();
-  const { getSourceBreakdown } = await import("@/lib/db/stats");
   const [stats, trends, models, growth, sourceBreakdown] = await Promise.all([
     getCommunityStatsCached(),
     getDailyTrendsCached(),
     getModelStatsCached(),
     getWeeklyGrowthCached(),
-    getSourceBreakdown(),
+    getSourceBreakdownCached(),
   ]);
 
   const totalCost = parseFloat(stats.totalCost);

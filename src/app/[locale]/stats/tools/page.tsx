@@ -7,8 +7,8 @@ import {
   getSourceDetailStatsCached,
   getSourceComparisonTrendsCached,
   getSourceModelBreakdownCached,
+  getSourceBreakdownCached,
 } from "@/lib/db/cached";
-import { getSourceBreakdown } from "@/lib/db/stats";
 import { ToolComparisonChart } from "@/components/stats/ToolComparisonChart";
 import { ModelShareChart } from "@/components/stats/ModelShareChart";
 import { StatCard } from "@/components/stats/StatCard";
@@ -41,7 +41,7 @@ function toolVsList(tools: ToolMeta[]): string {
 
 export async function generateMetadata(): Promise<Metadata> {
   const [breakdown, communityStats] = await Promise.all([
-    getSourceBreakdown(),
+    getSourceBreakdownCached(),
     getCommunityStatsCached(),
   ]);
   const activeTools = getActiveTools(breakdown);
@@ -89,7 +89,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ToolsPage() {
   const t = await getTranslations("statsTools");
   const locale = await getLocale();
-  const breakdown = await getSourceBreakdown();
+  const breakdown = await getSourceBreakdownCached();
   const activeTools = getActiveTools(breakdown);
 
   const communityStats = await getCommunityStatsCached();

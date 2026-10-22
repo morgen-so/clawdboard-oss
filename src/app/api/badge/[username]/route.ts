@@ -5,7 +5,7 @@ import {
   getUserByUsername,
   getUserRank,
   getUserDailyData,
-} from "@/lib/db/profile";
+} from "@/lib/db/cached";
 import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(

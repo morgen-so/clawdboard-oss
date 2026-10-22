@@ -6,6 +6,7 @@ import { sql } from "drizzle-orm";
 import { rateLimit } from "@/lib/rate-limit";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { recomputeAllStreaks } from "@/lib/db/streak-state";
+import { rebuildAllSnapshots } from "@/lib/snapshot/build";
 
 // This route does schema work, rebuilds the materialized view and refolds
 // every user's streak, so it needs more than the default function timeout.
@@ -327,10 +328,21 @@ export async function GET(req: NextRequest) {
       DELETE FROM page_visits WHERE visited_at < NOW() - INTERVAL '90 days'
     `);
 
+    // Rewrite the public snapshot last, from the refreshed data. A failure
+    // here leaves the previous files, which the next run replaces.
+    let publicSnapshot: Awaited<ReturnType<typeof rebuildAllSnapshots>> | { error: string } = null;
+    try {
+      publicSnapshot = await rebuildAllSnapshots();
+    } catch (err) {
+      console.error("[cron/refresh] snapshot rebuild failed:", err);
+      publicSnapshot = { error: "rebuild failed" };
+    }
+
     return NextResponse.json({
       ok: true,
       refreshedAt: new Date().toISOString(),
       snapshotsCaptured,
+      publicSnapshot,
       streaksRecomputed,
       cleanup: {
         duplicateRowsRemoved: dedupedCount,

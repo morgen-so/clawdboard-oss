@@ -6,18 +6,18 @@ import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
 import { Header } from "@/components/layout/Header";
+import { persistEarnedBadges } from "@/lib/db/profile";
 import {
   getUserByUsername,
-  persistEarnedBadges,
-  getUserSummary as getUncachedSummary,
-  getUserDailyData as getUncachedDailyData,
-  getUserModelBreakdown as getUncachedModelBreakdown,
-} from "@/lib/db/profile";
-import {
   getUserSummary,
   getUserDailyData,
   getUserModelBreakdown,
+  getUserSummaryUncached as getUncachedSummary,
+  getUserDailyDataUncached as getUncachedDailyData,
+  getUserModelBreakdownUncached as getUncachedModelBreakdown,
   getUserRank,
+  getUserPublicTeams,
+  getAllRecaps,
   VALID_PERIODS,
   parseDateRange,
   type Period,
@@ -41,8 +41,8 @@ import { ProfileJoinCta } from "@/components/profile/ProfileJoinCta";
 import { env } from "@/lib/env";
 import { seoAlternates, breadcrumbLd } from "@/lib/seo";
 import { auth } from "@/lib/auth";
-import { getUserTeams, getUserPublicTeams } from "@/lib/db/teams";
-import { getAllRecaps } from "@/lib/db/recaps";
+import { getUserTeams } from "@/lib/db/teams";
+import { rebuildLeaderboardSnapshot, runSnapshotJob } from "@/lib/snapshot/build";
 import { RecapStrip } from "@/components/recaps/RecapStrip";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
@@ -107,6 +107,18 @@ const CarcinizationEvent = nextDynamic(() =>
     default: m.CarcinizationEvent,
   }))
 );
+
+const BADGE_SAVE_WINDOW_MS = 5 * 60 * 1000;
+const badgeSavedAt = new Map<string, number>();
+
+/** True when this instance hasn't saved this user's badges in the last window. */
+function claimBadgeSave(userId: string): boolean {
+  const now = Date.now();
+  const last = badgeSavedAt.get(userId);
+  if (last !== undefined && now - last < BADGE_SAVE_WINDOW_MS) return false;
+  badgeSavedAt.set(userId, now);
+  return true;
+}
 
 interface PageProps {
   params: Promise<{ username: string }>;
@@ -263,9 +275,15 @@ export default async function UserProfilePage({
   const { badges, totalXp, kitchenRank, xpProgress, allEarnedIds, newlyEarnedIds, isFirstComputation } =
     computeFullBadgeState(allDailyData, rank, (user.earnedBadges ?? []) as string[]);
 
-  // Persist newly earned badges after response (serverless-safe)
-  if (newlyEarnedIds.length > 0) {
-    after(() => persistEarnedBadges(user.id, allEarnedIds));
+  // Persist newly earned badges after response (serverless-safe), then
+  // refresh the snapshot, which holds earnedBadges too. Until the refresh
+  // reaches every instance, other views would see the same badges as new and
+  // save them again, so each instance saves a user's badges once per window.
+  if (newlyEarnedIds.length > 0 && claimBadgeSave(user.id)) {
+    after(async () => {
+      await persistEarnedBadges(user.id, allEarnedIds);
+      await runSnapshotJob("badge save", rebuildLeaderboardSnapshot);
+    });
   }
 
   // Get pinned badges
