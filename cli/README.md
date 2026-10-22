@@ -17,7 +17,7 @@ That's it. This opens your browser, authenticates via GitHub, syncs your usage d
 1. **Auth** — Sign in with GitHub (device flow, no secrets in the terminal)
 2. **Extract** — Reads your local usage logs from each supported tool (`~/.claude/`, `~/.local/share/opencode/`, `~/.codex/`, Cursor's `state.vscdb`, `~/.gemini/`, `~/.copilot/`, `~/.pi/agent/sessions/`, `~/.hermes/state.db`, `~/.dsh/sessions/`, and the Claude desktop app's session directory on macOS)
 3. **Sync** — Uploads aggregate metrics (tokens, cost, models) to the leaderboard
-4. **Auto-sync** — A Claude Code hook syncs in the background every 2 hours
+4. **Auto-sync** — A Claude Code hook syncs in the background every 4 hours
 
 ## Updating
 

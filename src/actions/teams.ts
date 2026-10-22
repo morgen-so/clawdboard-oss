@@ -14,6 +14,7 @@ import { eq, and, isNull, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { revalidateTeamCaches } from "@/lib/db/cached";
+import { scheduleTeamRebuild } from "@/lib/snapshot/build";
 import crypto from "crypto";
 import type { ActionResult } from "@/lib/action-result";
 import { validatePublicUrl } from "@/lib/validate-url";
@@ -50,6 +51,7 @@ export async function createTeam(
     SELECT gen_random_uuid(), id, ${userId}, 'owner' FROM new_team
   `);
 
+  scheduleTeamRebuild(null, [user.id]);
   revalidatePath("/team", "layout");
   redirect(`/team/${slug}?created=true`);
 }
@@ -96,6 +98,7 @@ export async function joinTeam(
     redirect(`/team/${team.slug}`);
   }
 
+  scheduleTeamRebuild(teamId);
   revalidateTeamCaches();
   revalidatePath(`/team/${team.slug}`);
   redirect(`/team/${team.slug}`);
@@ -147,6 +150,7 @@ export async function leaveTeam(
       .where(eq(teams.id, teamId));
   }
 
+  scheduleTeamRebuild(teamId, [user.id]);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
   redirect("/my-team");
@@ -188,6 +192,7 @@ export async function removeMember(
       )
     );
 
+  scheduleTeamRebuild(teamId, [memberId]);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
 }
@@ -309,6 +314,7 @@ export async function toggleTeamPublic(
     sql`UPDATE teams SET is_public = NOT is_public WHERE id = ${teamId}`
   );
 
+  scheduleTeamRebuild(teamId);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
 }
@@ -357,6 +363,7 @@ export async function updateTeamCookingUrl(
       .where(eq(teams.id, teamId));
   }
 
+  scheduleTeamRebuild(null);
   revalidatePath("/teams");
   revalidatePath("/team", "layout");
 }
@@ -385,6 +392,7 @@ export async function clearTeamCookingUrl(
     .set({ cookingUrl: null, cookingLabel: null })
     .where(eq(teams.id, teamId));
 
+  scheduleTeamRebuild(null);
   revalidatePath("/teams");
   revalidatePath("/team", "layout");
 }
@@ -418,6 +426,7 @@ export async function renameTeam(
     .set({ name, slug: newSlug })
     .where(eq(teams.id, teamId));
 
+  scheduleTeamRebuild(teamId);
   revalidatePath("/team", "layout");
   redirect(`/team/${newSlug}/settings`);
 }

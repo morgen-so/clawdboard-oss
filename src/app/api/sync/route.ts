@@ -15,6 +15,7 @@ import { rateLimit } from "@/lib/rate-limit";
 import { authenticateApiToken } from "@/lib/api-auth";
 import { isOrgDataStale, syncUserGitHubOrgs } from "@/lib/db/github-orgs";
 import { recomputeUserStreak } from "@/lib/db/streak-state";
+import { rebuildAfterSync, runSnapshotJob } from "@/lib/snapshot/build";
 import { resolveStreak } from "@/lib/streak";
 
 // Sources whose extractors double-counted cached tokens before CLI 0.3.5:
@@ -399,6 +400,10 @@ export async function POST(req: NextRequest) {
     // 6. Invalidate all cached data so the next page visit shows fresh results.
     revalidateAllCaches();
     revalidatePath("/");
+
+    // 6b. Rebuild the public snapshot's leaderboard and this user's file while
+    //     the database is awake for the sync anyway.
+    after(() => runSnapshotJob("sync rebuild", () => rebuildAfterSync(user.id)));
 
     // 7. Sync GitHub orgs in the background (slow, non-critical)
     after(async () => {

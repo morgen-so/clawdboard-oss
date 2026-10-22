@@ -7,6 +7,8 @@ import { db } from "./db";
 import { users, accounts } from "./db/schema";
 import { eq } from "drizzle-orm";
 import { syncUserGitHubOrgs } from "./db/github-orgs";
+import { after } from "next/server";
+import { rebuildLeaderboardSnapshot, runSnapshotJob } from "./snapshot/build";
 import { env } from "./env";
 
 declare module "next-auth" {
@@ -86,6 +88,13 @@ const { handlers, auth: uncachedAuth, signIn, signOut } = NextAuth({
           syncUserGitHubOrgs(user.id).catch((err) =>
             console.error("[auth:jwt] org sync failed:", err)
           );
+          // The public snapshot finds profiles by handle; pick up a GitHub
+          // rename now rather than at the next hourly rebuild.
+          try {
+            after(() => runSnapshotJob("sign-in", rebuildLeaderboardSnapshot));
+          } catch {
+            // Not in a request scope: the hourly rebuild catches up.
+          }
         } else {
           const dbUser = await db.query.users.findFirst({
             where: eq(users.id, user.id),

@@ -4,6 +4,16 @@ All notable changes to the `clawdboard` CLI are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses semver loosely while pre-1.0.
 
+## [Unreleased]
+
+### Changed
+
+- **Background sync every 4 hours instead of 2.** Every sync wakes the
+  leaderboard's database, which bills by the minute it's awake, and the
+  board doesn't need fresher numbers than that. The next background run
+  rewrites the Claude Code, Codex and OpenCode hooks with the new interval.
+  `clawdboard sync` still sends your usage straight away whenever you want.
+
 ## [0.3.8] - 2026-09-26
 
 ### Fixed

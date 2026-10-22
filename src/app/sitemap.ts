@@ -2,11 +2,8 @@ export const dynamic = "force-dynamic";
 
 import type { MetadataRoute } from "next";
 import { env } from "@/lib/env";
-import { db } from "@/lib/db";
-import { users, teams } from "@/lib/db/schema";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { routing } from "@/i18n/routing";
-import { getDistinctModelSlugs } from "@/lib/db/stats";
+import { getDistinctModelSlugsCached, getSitemapPaths } from "@/lib/db/cached";
 
 const BASE_URL = env.NEXT_PUBLIC_BASE_URL;
 
@@ -28,16 +25,9 @@ function localeAlternates(path: string) {
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const [allUsers, publicTeams, modelSlugs] = await Promise.all([
-    db
-      .select({ githubUsername: users.githubUsername })
-      .from(users)
-      .where(isNotNull(users.githubUsername)),
-    db
-      .select({ slug: teams.slug })
-      .from(teams)
-      .where(and(eq(teams.isPublic, true), isNull(teams.deletedAt))),
-    getDistinctModelSlugs(),
+  const [{ usernames, teamSlugs }, modelSlugs] = await Promise.all([
+    getSitemapPaths(),
+    getDistinctModelSlugsCached(),
   ]);
 
   const staticPages: {
@@ -69,9 +59,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // User profile pages
-  for (const u of allUsers) {
-    if (!u.githubUsername) continue;
-    const path = `/user/${u.githubUsername}`;
+  for (const username of usernames) {
+    const path = `/user/${username}`;
     entries.push({
       url: localeUrl("en", path),
       lastModified: now,
@@ -82,8 +71,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Team pages
-  for (const t of publicTeams) {
-    const path = `/team/${t.slug}`;
+  for (const slug of teamSlugs) {
+    const path = `/team/${slug}`;
     entries.push({
       url: localeUrl("en", path),
       lastModified: now,

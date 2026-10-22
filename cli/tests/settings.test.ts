@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { installHook } from "../src/settings.js";
+import { DEBOUNCE_MINUTES } from "../src/hook.js";
 import type { ClaudeSettings } from "../src/settings.js";
 
 describe("installHook", () => {
@@ -18,6 +19,33 @@ describe("installHook", () => {
     );
     // Should not have PostToolUse
     expect(result.settings.hooks?.PostToolUse).toBeUndefined();
+  });
+
+  it("rewrites a Stop hook built with an older sync interval", () => {
+    const settings: ClaudeSettings = {
+      hooks: {
+        Stop: [
+          {
+            hooks: [
+              {
+                type: "command",
+                command:
+                  "bash -c 'f=$HOME/.clawdboard/last-sync; [ -f \"$f\" ] && [ -n \"$(find \"$f\" -mmin -120 2>/dev/null)\" ] && exit 0; npx -y clawdboard hook-sync'",
+                async: true,
+                timeout: 120,
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const result = installHook(settings);
+
+    expect(result.alreadyInstalled).toBe(false);
+    expect(result.settings.hooks?.Stop).toHaveLength(1);
+    expect(result.settings.hooks?.Stop?.[0].hooks[0].command).toContain(
+      `-mmin -${DEBOUNCE_MINUTES}`
+    );
   });
 
   it("idempotent: does not duplicate if already installed on Stop", () => {

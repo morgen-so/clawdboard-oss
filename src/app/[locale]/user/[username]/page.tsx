@@ -7,17 +7,22 @@ import nextDynamic from "next/dynamic";
 export const dynamic = "force-dynamic";
 import { Header } from "@/components/layout/Header";
 import {
-  getUserByUsername,
   persistEarnedBadges,
-  getUserSummary as getUncachedSummary,
-  getUserDailyData as getUncachedDailyData,
-  getUserModelBreakdown as getUncachedModelBreakdown,
+  getUserSummary as getLiveSummary,
+  getUserDailyData as getLiveDailyData,
+  getUserModelBreakdown as getLiveModelBreakdown,
 } from "@/lib/db/profile";
 import {
+  getUserByUsername,
   getUserSummary,
   getUserDailyData,
   getUserModelBreakdown,
+  getUserSummaryUncached as getUncachedSummary,
+  getUserDailyDataUncached as getUncachedDailyData,
+  getUserModelBreakdownUncached as getUncachedModelBreakdown,
   getUserRank,
+  getUserPublicTeams,
+  getAllRecaps,
   VALID_PERIODS,
   parseDateRange,
   type Period,
@@ -41,8 +46,8 @@ import { ProfileJoinCta } from "@/components/profile/ProfileJoinCta";
 import { env } from "@/lib/env";
 import { seoAlternates, breadcrumbLd } from "@/lib/seo";
 import { auth } from "@/lib/auth";
-import { getUserTeams, getUserPublicTeams } from "@/lib/db/teams";
-import { getAllRecaps } from "@/lib/db/recaps";
+import { getUserTeams } from "@/lib/db/teams";
+import { rebuildLeaderboardSnapshot, runSnapshotJob } from "@/lib/snapshot/build";
 import { RecapStrip } from "@/components/recaps/RecapStrip";
 import { cookies } from "next/headers";
 import { getTranslations } from "next-intl/server";
@@ -108,6 +113,21 @@ const CarcinizationEvent = nextDynamic(() =>
   }))
 );
 
+const BADGE_SAVE_WINDOW_MS = 5 * 60 * 1000;
+const badgeSavedAt = new Map<string, number>();
+
+/** True when this instance hasn't saved this user's badges in the last window. */
+function claimBadgeSave(userId: string): boolean {
+  const now = Date.now();
+  const last = badgeSavedAt.get(userId);
+  if (last !== undefined && now - last < BADGE_SAVE_WINDOW_MS) return false;
+  for (const [id, at] of badgeSavedAt) {
+    if (now - at >= BADGE_SAVE_WINDOW_MS) badgeSavedAt.delete(id);
+  }
+  badgeSavedAt.set(userId, now);
+  return true;
+}
+
 interface PageProps {
   params: Promise<{ username: string }>;
   searchParams: Promise<{
@@ -170,7 +190,12 @@ export default async function UserProfilePage({
   const period: Period = VALID_PERIODS.includes(sp.period as Period)
     ? (sp.period as Period)
     : saved?.period ?? "7d";
-  const range = parseDateRange(sp.from ?? saved?.from, sp.to ?? saved?.to);
+  // A saved range only applies to "custom"; leaving it off other periods keeps
+  // their reads on the same snapshot entries (the queries ignore it anyway).
+  const range =
+    period === "custom"
+      ? parseDateRange(sp.from ?? saved?.from, sp.to ?? saved?.to)
+      : undefined;
 
   // Optional comparison overlay: ?vs=<github-username>
   const vsParam =
@@ -182,23 +207,31 @@ export default async function UserProfilePage({
     notFound();
   }
 
+  const session = await auth();
+  const isOwner =
+    session?.user?.githubUsername?.toLowerCase() ===
+    (user.githubUsername ?? "").toLowerCase();
+
   // Fetch all profile data in parallel
   // Filtered data: summary, chart, model breakdown use the selected period
   // Unfiltered data: daily data for activity grid + streak, rank is always all-time
-  // "today" bypasses unstable_cache for real-time accuracy (cheap single-day query)
+  // Your own profile reads live, so a sync shows the moment it lands. Everyone
+  // else reads the public snapshot, rebuilt right after each sync; "today"
+  // skips unstable_cache when the snapshot can't answer.
   const isToday = period === "today";
-  const getSummary = isToday ? getUncachedSummary : getUserSummary;
-  const getDaily = isToday ? getUncachedDailyData : getUserDailyData;
-  const getModels = isToday ? getUncachedModelBreakdown : getUserModelBreakdown;
+  const [getSummary, getDaily, getModels] = isOwner
+    ? [getLiveSummary, getLiveDailyData, getLiveModelBreakdown]
+    : isToday
+      ? [getUncachedSummary, getUncachedDailyData, getUncachedModelBreakdown]
+      : [getUserSummary, getUserDailyData, getUserModelBreakdown];
 
-  const [summary, filteredDailyData, allDailyData, modelData, rank, session, publicTeams, userRecaps, compareUser] =
+  const [summary, filteredDailyData, allDailyData, modelData, rank, publicTeams, userRecaps, compareUser] =
     await Promise.all([
       getSummary(user.id, period, range),
       getDaily(user.id, period, range),
       getDaily(user.id),
       getModels(user.id, period, range),
       getUserRank(user.id),
-      auth(),
       getUserPublicTeams(user.id),
       getAllRecaps(user.id),
       vsParam ? getUserByUsername(vsParam) : Promise.resolve(null),
@@ -209,10 +242,6 @@ export default async function UserProfilePage({
   // joins is written by /api/sync and the cron, never by a page view.
   const streak = computeStreakState(allDailyData);
   const currentStreak = streak.current;
-
-  const isOwner =
-    session?.user?.githubUsername?.toLowerCase() ===
-    (user.githubUsername ?? "").toLowerCase();
 
   // Free passes are the user's own business. Visitors see the streak number
   // and nothing about what's holding it up, so the pass state never reaches
@@ -263,9 +292,15 @@ export default async function UserProfilePage({
   const { badges, totalXp, kitchenRank, xpProgress, allEarnedIds, newlyEarnedIds, isFirstComputation } =
     computeFullBadgeState(allDailyData, rank, (user.earnedBadges ?? []) as string[]);
 
-  // Persist newly earned badges after response (serverless-safe)
-  if (newlyEarnedIds.length > 0) {
-    after(() => persistEarnedBadges(user.id, allEarnedIds));
+  // Persist newly earned badges after response (serverless-safe), then
+  // refresh the snapshot, which holds earnedBadges too. Until the refresh
+  // reaches every instance, other views would see the same badges as new and
+  // save them again, so each instance saves a user's badges once per window.
+  if (newlyEarnedIds.length > 0 && claimBadgeSave(user.id)) {
+    after(async () => {
+      await persistEarnedBadges(user.id, allEarnedIds);
+      await runSnapshotJob("badge save", rebuildLeaderboardSnapshot);
+    });
   }
 
   // Get pinned badges

@@ -82,7 +82,7 @@ export async function runSetupHook(): Promise<boolean> {
   if (anyInstalled) {
     console.log(
       chalk.dim(
-        "Your data is live! Future usage syncs automatically every 2 hours."
+        "Your data is live! Future usage syncs automatically every 4 hours."
       )
     );
     console.log(

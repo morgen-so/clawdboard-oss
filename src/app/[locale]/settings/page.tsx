@@ -17,6 +17,7 @@ import { BadgesClient } from "@/components/settings/BadgesClient";
 import { getUserDailyData, getUserRank } from "@/lib/db/cached";
 import { computeFullBadgeState } from "@/lib/badges";
 import { persistEarnedBadges } from "@/lib/db/profile";
+import { rebuildLeaderboardSnapshot, runSnapshotJob } from "@/lib/snapshot/build";
 
 export const metadata: Metadata = {
   title: "Settings — clawdboard",
@@ -70,9 +71,13 @@ export default async function SettingsPage() {
   const { badges, totalXp, xpProgress, allEarnedIds, newlyEarnedIds, isFirstComputation } =
     computeFullBadgeState(allDailyData, rank, (user?.earnedBadges ?? []) as string[]);
 
-  // Persist newly earned badges after response (serverless-safe)
+  // Persist newly earned badges after response (serverless-safe), and
+  // refresh the snapshot's copy so profile views don't save them again.
   if (newlyEarnedIds.length > 0 && session.user.id) {
-    after(() => persistEarnedBadges(session.user.id!, allEarnedIds));
+    after(async () => {
+      await persistEarnedBadges(session.user.id!, allEarnedIds);
+      await runSnapshotJob("badge save", rebuildLeaderboardSnapshot);
+    });
   }
 
   return (

@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getUserByUsername } from "@/lib/db/profile";
+import { getUserByUsername } from "@/lib/db/cached";
 
 /**
  * Resolves the username *outside* the Suspense boundary that loading.tsx opens
@@ -11,7 +11,7 @@ import { getUserByUsername } from "@/lib/db/profile";
  * search engines. A layout renders before the boundary, so throwing here sets a
  * real 404 on the response.
  *
- * getUserByUsername is cache()-wrapped, so this shares one query with
+ * getUserByUsername is cache()-wrapped, so this shares one read with
  * generateMetadata and the page.
  */
 export default async function UserProfileLayout({

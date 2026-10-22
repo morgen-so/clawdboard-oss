@@ -92,14 +92,25 @@ export const getUserByUsername = cache(async function getUserByUsername(
 /**
  * Persist earned badge IDs to the user record.
  * Called when new badges are earned to ensure they can never be lost.
+ *
+ * Adds to the stored list rather than replacing it: a profile view computes
+ * allEarnedIds from the public snapshot's copy of the user, which can predate
+ * a badge another page has since saved.
  */
 export async function persistEarnedBadges(
   userId: string,
   allEarnedIds: string[]
 ): Promise<void> {
+  const stored = sql`COALESCE(${users.earnedBadges}, '[]'::jsonb)`;
   await db
     .update(users)
-    .set({ earnedBadges: allEarnedIds })
+    .set({
+      earnedBadges: sql`${stored} || COALESCE((
+        SELECT jsonb_agg(DISTINCT e.id)
+        FROM jsonb_array_elements(${JSON.stringify(allEarnedIds)}::jsonb) AS e(id)
+        WHERE NOT ${stored} @> jsonb_build_array(e.id)
+      ), '[]'::jsonb)`,
+    })
     .where(eq(users.id, userId));
 }
 
@@ -250,8 +261,10 @@ export async function getUserRank(userId: string): Promise<UserRank> {
     })
     .from(dailyAggregates);
 
-  const usersAbove = usersAboveRow?.count ?? 0;
-  const totalUsers = totalUsersRow?.count ?? 0;
+  return toUserRank(usersAboveRow?.count ?? 0, totalUsersRow?.count ?? 0);
+}
+
+function toUserRank(usersAbove: number, totalUsers: number): UserRank {
   const rank = totalUsers === 0 ? 1 : usersAbove + 1;
   const percentile =
     totalUsers <= 1
@@ -259,4 +272,79 @@ export async function getUserRank(userId: string): Promise<UserRank> {
       : Math.round(((totalUsers - rank) / totalUsers) * 1000) / 10;
 
   return { rank, totalUsers, percentile };
+}
+
+// ─── Bulk copies for the snapshot ────────────────────────────────────────────
+// The public-data snapshot (src/lib/snapshot) stores these per user. One query
+// each keeps a rebuild cheap enough to run after every sync. Change the
+// single-user function and its copy together.
+
+/**
+ * getUserByUsername for every user at once, keyed by lowercased username.
+ * Same columns, and banned users are left out just as the single lookup
+ * returns null for them.
+ */
+export async function getAllProfileUsers(): Promise<Map<string, ProfileUser>> {
+  const rows = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      githubUsername: users.githubUsername,
+      image: users.image,
+      cookingUrl: users.cookingUrl,
+      cookingLabel: users.cookingLabel,
+      createdAt: users.createdAt,
+      lastSyncAt: users.lastSyncAt,
+      pinnedBadges: users.pinnedBadges,
+      earnedBadges: users.earnedBadges,
+      bannedAt: users.bannedAt,
+    })
+    .from(users)
+    .where(sql`${users.githubUsername} IS NOT NULL AND ${users.bannedAt} IS NULL`);
+
+  const byName = new Map<string, ProfileUser>();
+  for (const row of rows) {
+    const key = row.githubUsername!.toLowerCase();
+    if (!byName.has(key)) byName.set(key, row);
+  }
+  return byName;
+}
+
+/**
+ * getUserRank for every user at once, keyed by user id. Same rules: all-time
+ * cost against every user with data, banned or not.
+ */
+export async function getAllUserRanks(): Promise<Map<string, UserRank>> {
+  const rows = await executeRows<{
+    user_id: string;
+    users_above: number;
+    total_users: number;
+  }>(sql`
+    WITH totals AS (
+      -- An all-NULL user counts as 0, as getUserRank's comparison treats them.
+      SELECT user_id, COALESCE(SUM(total_cost::numeric), 0) AS total
+      FROM daily_aggregates
+      GROUP BY user_id
+    ),
+    ranked AS (
+      SELECT user_id, (RANK() OVER (ORDER BY total DESC) - 1)::int AS users_above
+      FROM totals
+    )
+    SELECT
+      u.id AS user_id,
+      COALESCE(
+        r.users_above,
+        (SELECT COUNT(*)::int FROM totals WHERE total > 0)
+      )::int AS users_above,
+      (SELECT COUNT(*)::int FROM totals) AS total_users
+    FROM users u
+    LEFT JOIN ranked r ON r.user_id = u.id
+  `);
+
+  return new Map(
+    rows.map((row) => [
+      row.user_id,
+      toUserRank(Number(row.users_above), Number(row.total_users)),
+    ])
+  );
 }

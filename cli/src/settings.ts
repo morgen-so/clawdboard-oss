@@ -85,7 +85,9 @@ function hasClawdboardHook(
  */
 function hasCurrentHook(settings: ClaudeSettings): boolean {
   const stop = settings.hooks?.[HOOK_EVENT] ?? [];
-  return hasClawdboardHook(stop, (cmd) => cmd.includes("find"));
+  // A hook built with an older interval is outdated, so the next hook-sync
+  // rewrites it with the current one.
+  return hasClawdboardHook(stop, (cmd) => cmd.includes(`-mmin -${DEBOUNCE_MINUTES}`));
 }
 
 /**

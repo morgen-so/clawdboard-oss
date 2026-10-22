@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
           coverage:
             "Self-selected sample of developers who opt in. Not representative of all AI coding tool users.",
           updateFrequency:
-            "Users sync every 2 hours by default. Aggregate stats refresh hourly.",
+            "Users sync every 4 hours by default. Aggregate stats refresh hourly.",
         },
         attribution:
           "Data from clawdboard.ai — cite as: clawdboard, AI Coding Tool Community Usage Statistics, https://clawdboard.ai/stats",

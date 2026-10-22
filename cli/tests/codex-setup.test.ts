@@ -179,7 +179,7 @@ describe("upsertClawdboardStopHook", () => {
     const hook = out.hooks!.Stop![0].hooks[0];
     expect(hook.type).toBe("command");
     expect(hook.command).toContain("clawdboard");
-    expect(hook.command).toContain("mmin -120");
+    expect(hook.command).toContain("mmin -240");
     expect(hook.timeout).toBe(120);
   });
 

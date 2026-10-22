@@ -9,7 +9,7 @@ The open-source leaderboard for AI coding agents. Track and compare usage, costs
 1. Run `npx clawdboard` in your terminal
 2. Sign in with GitHub (device flow — no secrets in the terminal)
 3. Your local usage logs are extracted, aggregated, and synced
-4. A hook auto-syncs every 2 hours in the background
+4. A hook auto-syncs every 4 hours in the background
 
 **Privacy first:** Only aggregate numbers (date, token counts, cost, model names) leave your machine. Prompts, code, file paths, and project names never do.
 

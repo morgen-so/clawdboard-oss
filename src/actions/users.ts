@@ -5,7 +5,13 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { revalidateAllCaches } from "@/lib/db/cached";
+import {
+  rebuildLeaderboardSnapshot,
+  removeUserSnapshot,
+  runSnapshotJob,
+} from "@/lib/snapshot/build";
 import type { ActionResult } from "@/lib/action-result";
 import { validatePublicUrl } from "@/lib/validate-url";
 import { BADGES, MAX_PINNED_BADGES } from "@/lib/badges";
@@ -15,6 +21,12 @@ export async function deleteAccount(): Promise<ActionResult> {
   if (!user) return { error: "Unauthorized" };
 
   await db.delete(users).where(eq(users.id, user.id));
+
+  // Take them out of the public snapshot now rather than at the next cron:
+  // their profile file goes before the action returns, and the leaderboard
+  // file follows once the response is sent.
+  await runSnapshotJob("account delete", () => removeUserSnapshot(user.id));
+  after(() => runSnapshotJob("account delete", rebuildLeaderboardSnapshot));
 
   // User removal affects leaderboards, team stats, and all aggregate caches
   revalidateAllCaches();
@@ -56,6 +68,9 @@ export async function updateCookingUrl(
       .where(eq(users.id, user.id));
   }
 
+  // The leaderboard rows and profile header in the snapshot carry the link.
+  after(() => runSnapshotJob("cooking link", rebuildLeaderboardSnapshot));
+
   revalidatePath("/");
   revalidatePath("/teams");
 }
@@ -85,6 +100,9 @@ export async function updatePinnedBadges(
     .update(users)
     .set({ pinnedBadges: filtered })
     .where(eq(users.id, user.id));
+
+  // The snapshot's copy of the user carries the pins the profile shows.
+  after(() => runSnapshotJob("pinned badges", rebuildLeaderboardSnapshot));
 
   revalidatePath(`/user/${user.githubUsername}`);
   revalidatePath("/settings");

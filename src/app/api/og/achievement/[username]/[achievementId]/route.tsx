@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { BADGES } from "@/lib/badges";
-import { getUserByUsername } from "@/lib/db/profile";
 import {
+  getUserByUsername,
   getUserSummary,
   getUserRank,
   getUserDailyData,

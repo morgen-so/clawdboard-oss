@@ -10,6 +10,7 @@ import {
 import { eq, and, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { revalidateTeamCaches } from "@/lib/db/cached";
+import { scheduleTeamRebuild } from "@/lib/snapshot/build";
 import type { ActionResult } from "@/lib/action-result";
 
 // ─── Shared validation ──────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ export async function acceptTeamInvite(
     markNotificationActed(notificationId),
   ]);
 
+  scheduleTeamRebuild(teamId, [userId]);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
 }

@@ -6,7 +6,7 @@ import {
   getUserSummary,
   getUserRank,
   getUserDailyData,
-} from "@/lib/db/profile";
+} from "@/lib/db/cached";
 import { loadGoogleFont } from "@/lib/og-fonts";
 import { computeCurrentStreak } from "@/lib/streak";
 import { getStreakTier } from "@/lib/streak-tiers";

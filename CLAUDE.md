@@ -71,6 +71,15 @@ Defined in `next.config.ts`. When adding third-party scripts/services, update CS
 - **Materialized views** are created via raw SQL (`db.execute()` in `/api/cron/refresh`). In production, Vercel cron runs this hourly.
 - **Local dev uses `pg` driver** — `docker-compose.yml` provides Postgres. Seed script creates materialized views automatically.
 
+### Public-data snapshot
+Neon bills for every minute the database is awake, and crawlers on profile and stats pages used to keep it awake all day. Public reads now answer from precomputed JSON files in a **private** Vercel Blob store (`src/lib/snapshot`), and the database only wakes for syncs, the cron and signed-in actions.
+
+- **Readers in `src/lib/db/cached.ts` are snapshot-first.** A call the snapshot holds never touches the database; anything else (custom range, non-default sort, unknown user, missing or 3h-stale file) falls through to the live query. Pages import readers from `cached.ts`, not the raw query modules.
+- **Writers:** the hourly cron rewrites every file and drops users who are gone; `/api/sync` rewrites the leaderboard file and the user's own file in `after()`; account deletion, cooking link, pinned and earned badges, recap views and team changes rewrite what they change. Bans show within the hour. A write never replaces a file built from newer data, so overlapping rebuilds are safe.
+- **Adding a public read:** add a spec to `SNAP` in `src/lib/snapshot/index.ts`, wrap the reader with `snapshotFirst`, and build the calls pages make by default in `build.ts`. A read with no built entry still works; it just wakes the database.
+- **The files hold unredacted rows** (free-pass state included), which pages redact as before. Keep the store private.
+- **Local:** off by default (every read is live). `SNAPSHOT_DIR=/some/dir` writes the files to disk instead; hit `/api/cron/refresh` to build them.
+
 ### Streaks and free passes
 A streak counts days the user was active, back from today (or yesterday, since today isn't over). Every 75 days of an unbroken streak banks one free pass; a pass covers one missed day and unused passes accumulate. A covered day keeps the run alive but does not add to the count.
 
