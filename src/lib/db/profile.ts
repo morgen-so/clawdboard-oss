@@ -106,7 +106,7 @@ export async function persistEarnedBadges(
     .update(users)
     .set({
       earnedBadges: sql`${stored} || COALESCE((
-        SELECT jsonb_agg(e.id)
+        SELECT jsonb_agg(DISTINCT e.id)
         FROM jsonb_array_elements(${JSON.stringify(allEarnedIds)}::jsonb) AS e(id)
         WHERE NOT ${stored} @> jsonb_build_array(e.id)
       ), '[]'::jsonb)`,
