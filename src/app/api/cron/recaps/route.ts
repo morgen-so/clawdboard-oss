@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { rateLimit } from "@/lib/rate-limit";
 import { verifyCronSecret } from "@/lib/api-auth";
 import { generateAllRecaps } from "@/lib/recaps/generate";
-import { rebuildAllSnapshots, runSnapshotJob } from "@/lib/snapshot/build";
+import { rebuildAllUserSnapshots, runSnapshotJob } from "@/lib/snapshot/build";
+
+// Generating recaps and then rebuilding every user's snapshot file can take a
+// while; give it the same budget as the refresh cron.
+export const maxDuration = 300;
 
 export async function GET(req: NextRequest) {
   const limited = rateLimit(req, { key: "cron-recaps", limit: 2 });
@@ -79,8 +83,9 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // New recaps show on profiles, which read the public snapshot.
-    await runSnapshotJob("recaps rebuild", rebuildAllSnapshots);
+    // New recaps show on profiles, which read the public snapshot. Only the
+    // user files hold recaps, so only those are rebuilt.
+    await runSnapshotJob("recaps rebuild", rebuildAllUserSnapshots);
 
     return NextResponse.json({
       ok: true,

@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { revalidateAllCaches } from "@/lib/db/cached";
 import {
   rebuildLeaderboardSnapshot,
@@ -67,7 +68,7 @@ export async function updateCookingUrl(
   }
 
   // The leaderboard rows and profile header in the snapshot carry the link.
-  await runSnapshotJob("cooking link", rebuildLeaderboardSnapshot);
+  after(() => runSnapshotJob("cooking link", rebuildLeaderboardSnapshot));
 
   revalidatePath("/");
   revalidatePath("/teams");
@@ -100,7 +101,7 @@ export async function updatePinnedBadges(
     .where(eq(users.id, user.id));
 
   // The snapshot's copy of the user carries the pins the profile shows.
-  await runSnapshotJob("pinned badges", rebuildLeaderboardSnapshot);
+  after(() => runSnapshotJob("pinned badges", rebuildLeaderboardSnapshot));
 
   revalidatePath(`/user/${user.githubUsername}`);
   revalidatePath("/settings");

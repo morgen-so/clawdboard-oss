@@ -3,6 +3,7 @@ import "server-only";
 import { after } from "next/server";
 import { VALID_PERIODS, type Period } from "@/lib/constants";
 import { getAllProfileUsers, getAllUserRanks } from "@/lib/db/profile";
+import { getTeamMembers } from "@/lib/db/teams";
 import { getActiveTools } from "@/lib/tools";
 import { SNAP, SnapshotBuild, userFile } from "./index";
 import {
@@ -161,16 +162,11 @@ export async function rebuildUserSnapshot(userId: string): Promise<void> {
   await rebuildUsers([userId]);
 }
 
-/**
- * The leaderboard and every user's file, after a team change: team names,
- * visibility and membership show on the team board and on members' profiles.
- */
-export async function rebuildPeopleSnapshots(): Promise<void> {
+/** Every user's file, after the recaps cron adds recaps. */
+export async function rebuildAllUserSnapshots(): Promise<void> {
   if (!snapshotEnabled()) return;
-  const build = new SnapshotBuild();
-  const userIds = await addLeaderboard(build);
-  await writeFiles(build);
-  await rebuildUsers(userIds);
+  const profiles = await getAllProfileUsers();
+  await rebuildUsers([...profiles.values()].map((user) => user.id));
 }
 
 /** After a sync: the leaderboard moved and so did this user's profile. */
@@ -183,11 +179,21 @@ export async function rebuildAfterSync(userId: string): Promise<void> {
 }
 
 /**
- * For team actions: team names, visibility and membership are public on the
- * team board and members' profiles, so rebuild once the response is sent.
+ * For team actions: team names, visibility and membership show on the team
+ * board and on members' profiles. Once the response is sent, rebuild the
+ * leaderboard file and the files of the team's current members plus anyone
+ * who just left it. Pass no team for a change that only the board shows.
  */
-export function scheduleTeamRebuild(): void {
-  after(() => runSnapshotJob("team change", rebuildPeopleSnapshots));
+export function scheduleTeamRebuild(teamId: string | null, alsoUserIds: string[] = []): void {
+  after(() =>
+    runSnapshotJob("team change", async () => {
+      if (!snapshotEnabled()) return;
+      const members = teamId ? await getTeamMembers(teamId) : [];
+      const userIds = members.filter((m) => !m.leftAt).map((m) => m.userId);
+      await rebuildLeaderboardSnapshot();
+      await rebuildUsers([...new Set([...userIds, ...alsoUserIds])]);
+    })
+  );
 }
 
 export async function removeUserSnapshot(userId: string): Promise<void> {

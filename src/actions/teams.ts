@@ -51,7 +51,7 @@ export async function createTeam(
     SELECT gen_random_uuid(), id, ${userId}, 'owner' FROM new_team
   `);
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(null, [user.id]);
   revalidatePath("/team", "layout");
   redirect(`/team/${slug}?created=true`);
 }
@@ -98,7 +98,7 @@ export async function joinTeam(
     redirect(`/team/${team.slug}`);
   }
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(teamId);
   revalidateTeamCaches();
   revalidatePath(`/team/${team.slug}`);
   redirect(`/team/${team.slug}`);
@@ -150,7 +150,7 @@ export async function leaveTeam(
       .where(eq(teams.id, teamId));
   }
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(teamId, [user.id]);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
   redirect("/my-team");
@@ -192,7 +192,7 @@ export async function removeMember(
       )
     );
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(teamId, [memberId]);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
 }
@@ -314,7 +314,7 @@ export async function toggleTeamPublic(
     sql`UPDATE teams SET is_public = NOT is_public WHERE id = ${teamId}`
   );
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(teamId);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
 }
@@ -363,7 +363,7 @@ export async function updateTeamCookingUrl(
       .where(eq(teams.id, teamId));
   }
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(null);
   revalidatePath("/teams");
   revalidatePath("/team", "layout");
 }
@@ -392,7 +392,7 @@ export async function clearTeamCookingUrl(
     .set({ cookingUrl: null, cookingLabel: null })
     .where(eq(teams.id, teamId));
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(null);
   revalidatePath("/teams");
   revalidatePath("/team", "layout");
 }
@@ -426,7 +426,7 @@ export async function renameTeam(
     .set({ name, slug: newSlug })
     .where(eq(teams.id, teamId));
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(teamId);
   revalidatePath("/team", "layout");
   redirect(`/team/${newSlug}/settings`);
 }

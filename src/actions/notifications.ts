@@ -71,7 +71,7 @@ export async function acceptTeamInvite(
     markNotificationActed(notificationId),
   ]);
 
-  scheduleTeamRebuild();
+  scheduleTeamRebuild(teamId, [userId]);
   revalidateTeamCaches();
   revalidatePath("/team", "layout");
 }
