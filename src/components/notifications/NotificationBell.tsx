@@ -134,22 +134,22 @@ export function NotificationBell() {
     }
   }, []);
 
-  // Fetch on mount + poll every 30s, pause when tab hidden
+  // Fetch on mount and whenever the tab comes back into view, not on a timer:
+  // a 30s poll from one open tab kept the database awake all evening.
+  // Switching tabs fires both events, so skip a check that just ran.
   useEffect(() => {
-    fetchNotifications();
-    let interval = setInterval(fetchNotifications, 30000);
-    const handleVisibility = () => {
-      if (document.hidden) {
-        clearInterval(interval);
-      } else {
-        fetchNotifications();
-        interval = setInterval(fetchNotifications, 30000);
-      }
+    let lastFetch = 0;
+    const refresh = () => {
+      if (document.hidden || Date.now() - lastFetch < 30_000) return;
+      lastFetch = Date.now();
+      fetchNotifications();
     };
-    document.addEventListener("visibilitychange", handleVisibility);
+    refresh();
+    document.addEventListener("visibilitychange", refresh);
+    window.addEventListener("focus", refresh);
     return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibility);
+      document.removeEventListener("visibilitychange", refresh);
+      window.removeEventListener("focus", refresh);
     };
   }, [fetchNotifications]);
 
