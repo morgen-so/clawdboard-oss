@@ -186,8 +186,9 @@ export const getUserModelBreakdown = snapshotFirst(
 // ─── Profile reads that skip unstable_cache ─────────────────────────────────
 // The profile's "today" view, the user lookup (it returns Dates, which
 // unstable_cache would turn into strings), teams and recaps never went through
-// the data cache. They still read the snapshot first: it's rebuilt the moment
-// the user syncs, so it's as current as a live query.
+// the data cache. They still read the snapshot first: it's rebuilt right after
+// the user syncs, so visitors see a sync within about a minute. The owner's
+// own profile reads its numbers live (see the profile page).
 
 /** cache()-wrapped so the layout, generateMetadata and the page share one read. */
 export const getUserByUsername = cache(

@@ -6,7 +6,12 @@ import nextDynamic from "next/dynamic";
 
 export const dynamic = "force-dynamic";
 import { Header } from "@/components/layout/Header";
-import { persistEarnedBadges } from "@/lib/db/profile";
+import {
+  persistEarnedBadges,
+  getUserSummary as getLiveSummary,
+  getUserDailyData as getLiveDailyData,
+  getUserModelBreakdown as getLiveModelBreakdown,
+} from "@/lib/db/profile";
 import {
   getUserByUsername,
   getUserSummary,
@@ -185,7 +190,12 @@ export default async function UserProfilePage({
   const period: Period = VALID_PERIODS.includes(sp.period as Period)
     ? (sp.period as Period)
     : saved?.period ?? "7d";
-  const range = parseDateRange(sp.from ?? saved?.from, sp.to ?? saved?.to);
+  // A saved range only applies to "custom"; leaving it off other periods keeps
+  // their reads on the same snapshot entries (the queries ignore it anyway).
+  const range =
+    period === "custom"
+      ? parseDateRange(sp.from ?? saved?.from, sp.to ?? saved?.to)
+      : undefined;
 
   // Optional comparison overlay: ?vs=<github-username>
   const vsParam =
@@ -197,23 +207,31 @@ export default async function UserProfilePage({
     notFound();
   }
 
+  const session = await auth();
+  const isOwner =
+    session?.user?.githubUsername?.toLowerCase() ===
+    (user.githubUsername ?? "").toLowerCase();
+
   // Fetch all profile data in parallel
   // Filtered data: summary, chart, model breakdown use the selected period
   // Unfiltered data: daily data for activity grid + streak, rank is always all-time
-  // "today" bypasses unstable_cache for real-time accuracy (cheap single-day query)
+  // Your own profile reads live, so a sync shows the moment it lands. Everyone
+  // else reads the public snapshot, rebuilt right after each sync; "today"
+  // skips unstable_cache when the snapshot can't answer.
   const isToday = period === "today";
-  const getSummary = isToday ? getUncachedSummary : getUserSummary;
-  const getDaily = isToday ? getUncachedDailyData : getUserDailyData;
-  const getModels = isToday ? getUncachedModelBreakdown : getUserModelBreakdown;
+  const [getSummary, getDaily, getModels] = isOwner
+    ? [getLiveSummary, getLiveDailyData, getLiveModelBreakdown]
+    : isToday
+      ? [getUncachedSummary, getUncachedDailyData, getUncachedModelBreakdown]
+      : [getUserSummary, getUserDailyData, getUserModelBreakdown];
 
-  const [summary, filteredDailyData, allDailyData, modelData, rank, session, publicTeams, userRecaps, compareUser] =
+  const [summary, filteredDailyData, allDailyData, modelData, rank, publicTeams, userRecaps, compareUser] =
     await Promise.all([
       getSummary(user.id, period, range),
       getDaily(user.id, period, range),
       getDaily(user.id),
       getModels(user.id, period, range),
       getUserRank(user.id),
-      auth(),
       getUserPublicTeams(user.id),
       getAllRecaps(user.id),
       vsParam ? getUserByUsername(vsParam) : Promise.resolve(null),
@@ -224,10 +242,6 @@ export default async function UserProfilePage({
   // joins is written by /api/sync and the cron, never by a page view.
   const streak = computeStreakState(allDailyData);
   const currentStreak = streak.current;
-
-  const isOwner =
-    session?.user?.githubUsername?.toLowerCase() ===
-    (user.githubUsername ?? "").toLowerCase();
 
   // Free passes are the user's own business. Visitors see the streak number
   // and nothing about what's holding it up, so the pass state never reaches
