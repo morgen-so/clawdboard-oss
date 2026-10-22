@@ -321,7 +321,8 @@ export async function getAllUserRanks(): Promise<Map<string, UserRank>> {
     total_users: number;
   }>(sql`
     WITH totals AS (
-      SELECT user_id, SUM(total_cost::numeric) AS total
+      -- An all-NULL user counts as 0, as getUserRank's comparison treats them.
+      SELECT user_id, COALESCE(SUM(total_cost::numeric), 0) AS total
       FROM daily_aggregates
       GROUP BY user_id
     ),
