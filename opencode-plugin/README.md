@@ -33,7 +33,7 @@ cd ~/.config/opencode && npm install clawdboard-opencode
 
 ### 3. Use OpenCode normally
 
-The plugin triggers a sync on `session.idle` (debounced to every 2 hours). The clawdboard CLI handles all data extraction and upload.
+The plugin triggers a sync on `session.idle` (debounced to every 4 hours). The clawdboard CLI handles all data extraction and upload.
 
 ## How it works
 
