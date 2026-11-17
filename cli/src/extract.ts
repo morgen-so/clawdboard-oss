@@ -1,4 +1,5 @@
-import { SyncPayloadSchema, type SyncPayload, type SyncDay } from "./schemas.js";
+import { SyncPayloadSchema, type SyncPayload } from "./schemas.js";
+import { extractClaudeCodeData } from "./claude-code.js";
 import { extractOpenCodeData, hasOpenCodeData } from "./opencode.js";
 import { extractCodexData, hasCodexData } from "./codex.js";
 import { extractCursorData, hasCursorData } from "./cursor.js";
@@ -16,12 +17,12 @@ import { loadLivePricing } from "./litellm-pricing.js";
 import type { Source } from "./accumulator.js";
 
 /**
- * Privacy-preserving data extraction from raw ccusage DailyUsage data.
+ * Privacy-preserving data extraction from raw daily usage data.
  *
- * This function is the core privacy boundary. It transforms raw ccusage output
- * (which may contain project paths, session IDs, git branches, and other
- * identifying information) into a clean SyncPayload containing ONLY aggregate
- * metrics.
+ * This function is the core privacy boundary. It transforms daily usage
+ * objects (which may carry project paths, session IDs, git branches, and
+ * other identifying information) into a clean SyncPayload containing ONLY
+ * aggregate metrics.
  *
  * CRITICAL DESIGN DECISIONS:
  * 1. Uses explicit field picking (NOT object spread or Object.assign)
@@ -29,7 +30,7 @@ import type { Source } from "./accumulator.js";
  * 3. Result is validated through SyncPayloadSchema.parse() -- Zod catches any leakage
  * 4. Throws on validation failure (caller must handle)
  *
- * @param raw - Array of raw ccusage DailyUsage-like objects (typed as unknown[] for safety)
+ * @param raw - Array of raw DailyUsage-like objects (typed as unknown[] for safety)
  * @param source - The data source tag for these entries
  * @returns A clean SyncPayload with only allowlisted fields
  * @throws ZodError if the sanitized data fails schema validation
@@ -72,7 +73,8 @@ export function sanitizeDailyData(
  * Extract usage data from all available sources, sanitize, and combine.
  *
  * Sources:
- *   1. ccusage (Claude Code) — reads JSONL files from ~/.claude/
+ *   1. Claude Code — reads transcript JSONL files from ~/.claude/projects/
+ *      (and $XDG_CONFIG_HOME/claude, or $CLAUDE_CONFIG_DIR when set)
  *   2. OpenCode (incl. opencode-go and opencode-zen branded tiers) —
  *      reads message JSON files from ~/.local/share/opencode/
  *   3. Codex CLI — reads rollout JSONL files from ~/.codex/sessions/
@@ -121,16 +123,10 @@ export async function extractAndSanitize(
     hermesResult,
     dshResult,
   ] = await Promise.allSettled([
-    // Source 1: Claude Code via ccusage
-    (async (): Promise<SyncDay[]> => {
-      const { loadDailyUsageData } = await import("ccusage/data-loader");
-      const options: Record<string, unknown> = { mode: "calculate" };
-      if (since) options.since = since;
-      const raw = await loadDailyUsageData(
-        options as Parameters<typeof loadDailyUsageData>[0]
-      );
-      return sanitizeDailyData(raw as unknown[], "claude-code").days;
-    })(),
+    // Source 1: Claude Code
+    extractClaudeCodeData(since).then(
+      (days) => sanitizeDailyData(days, "claude-code").days
+    ),
     // Source 2: OpenCode (returns possibly multiple sources: opencode/opencode-go/opencode-zen)
     extractOpenCodeData(since),
     // Source 3: Codex CLI

@@ -4,7 +4,7 @@
  * Reads OpenCode's message JSON files from disk, aggregates by date and model,
  * calculates costs from token counts, and returns a SyncPayload.
  *
- * This mirrors the ccusage-based extraction in extract.ts but reads OpenCode's
+ * This mirrors the Claude Code extraction in claude-code.ts but reads OpenCode's
  * native file format instead. The same privacy guarantees apply: only aggregate
  * metrics leave the machine — no prompts, code, file paths, or session IDs.
  *

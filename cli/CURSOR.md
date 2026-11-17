@@ -131,7 +131,7 @@ guarantee.
 
 ## Why a fourth extractor instead of extending an existing one?
 
-Each existing extractor (`opencode.ts`, `codex.ts`, ccusage for Claude Code)
+Each existing extractor (`opencode.ts`, `codex.ts`, `claude-code.ts`)
 reads from a single tool's native on-disk format. Cursor's format — SQLite
 with JSON-encoded blobs spread across two key prefixes — has nothing in
 common with the others, and the OS-aware path resolution differs too. Mirroring
