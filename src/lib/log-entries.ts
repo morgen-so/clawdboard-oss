@@ -12,6 +12,53 @@ export interface LogEntry {
 
 export const logEntries: LogEntry[] = [
   {
+    date: "2026-11-17",
+    items: [
+      {
+        title: "Claude Code sync takes seconds, not minutes",
+        type: "improvement",
+        description:
+          "Syncing Claude Code usage used to re-read every transcript on every run, which took over four minutes on a machine with 9 GB of history. The CLI now reads each transcript once and remembers the result, so the first sync takes about 14 seconds and later ones about a second. Your numbers don't change. Part of CLI 0.3.10.",
+      },
+      {
+        title: "The Carcinization Event, remastered",
+        type: "improvement",
+        description:
+          "The 200-day takeover is now one continuous show. Your profile glitches and collapses like a CRT, a kernel panic waits for a keypress, and CLAWD-BIOS boots in amber. Then every day of your real streak lights up on a calendar grid, speeding through the tiers before it implodes, and CLAWD PRIME is crowned with fireworks and your stats. It has synthesized sound and a replay button, and it pauses while the tab is hidden.",
+      },
+      {
+        title: "A proper ceremony for day 100",
+        type: "feature",
+        description:
+          "Reaching 100 days used to get the generic tier-up pop-up. Now a dial of 100 ticks lights up one day at a time, each in the colour of the tier you were in that day, then bursts into gold sparks and settles into the spinning Eternal halo, with a card to share, invite a team or replay. Click, Space or Esc skips ahead, sound stays off until you switch it on, and reduced-motion gets a still version.",
+      },
+      {
+        title: "Codex totals no longer count forks and sub-agents twice",
+        type: "fix",
+        description:
+          "Forked sessions and sub-agents start with a copy of their parent's token counts, and the CLI added that copy again for every fork. One multi-agent user came out about 5x too high. The CLI now counts each session's own usage once, and usage from before a context-window reset is no longer dropped. Fixed in CLI 0.3.7; sessions without forks come out the same.",
+      },
+      {
+        title: "Cursor and Hermes sync again after npm 12",
+        type: "fix",
+        description:
+          "If you installed with npm 12, Cursor and Hermes usage stopped syncing without any message. npm 12 skips the build step for the SQLite module they read. The CLI now falls back to Node's built-in SQLite (Node 22.13+ or 23.4+), so update to CLI 0.3.8 and they sync again.",
+      },
+      {
+        title: "Your streak after every sync",
+        type: "feature",
+        description:
+          "`clawdboard sync` now ends with your current streak, how many free passes you have banked, and whether a pass is holding the streak open, like \"89 day streak · 2 free passes banked\". Only you see it, because pass balances stay private. Part of CLI 0.3.7.",
+      },
+      {
+        title: "Background sync every 4 hours",
+        type: "improvement",
+        description:
+          "Background syncs now run every 4 hours instead of 2. That lets the leaderboard's database sleep longer without making the board noticeably staler. Your hooks update on the next background run, and `clawdboard sync` still sends everything on demand. Part of CLI 0.3.9.",
+      },
+    ],
+  },
+  {
     date: "2026-09-21",
     items: [
       {
