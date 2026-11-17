@@ -4,6 +4,34 @@ All notable changes to the `clawdboard` CLI are documented here. The format
 follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the
 project uses semver loosely while pre-1.0.
 
+## [Unreleased]
+
+### Changed
+
+- **Syncing Claude Code usage is much faster.** The CLI read Claude Code
+  transcripts through ccusage, which parses every line of every transcript
+  twice on every sync. With a few gigabytes of transcripts that took minutes:
+  4m10s on one machine holding 8.9 GB. The CLI now reads them itself, in one
+  pass that only parses the lines holding usage, and remembers each
+  transcript's result in `~/.clawdboard/claude-code-cache.json` until the
+  file changes. On that machine the first sync takes 14 seconds and later
+  ones about a second. The cache holds token counts, timestamps, model names
+  and message ids (no prompts or code) and never leaves your machine; delete
+  it any time and the next sync rebuilds it.
+- **Your numbers don't change.** The same transcript lines count, repeated
+  responses are dropped the same way, days are still your local days, and
+  cost is still LiteLLM's rates with the above-200k tier. On those 8.9 GB,
+  tokens matched ccusage exactly and cost matched to the last bit on all 41
+  days. ccusage is no longer installed with the CLI.
+
+### Fixed
+
+- **`--since` now applies to Claude Code usage.** It was passed to ccusage
+  in a format ccusage reads differently, so `--since 2026-11-01` still
+  uploaded every Claude Code day of 2026.
+- **One unreadable transcript no longer drops all Claude Code usage from a
+  sync.** The file is skipped and the rest are counted.
+
 ## [0.3.9] - 2026-10-22
 
 ### Changed
